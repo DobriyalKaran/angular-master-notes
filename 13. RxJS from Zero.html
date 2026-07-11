@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 13 — RxJS from Zero | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 11 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 13 — <span>RxJS</span> from Zero</h1>
+  <p class="subtitle">Angular ka poora reactive core — HttpClient, forms, router events, signals interop — RxJS pe khada hai. Is chapter mein hum <em>bilkul zero</em> se shuru karenge: ek stream kya hoti hai, use kaun sunta hai, kaise band karte hain — phir operators, subjects, flattening, combination, aur asli project patterns tak. Har concept <em>WHY-first</em>: pehle problem, phir marble intuition, phir internals. Ratne ke liye nahi — <strong>samajhne</strong> ke liye.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">RxJS: <b>7.x</b> (v8 deprecations noted)</span>
+    <span class="chip">Sections: <b>11</b> · Topics: <b>22+</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Observable — The Stream</a><div class="sub">cold vs hot · lazy execution · of/from/interval · new Observable · producer</div></li>
+    <li><a href="#s2">Observer &amp; Subscription</a><div class="sub">next/error/complete contract · subscribe · unsubscribe · teardown · finite vs infinite</div></li>
+    <li><a href="#s3">Operators</a><div class="sub">pipe · pure functions · creation vs pipeable · map/filter/tap/take · marble intuition</div></li>
+    <li><a href="#s4">Subjects (4 types)</a><div class="sub">Subject · BehaviorSubject · ReplaySubject · AsyncSubject · hot &amp; multicast</div></li>
+    <li><a href="#s5">Flattening Operators</a><div class="sub">switchMap · mergeMap · concatMap · exhaustMap · higher-order Observables</div></li>
+    <li><a href="#s6">Combination Operators</a><div class="sub">forkJoin · combineLatest · zip · parallel calls · dependent streams</div></li>
+    <li><a href="#s7">Rate-Limiting &amp; Timing</a><div class="sub">debounceTime · throttleTime · distinctUntilChanged · auditTime</div></li>
+    <li><a href="#s8">Multicasting &amp; Sharing</a><div class="sub">shareReplay · share · refCount footgun · caching HTTP</div></li>
+    <li><a href="#s9">Error Handling</a><div class="sub">catchError · retry · throwError · EMPTY · recover vs rethrow</div></li>
+    <li><a href="#s10">Memory Leaks &amp; Unsubscribe</a><div class="sub">takeUntilDestroyed · AsyncPipe · takeUntil · leak sources · patterns</div></li>
+    <li><a href="#s11">RxJS in Real Angular Projects</a><div class="sub">typeahead · dependent dropdowns · auto-save · polling · caching · loading</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>Observable — The Stream</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>stream concept · cold vs hot · lazy execution · producer · creation (of/from/interval/fromEvent/new Observable) · Observable vs Promise</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Observable ek <strong>stream of values over time</strong> hai — ek "pipe" jismein se 0, 1, ya infinite values aa sakti hain, aaj ya future mein. Ek array socho jiske elements <em>ek saath</em> nahi, <em>samay ke saath</em> aate hain. Mouse clicks, HTTP response, timer ticks — sab streams hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Async cheezein sirf "ek future value" nahi hoti — kabhi <em>multiple</em> values over time hoti hain (clicks, keystrokes, WebSocket messages). Promise sirf ek value deta hai aur cancel nahi hota. Observable multiple values + cancellation + composition (operators) deta hai — reactive programming ka core.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Promise ki limitations</div>
+<ul style="margin-bottom:0">
+<li>Sirf <strong>ek</strong> value (stream of clicks handle nahi hota).</li>
+<li><strong>Cancel nahi</strong> ho sakta (fire ho gaya toh ho gaya).</li>
+<li><strong>Eager</strong> — banate hi chal padta.</li>
+<li>Composition weak — retry/debounce/switch manually.</li>
+</ul></div>
+<div class="panel good-p"><div class="ptitle">Observable</div><p>Multiple values · cancellable · lazy · 100+ operators se composable. Ek unified model for all async.</p></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Lazy + Cold ka matlab</div><p>Observable banane se kuch <strong>nahi</strong> hota — ye sirf ek "recipe" hai (ek function jo batata hai kaise values produce karni hain). Kaam tabhi shuru hota hai jab koi <code>subscribe()</code> kare. Ye "lazy" hai. Aur <strong>cold</strong> Observable har subscriber ke liye producer ko <em>dobara</em> chalata hai — 3 subscribers = 3 independent executions (jaise 3 alag HTTP requests). Iske ulta <strong>hot</strong> Observable ek shared producer se sab subscribers ko same values bhejता hai (S-04 Subjects).</p></div>
+
+<div class="dg-title">Diagram — cold vs hot</div>
+<pre class="diagram">
+ COLD (default): each subscriber gets its OWN execution
+   sub A ─▶ [producer runs] ─▶ 1,2,3
+   sub B ─▶ [producer runs again] ─▶ 1,2,3   (independent)
+
+ HOT (Subject-based): one shared producer, multicast
+   producer ─▶ 1,2,3 ─┬─▶ sub A
+                      └─▶ sub B   (same values, shared)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ new Observable(fn)  ─▶ NOTHING happens (lazy recipe)
+        │
+   .subscribe(observer) ─▶ fn(observer) runs
+        ─▶ observer.next(v)  (0..many times, over time)
+        ─▶ observer.complete()  OR  observer.error(e)   ← terminal (stream ends)
+        ─▶ teardown/cleanup runs
+</pre>
+
+<h3 class="part">6. Architecture — creation functions</h3>
+<table>
+<tr><td><code>of(1,2,3)</code></td><td>Given values ek-ek karke emit, phir complete. Synchronous.</td></tr>
+<tr><td><code>from([...])</code> / <code>from(promise)</code></td><td>Array/iterable/Promise ko Observable mein convert.</td></tr>
+<tr><td><code>interval(1000)</code> / <code>timer(d, p)</code></td><td>Har interval pe number emit (infinite).</td></tr>
+<tr><td><code>fromEvent(el, 'click')</code></td><td>DOM events ko stream banata (hot).</td></tr>
+<tr><td><code>new Observable(fn)</code></td><td>Custom producer — full control.</td></tr>
+<tr><td><code>EMPTY</code> / <code>NEVER</code> / <code>throwError</code></td><td>Special: turant complete / kabhi nahi / error.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">HTTP is an Observable</div>
+<pre><code>import { inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+export class UserService {
+  private http = inject(HttpClient);
+  // returns a COLD Observable — request fires only on subscribe
+  getUsers() { return this.http.get&lt;User[]&gt;('/api/users'); }
+}
+// component: users$ = this.userService.getUsers();  // template: | async</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { of, from, interval } from 'rxjs';
+
+of(1, 2, 3).subscribe(v =&gt; console.log(v));         // 1 2 3
+from(['a', 'b']).subscribe(v =&gt; console.log(v));    // a b
+interval(1000).subscribe(n =&gt; console.log(n));      // 0,1,2,... every 1s (infinite!)</code></pre>
+
+<h3 class="part">9. Advanced Example — custom Observable + teardown</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { Observable } from 'rxjs';
+
+const timer$ = new Observable&lt;number&gt;(subscriber =&gt; {
+  let count = 0;
+  const id = setInterval(() =&gt; subscriber.next(count++), 1000);
+  // teardown — unsubscribe pe chalega (cleanup!)
+  return () =&gt; { clearInterval(id); console.log('cleaned up'); };
+});
+
+const sub = timer$.subscribe(v =&gt; console.log(v));
+setTimeout(() =&gt; sub.unsubscribe(), 3500);   // 0,1,2 then cleanup</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>new Observable(subscriber =&gt; {...})</code> — producer function; subscribe pe chalta hai.</li>
+<li><code>subscriber.next(v)</code> — ek value emit; jitni baar chaho.</li>
+<li><code>return () =&gt; {...}</code> — teardown; unsubscribe/complete pe cleanup (leak-prevention).</li>
+<li><code>sub.unsubscribe()</code> — stream stop + teardown trigger.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Observable ko "already running" samajhna — ye lazy hai, subscribe bina kuch nahi.</li>
+<li>Cold Observable ko multiple jagah subscribe karke wonder karna ki request 3 baar kyun gayi (har subscribe = nayi execution).</li>
+<li>Infinite Observable (<code>interval</code>) ko unsubscribe na karna → leak.</li>
+<li>Custom Observable mein teardown na dena → resources (timers/listeners) leak.</li>
+<li>Observable ko Promise samajhna (ek value expect karna) — multiple emit ho sakte.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Streams ko <code>$</code> suffix se naam do (<code>users$</code>) — convention.</li>
+<li>Custom Observables mein hamesha teardown return karo.</li>
+<li>Shared cold data → <code>shareReplay</code> (S-08) se multicast + cache.</li>
+<li>Prefer built-in creation functions (<code>of/from/fromEvent</code>) over manual <code>new Observable</code>.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Cold Observable ka biggest gotcha: multiple subscribers = multiple executions (duplicate HTTP). <code>shareReplay(1)</code> se ek execution multicast karo. Infinite streams (<code>interval</code>, <code>fromEvent</code>) bina unsubscribe leak + CPU waste karte. Lazy nature actually perf-friendly — jab tak zaroorat na ho, kuch execute nahi hota.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Synchronous emit</td><td><code>of(1,2,3)</code> subscribe hote hi sab emit — "over time" jaruri nahi async.</td></tr>
+<tr><td>Never completes</td><td><code>interval</code>/<code>fromEvent</code> khud complete nahi hote — <code>take</code>/<code>takeUntil</code> chahiye.</td></tr>
+<tr><td>Observable vs Promise</td><td>Promise eager + single + non-cancellable; Observable lazy + multi + cancellable.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Observable vs Promise?</summary><div class="ans"><p>Promise: ek future value, eager (banate hi chalta), non-cancellable, no operators. Observable: 0..many values over time, lazy (subscribe pe chalta), cancellable (unsubscribe), 100+ operators se composable. Multiple values ya cancellation chahiye → Observable.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Cold vs Hot Observable?</summary><div class="ans"><p>Cold: har subscriber ke liye producer alag se chalta hai (independent execution) — jaise HTTP (har subscribe = nayi request). Hot: ek shared producer sab subscribers ko same values multicast karta (jaise Subject, <code>fromEvent</code>). Cold ko hot banana → <code>share</code>/<code>shareReplay</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> "Observable lazy hota hai" — iska practical impact?</summary><div class="ans"><p>Observable banane pe producer chalta hi nahi — sirf <code>subscribe</code> pe. Practical: <code>http.get()</code> call karke <code>subscribe</code> na karo toh request kabhi nahi jaati. Aur har <code>subscribe</code> cold Observable ko dobara chalata (duplicate requests). Isliye AsyncPipe/shareReplay important.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek service method 3 components use karte hain aur network tab mein 3 identical requests dikhte hain. Kyun aur fix?</summary><div class="ans"><p>HTTP Observable cold hai — har component ka <code>subscribe</code> (ya <code>| async</code>) alag execution trigger karta hai. Fix: source pe <code>shareReplay(1)</code> lagao — pehla subscriber request fire karega, response cache hoga, baaki cached value paayenge (ek request, multicast).</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Observable = stream of 0..many values over time. LAZY (subscribe pe chalta) + cancellable + composable.</li>
+<li>COLD = per-subscriber execution (HTTP); HOT = shared multicast (Subject/fromEvent).</li>
+<li>Create: <code>of/from/interval/timer/fromEvent/new Observable</code>. Custom → return teardown.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.1 · Custom interval Observable</div><p><code>new Observable</code> se ek timer banao jo har second count emit kare, teardown mein <code>clearInterval</code> ho. 3.5s baad unsubscribe karke verify karo cleanup chala (console log).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-13.2 · Cold proof</div><p>Ek Observable banao jo subscribe pe <code>console.log('running')</code> kare. 3 baar subscribe karke prove karo ki har subscribe alag execution hai. Phir <code>shareReplay(1)</code> laga ke prove karo ab ek hi execution hai.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Observer &amp; Subscription</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>Observer (next/error/complete) · subscribe overloads · Subscription object · unsubscribe · teardown · terminal events · finite vs infinite</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><strong>Observer</strong> woh consumer hai jo stream ko "sunta" hai — ek object with 3 callbacks: <code>next</code> (har value), <code>error</code> (fail), <code>complete</code> (stream khatam). <strong>Subscription</strong> woh object hai jo <code>subscribe()</code> return karta hai — ise <code>unsubscribe()</code> karke stream band karte ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Observable "recipe" hai, par usse values nikaalne ke liye koi consume karna padta — that's the Observer. Aur running stream ko rokne (cancellation, cleanup) ke liye Subscription ka handle chahiye. In dono ke bina Observable useless hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Observer 3 alag channels deta hai — success values, error, completion — clean separation. Subscription lifecycle management deta hai: jab tak chahiye suno, phir band karke resources free karo (leak prevention).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">next/error/complete contract</div><p>Ek Observable <em>zero ya more</em> <code>next</code> emit kar sakta hai, phir <strong>ya to</strong> ek <code>complete</code> <strong>ya</strong> ek <code>error</code> — dono nahi, aur uske baad kuch nahi. <code>error</code>/<code>complete</code> <strong>terminal</strong> hain: stream khatam, teardown chalta, further emissions ignore. Isliye error ke baad next nahi aata. Ye "grammar" (<code>next* (error | complete)?</code>) reactive contract hai.</p></div>
+
+<div class="dg-title">Diagram — the contract</div>
+<pre class="diagram">
+ next ─▶ next ─▶ next ─▶ complete    ✓ (finite, success)
+ next ─▶ next ─▶ error               ✓ (failed — terminal)
+ next ─▶ next ─▶ ... (never ends)    ← infinite (interval) — YOU must unsubscribe
+
+ grammar:  next* (error | complete)?     terminal = teardown runs
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ obs.subscribe({ next, error, complete })
+        │
+        ├─ producer emits ─▶ next(v)  (repeat)
+        ├─ success ─▶ complete() ─▶ teardown ─▶ (auto-unsubscribed)
+        ├─ failure ─▶ error(e)   ─▶ teardown ─▶ (auto-unsubscribed)
+        └─ manual  ─▶ sub.unsubscribe() ─▶ teardown (stop early)
+</pre>
+
+<h3 class="part">6. Architecture — subscribe forms</h3>
+<table>
+<tr><td>Full observer</td><td><code>subscribe({ next, error, complete })</code> — teeno callbacks.</td></tr>
+<tr><td>next only</td><td><code>subscribe(v =&gt; ...)</code> — shorthand, sirf values.</td></tr>
+<tr><td><code>Subscription</code></td><td>Return object — <code>unsubscribe()</code>, <code>closed</code>, <code>add(child)</code>.</td></tr>
+<tr><td>Auto-cleanup</td><td>complete/error → auto-unsubscribe; infinite → manual.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">component</div>
+<pre><code>this.userService.getUsers().subscribe({
+  next: users =&gt; this.users = users,
+  error: err =&gt; this.error = err.message,
+  complete: () =&gt; console.log('done'),   // HTTP: after single value
+});
+// finite streams (HTTP) auto-complete → auto-unsubscribe. But prefer AsyncPipe.</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const sub = interval(1000).subscribe(n =&gt; console.log(n));
+setTimeout(() =&gt; sub.unsubscribe(), 3000);   // stop after ~3 ticks (infinite → manual!)</code></pre>
+
+<h3 class="part">9. Advanced Example — grouping subscriptions</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { Subscription } from 'rxjs';
+
+private subs = new Subscription();
+
+ngOnInit() {
+  this.subs.add(this.a$.subscribe(...));
+  this.subs.add(this.b$.subscribe(...));
+}
+ngOnDestroy() {
+  this.subs.unsubscribe();   // ek call → saari child subscriptions band
+}
+// NOTE: modern Angular mein takeUntilDestroyed()/AsyncPipe behtar (S-10)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>subscribe({ next, error, complete })</code> — Observer object; teen channels.</li>
+<li><code>next</code> har value pe; <code>error</code> ek baar (terminal); <code>complete</code> ek baar (terminal).</li>
+<li><code>const sub = ...subscribe(...)</code> — Subscription handle capture.</li>
+<li><code>sub.unsubscribe()</code> — stream stop + teardown; infinite streams ke liye must.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Infinite stream subscribe karke unsubscribe na karna → #1 memory leak (S-10).</li>
+<li><code>error</code> callback na dena → unhandled error crash/console noise.</li>
+<li>Error ke baad <code>next</code> expect karna — error terminal hai, stream khatam.</li>
+<li><code>Subscription.add()</code> chaining pe over-rely — flawed pattern; <code>takeUntil</code>/AsyncPipe better.</li>
+<li>Nested subscribes (subscribe ke andar subscribe) → callback hell + leaks. Flattening operators (S-05) use karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Templates mein <code>AsyncPipe</code> — auto subscribe + unsubscribe (leak-free).</li>
+<li>Manual subscribe zaroori ho toh <code>takeUntilDestroyed()</code> se cleanup (S-10).</li>
+<li>Hamesha <code>error</code> handle karo (ya <code>catchError</code>).</li>
+<li>Nested subscribe kabhi nahi — flattening operators (switchMap etc.).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Leaked subscriptions (khaas infinite streams) memory + CPU khaate hain — har destroy nahi hui subscription callback chalati rehti. AsyncPipe/takeUntilDestroyed se automatic cleanup. Nested subscribes na sirf leaky balki uncontrolled concurrency — flattening operators controlled + cancellable.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Double unsubscribe</td><td>Safe — no-op (<code>closed</code> already true).</td></tr>
+<tr><td>Unsubscribe before emit</td><td>Producer teardown chalta, koi value nahi aati.</td></tr>
+<tr><td>Finite auto-complete</td><td>HTTP/of complete karte hi auto-unsubscribe — manual zaroori nahi (par AsyncPipe still cleaner).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Observer ke 3 methods?</summary><div class="ans"><p><code>next(value)</code> — har emitted value. <code>error(err)</code> — failure (terminal, stream khatam). <code>complete()</code> — success end (terminal). Contract: <code>next*</code> phir optionally ek <code>error</code> YA <code>complete</code>, dono nahi.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Kaunse Observables ko manually unsubscribe karna zaroori hai?</summary><div class="ans"><p>Infinite/long-lived streams jo khud complete nahi hote — <code>interval</code>, <code>fromEvent</code>, <code>Subject</code>-based, <code>valueChanges</code>. Finite streams (HTTP, <code>of</code>) complete pe auto-unsubscribe ho jaate. Par best practice: AsyncPipe/takeUntilDestroyed se saare cases handle karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek component <code>interval(1000)</code> subscribe karta hai, phir destroy ho jaata, par console mein numbers aate rehte hain. Fix?</summary><div class="ans"><p>Subscription destroy pe cleanup nahi hui — leak. Fix: <code>interval(1000).pipe(takeUntilDestroyed()).subscribe(...)</code> — component destroy pe auto-unsubscribe. Ya AsyncPipe use karo template mein. Manual: <code>ngOnDestroy</code> mein <code>sub.unsubscribe()</code>.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Observer = <code>{ next, error, complete }</code>. Contract: <code>next* (error|complete)?</code> — terminal ends stream.</li>
+<li><code>subscribe()</code> → Subscription; <code>unsubscribe()</code> stops + teardown. Infinite → MUST unsubscribe.</li>
+<li>Prefer AsyncPipe / <code>takeUntilDestroyed()</code>. Never nest subscribes.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.3 · Observer channels</div><p>Ek Observable banao jo 3 values emit kare phir error/complete. Full observer (<code>{next,error,complete}</code>) se subscribe karke prove karo error ke baad next/complete nahi aata.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-13.4 · Leak vs no-leak</div><p>Ek component banao jo <code>interval</code> subscribe karta hai. Pehle bina cleanup ke leak dikhao (destroy ke baad bhi logs), phir <code>takeUntilDestroyed()</code> se fix karke prove karo logs ruk gaye.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Operators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>pipe() · pure functions · creation vs pipeable operators · map/filter/tap/take/scan · marble diagrams · chaining · immutability</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Operators wo functions hain jo ek Observable ko leke <strong>naya</strong> Observable return karte hain — stream ko transform, filter, combine karke. <code>map</code>, <code>filter</code>, <code>tap</code>, <code>debounceTime</code> — sab operators. Inhe <code>.pipe()</code> ke andar chain karte ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Raw stream se seedhe kaam nahi chalta — usse transform karna padta (map values), filter (sirf valid), debounce (rate limit), combine (dependent data). Operators ye declaratively karte hain, imperative loops/flags ke bina. Yehi RxJS ki asli power hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Async logic ka spaghetti (nested callbacks, manual state, flags) ko clean, composable, declarative pipeline mein badalna. "Har keystroke pe, 300ms wait karke, agar value badli ho, API call karo, purani cancel karke" — ek pipe mein.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">pipe = function composition</div><p>Har pipeable operator ek function hai jo <code>Observable</code> leta hai aur naya <code>Observable</code> deta hai. <code>pipe(a, b, c)</code> unhe left-to-right compose karta hai: source → a → b → c. Har operator source ko subscribe karta hai, values ko transform karke apne subscriber ko forward karta hai. Operators <strong>pure</strong> hain — original stream ko modify nahi karte, naya banate hain (immutable).</p></div>
+
+<div class="dg-title">Diagram — pipe composition (marble)</div>
+<pre class="diagram">
+ source:        --1--2--3--4--|
+ .pipe(
+   filter(x=&gt;x%2==0)   --2-----4--|      keep even
+   map(x=&gt;x*10)   )     --20----40-|      transform
+ result:               --20----40-|
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ source$ .pipe(map(f), filter(g), take(2))
+        │
+   subscribe ─▶ source emits ─▶ map(f) ─▶ filter(g) ─▶ take(2) ─▶ your observer
+              (each value flows through the chain, left to right)
+</pre>
+
+<h3 class="part">6. Architecture — operator categories</h3>
+<table>
+<tr><td>Transformation</td><td><code>map</code>, <code>scan</code>, <code>pluck</code>, flattening (switchMap etc. — S-05)</td></tr>
+<tr><td>Filtering</td><td><code>filter</code>, <code>take</code>, <code>first</code>, <code>distinctUntilChanged</code>, <code>debounceTime</code></td></tr>
+<tr><td>Combination</td><td><code>merge</code>, <code>concat</code>, <code>forkJoin</code>, <code>combineLatest</code> (S-06)</td></tr>
+<tr><td>Utility</td><td><code>tap</code> (side-effects), <code>delay</code>, <code>finalize</code>, <code>timeout</code></td></tr>
+<tr><td>Error</td><td><code>catchError</code>, <code>retry</code> (S-09)</td></tr>
+<tr><td>Creation (not piped)</td><td><code>of</code>, <code>from</code>, <code>interval</code> — Observables banate hain (S-01)</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">transform HTTP response</div>
+<pre><code>import { map, filter } from 'rxjs';
+
+activeUserNames$ = this.http.get&lt;User[]&gt;('/api/users').pipe(
+  map(users =&gt; users.filter(u =&gt; u.active)),   // keep active
+  map(users =&gt; users.map(u =&gt; u.name)),         // just names
+);
+// template: &lt;li *ngFor="let name of activeUserNames$ | async"&gt;{{ name }}&lt;/li&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { of, map, filter } from 'rxjs';
+
+of(1, 2, 3, 4).pipe(
+  filter(x =&gt; x % 2 === 0),   // 2, 4
+  map(x =&gt; x * 10),           // 20, 40
+).subscribe(console.log);     // 20, 40</code></pre>
+
+<h3 class="part">9. Advanced Example — tap (side-effects) + scan (accumulate)</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { interval, tap, scan, take } from 'rxjs';
+
+interval(1000).pipe(
+  take(5),
+  tap(n =&gt; console.log('tick', n)),     // side-effect (debug/log), stream unchanged
+  scan((acc, n) =&gt; acc + n, 0),          // running total: 0,1,3,6,10
+).subscribe(total =&gt; console.log('sum', total));</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>.pipe(...)</code> — operators ki chain; left-to-right execute.</li>
+<li><code>filter(pred)</code> — sirf true wali values aage.</li>
+<li><code>map(fn)</code> — har value ko transform.</li>
+<li><code>tap(fn)</code> — side-effect (log/debug), value badalta nahi.</li>
+<li><code>scan(reducer, seed)</code> — running accumulate (jaise Array.reduce, par per-emit).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Operators ke saath source modify hone ki umeed — ye pure hain, naya stream dete hain.</li>
+<li><code>map</code> mein side-effects (state mutate) — <code>map</code> pure hona chahiye; side-effects <code>tap</code> mein.</li>
+<li>Creation operator (<code>of</code>) ko <code>.pipe</code> ke andar use karna — creation vs pipeable confuse.</li>
+<li>Nested subscribe jab flattening operator (switchMap) chahiye — S-05.</li>
+<li>RxJS 6 style import (<code>rxjs/operators</code>) — v7+ mein sab <code>'rxjs'</code> se import ho jaata.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Side-effects sirf <code>tap</code> mein; <code>map</code>/<code>filter</code> pure rakho.</li>
+<li>Chain ko readable rakho — ek pipe mein logical flow.</li>
+<li>Marble diagram se sochо — "input marbles → output marbles".</li>
+<li>Import <code>'rxjs'</code> se (v7+ unified); tree-shaking automatic.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Har operator ek subscription layer add karta — typically negligible, par hot paths mein zaroorat se zyada operators avoid. <code>tap</code> ke bhaari side-effects har emit pe chalte. <code>distinctUntilChanged</code>/<code>filter</code> jaldi lagakar downstream work kam karo. Pure operators tree-shakable → chhota bundle.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Operator order matters</td><td><code>filter</code> phir <code>map</code> vs <code>map</code> phir <code>filter</code> — alag semantics + perf.</td></tr>
+<tr><td>Empty stream</td><td><code>map</code>/<code>filter</code> kuch nahi karte agar source complete without emit.</td></tr>
+<tr><td>Custom operator</td><td>Ek function jo Observable→Observable — reusable pipe logic.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>pipe()</code> kya karta hai?</summary><div class="ans"><p>Multiple operators ko left-to-right compose karta hai. Source Observable in operators se guzarta hai (transform/filter/etc.) aur naya Observable banta hai — original unchanged (pure). <code>source.pipe(op1, op2, op3)</code>.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> <code>map</code> vs <code>tap</code>?</summary><div class="ans"><p><code>map</code> value ko transform karke naya value emit karta hai (stream badalta). <code>tap</code> side-effect (log/debug/analytics) karta hai par value ko as-is aage bhejta (stream unchanged). Transform → map; side-effect → tap.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Creation vs pipeable operators?</summary><div class="ans"><p>Creation operators (<code>of</code>, <code>from</code>, <code>interval</code>, <code>fromEvent</code>) naya Observable <em>banate</em> hain — pipe ke bahar. Pipeable operators (<code>map</code>, <code>filter</code>, <code>switchMap</code>) existing Observable ko <code>.pipe()</code> ke andar transform karte hain. Ek stream shuru karta, doosra use manipulate.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek pipe mein <code>map</code> ke andar tumne component property update kar di aur ajeeb bugs aa rahe. Kyun?</summary><div class="ans"><p><code>map</code> pure hona chahiye — sirf value transform, koi side-effect nahi. State mutation <code>map</code> mein daalne se multiple subscriptions/re-runs pe unpredictable behavior aata. Side-effects ko <code>tap</code> mein move karo, ya better — state ko stream se derive karo (AsyncPipe).</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Operators: Observable → new Observable (pure). Chain via <code>.pipe(a, b, c)</code> left-to-right.</li>
+<li>Transform=<code>map/scan</code>, filter=<code>filter/take/distinctUntilChanged</code>, side-effect=<code>tap</code>.</li>
+<li>Creation (of/from) vs pipeable (map/filter). Import from <code>'rxjs'</code> (v7+).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.5 · Transform pipeline</div><p><code>of(1..10)</code> se ek pipe banao: even filter → square (map) → running sum (scan) → first 3 (take). <code>tap</code> se har stage log karke marble flow samjho.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Subjects (4 types)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>Subject · BehaviorSubject · ReplaySubject · AsyncSubject · Observable+Observer both · multicast/hot · state management · asObservable</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Subject ek special object hai jo <strong>Observable AUR Observer dono</strong> hai — yani tum ise subscribe bhi kar sakte ho, aur ispe <code>next()</code> karke values <em>push</em> bhi kar sakte ho. Ye <strong>hot</strong> aur <strong>multicast</strong> hai: ek Subject ke saare subscribers ko same values milti hain. Iske 4 variants alag "memory" behavior dete hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Regular Observable cold + unicast hai. Par kabhi tumhe chahiye: ek jagah se value push karna aur multiple listeners ko bhejna (event bus, shared state, cross-component communication). Subject exactly ye deta hai — imperative "emit" + multicast.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Multicasting (ek source, multiple listeners, same values) aur imperative emission (code se <code>next()</code> push). Angular mein: simple state services, event buses, cross-component signals — sab Subjects se (ya ab signals se).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">4 variants = alag "memory"</div><p>Sabhi Subjects multicast hain; farak sirf <em>naye subscriber ko kya milta hai</em>:
+<br>• <strong>Subject</strong> — subscribe ke <em>baad</em> wali values only (no memory).
+<br>• <strong>BehaviorSubject</strong> — ek initial/latest value hamesha yaad; subscribe pe turant current value.
+<br>• <strong>ReplaySubject(n)</strong> — last <em>n</em> values yaad; subscribe pe woh sab replay.
+<br>• <strong>AsyncSubject</strong> — sirf <em>last</em> value, woh bhi <strong>complete</strong> hone ke baad.</p></div>
+
+<div class="dg-title">Diagram — what a late subscriber gets</div>
+<pre class="diagram">
+ emitted:  1 -- 2 -- 3 --[late subscriber joins here]-- 4 -- complete
+
+ Subject          late sub gets:  4              (nothing before join)
+ BehaviorSubject  late sub gets:  3, 4           (latest, then new)
+ ReplaySubject(2) late sub gets:  2, 3, 4        (last 2 buffered, then new)
+ AsyncSubject     late sub gets:  4              (only last, AFTER complete)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ const s = new BehaviorSubject(0);
+ s.subscribe(A);        A ─▶ 0 (initial, immediate)
+ s.next(1);             A ─▶ 1
+ s.subscribe(B);        B ─▶ 1 (current value on join)
+ s.next(2);             A ─▶ 2,  B ─▶ 2   (multicast to both)
+</pre>
+
+<h3 class="part">6. Architecture — the 4 types</h3>
+<table>
+<tr><td><code>Subject</code></td><td>No memory. Pure event bus. Late subscriber = future values only.</td></tr>
+<tr><td><code>BehaviorSubject(init)</code></td><td>Needs initial value; always has "current". <code>.value</code> sync read. <strong>State ke liye best.</strong></td></tr>
+<tr><td><code>ReplaySubject(n)</code></td><td>Buffers last n (optionally time-window). Late subscriber replay.</td></tr>
+<tr><td><code>AsyncSubject</code></td><td>Only final value, only on complete. Rare (jaise ek computation ka result).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — simple state service</h3>
+<div class="code-label">cart.service.ts</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class CartService {
+  private itemsSubject = new BehaviorSubject&lt;Item[]&gt;([]);   // initial: empty
+  items$ = this.itemsSubject.asObservable();               // expose read-only
+
+  add(item: Item) {
+    this.itemsSubject.next([...this.itemsSubject.value, item]);  // .value = current
+  }
+  get count() { return this.itemsSubject.value.length; }
+}
+// any component: cartService.items$ | async  → always current cart, multicast</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { Subject } from 'rxjs';
+
+const bus = new Subject&lt;string&gt;();
+bus.subscribe(msg =&gt; console.log('A:', msg));
+bus.next('hello');            // A: hello
+bus.subscribe(msg =&gt; console.log('B:', msg));  // B misses 'hello' (no memory)
+bus.next('world');            // A: world, B: world</code></pre>
+
+<h3 class="part">9. Advanced Example — asObservable + encapsulation</h3>
+<div class="code-label">typescript</div>
+<pre><code>private statusSubject = new BehaviorSubject&lt;Status&gt;('idle');
+// EXPOSE read-only — bahar se koi next() na kar sake
+readonly status$ = this.statusSubject.asObservable();
+
+setStatus(s: Status) { this.statusSubject.next(s); }   // controlled mutation
+// bahar: service.status$.subscribe(...)  ✓   service.status$.next(...) ✗ (not a Subject)</code></pre>
+<div class="panel info-p"><div class="ptitle">asObservable kyun</div><p>Subject ko directly expose karne se koi bhi <code>next()</code> karke state corrupt kar sakta. <code>asObservable()</code> ek read-only Observable deta hai — bahar sirf subscribe, mutation service ke controlled methods se. Encapsulation ka core pattern.</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>new BehaviorSubject&lt;Item[]&gt;([])</code> — initial value <code>[]</code> zaroori.</li>
+<li><code>.asObservable()</code> — read-only view, bahar next() nahi.</li>
+<li><code>.value</code> — current value synchronously (sirf BehaviorSubject).</li>
+<li><code>.next([...prev, item])</code> — nayi immutable value push, saare subscribers ko multicast.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>State ke liye plain <code>Subject</code> use karna — late subscriber ko current value nahi milti; <code>BehaviorSubject</code> chahiye.</li>
+<li><code>BehaviorSubject</code> bina initial value banana — constructor error.</li>
+<li>Subject ko public expose karna → koi bhi <code>next()</code> kar sakta. <code>asObservable()</code>.</li>
+<li><code>ReplaySubject</code> bada buffer + long life → memory bloat.</li>
+<li>Subjects ko har jagah use karna jab derived/computed stream better hota — ya modern Angular mein <code>signal</code>.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Shared state → <code>BehaviorSubject</code> (has current value) + <code>asObservable()</code> expose.</li>
+<li>Mutation service methods se controlled; bahar read-only.</li>
+<li>Modern Angular: simple state ke liye <code>signal()</code> consider — kam boilerplate.</li>
+<li><code>ReplaySubject</code> buffer chhota + bounded rakho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Subjects hot hain — ek execution multicast, cold ke multiple executions se efficient (isliye <code>shareReplay</code> andar Subject use karta). <code>ReplaySubject</code> ka buffer memory hold karta; unbounded buffer leak. Late subscribers ko replay CPU/memory cost. State ke liye BehaviorSubject lightweight.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Subject after complete</td><td>Complete ke baad <code>next()</code> ignore; naye subscribers turant complete.</td></tr>
+<tr><td>Error on Subject</td><td>Error saare subscribers ko + Subject "dead" — further next() nahi.</td></tr>
+<tr><td>ReplaySubject time window</td><td><code>new ReplaySubject(n, timeMs)</code> — sirf recent time-window replay.</td></tr>
+<tr><td>Signals vs Subjects</td><td>Angular signals sync state ke liye simpler; Subjects async event streams ke liye.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Subject Observable se kaise alag hai?</summary><div class="ans"><p>Subject Observable AUR Observer dono hai — subscribe bhi kar sakte, <code>next()</code> se push bhi. Aur ye hot + multicast hai (saare subscribers ko same values). Regular Observable cold + unicast (har subscriber alag execution).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Chaaro Subjects mein farak — ek line each.</summary><div class="ans"><p><strong>Subject</strong>: no memory, sirf future values. <strong>BehaviorSubject</strong>: current/latest value yaad (initial zaroori), subscribe pe turant milti. <strong>ReplaySubject(n)</strong>: last n values buffer + replay. <strong>AsyncSubject</strong>: sirf final value, complete hone par. State → BehaviorSubject.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>asObservable()</code> kyun use karte ho?</summary><div class="ans"><p>Subject ko directly expose karne se bahar se koi bhi <code>next()</code>/<code>error()</code> karke state corrupt kar sakta. <code>asObservable()</code> ek read-only Observable deta hai — consumers sirf subscribe kar sakte, mutation service ke controlled methods tak seemit. Encapsulation.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Cart state <code>Subject</code> se banaya, par jo component baad mein mount hota hai use current cart nahi dikhti (khaali). Fix?</summary><div class="ans"><p>Plain <code>Subject</code> ki memory nahi — late subscriber ko sirf future emissions milti hain, current value nahi. <code>BehaviorSubject</code> use karo (initial <code>[]</code>) — ye current value hold karta hai, isliye late-mounting component ko turant latest cart milegi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Subject = Observable + Observer, hot + multicast (<code>next()</code> to push).</li>
+<li>Subject (no memory) · BehaviorSubject (current value, <code>.value</code>) · ReplaySubject(n) (last n) · AsyncSubject (final on complete).</li>
+<li>State → BehaviorSubject + <code>asObservable()</code>. Modern: consider signals.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.6 · 4-Subjects demo</div><p>Chaaro Subjects banao, kuch values emit karo, phir ek late subscriber add karke prove karo ki har type late subscriber ko kya deta hai (diagram wala behavior).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-13.7 · Cart state service</div><p><code>BehaviorSubject</code> se ek cart service banao: <code>items$</code> (asObservable), <code>add/remove</code>, <code>count</code> (sync via <code>.value</code>). Do components se subscribe karke multicast + current-value-on-join prove karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Flattening Operators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>higher-order Observables · switchMap · mergeMap · concatMap · exhaustMap · when to use which · nested-subscribe fix</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Flattening operators tab use hote hain jab ek Observable ki har value se <strong>ek naya Observable</strong> banta hai (jaise "har search term pe ek HTTP call"). Ye ek <em>higher-order Observable</em> (Observable of Observables) ko <strong>flatten</strong> karke ek single stream banate hain. Chaar variants alag <em>concurrency strategy</em> dete hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Common pattern: ek stream (clicks/keystrokes/route params) ki har value pe async operation (HTTP). Agar tum <code>map</code> use karo toh Observable-of-Observables milta hai (nested, useless). Aur nested <code>subscribe</code> callback hell + no cancellation. Flattening operators inner Observable ko subscribe + flatten karke, cancellation/ordering handle karte hain.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Nested subscribe — anti-pattern</div>
+<pre><code>// ❌ callback hell + no cancel + leak
+this.search$.subscribe(term =&gt; {
+  this.http.get(`/api?q=${term}`).subscribe(res =&gt; { ... });
+});</code></pre></div>
+<div class="panel good-p"><div class="ptitle">✅ flattening operator</div>
+<pre><code>this.search$.pipe(switchMap(term =&gt; this.http.get(`/api?q=${term}`))).subscribe(...)</code></pre></div>
+
+<h3 class="part">4. Internal Working — the 4 strategies</h3>
+<div class="panel why"><div class="ptitle">Concurrency ka farak (RAT-DE mnemonic nahi — bas samjho)</div><p>Jab outer se nayi value aaye <em>jabki purani inner abhi chal rahi ho</em>, tab kya karein:
+<br>• <strong>switchMap</strong> — purani inner ko <strong>cancel</strong> karo, nayi pe switch. (Latest jeetta.)
+<br>• <strong>mergeMap</strong> — sabko <strong>parallel</strong> chalao, jaise-jaise complete ho emit. (No order.)
+<br>• <strong>concatMap</strong> — <strong>queue</strong> karo; ek complete hone ke baad agli. (Order preserved.)
+<br>• <strong>exhaustMap</strong> — jab tak current chal rahi, nayi ko <strong>ignore</strong> karo. (First jeetta.)</p></div>
+
+<div class="dg-title">Diagram — same input, 4 behaviors</div>
+<pre class="diagram">
+ outer:   --A------B--C-------|   (each maps to inner taking ~2 units)
+
+ switchMap:  A cancelled by B, B cancelled by C ─▶ only C result
+ mergeMap:   A, B, C all run in parallel ─▶ all results (any order)
+ concatMap:  A fully, then B, then C ─▶ all results, IN ORDER
+ exhaustMap: A runs; B,C ignored (arrived while A busy) ─▶ only A result
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ outer emits term ─▶ project(term) → inner Observable (e.g. http.get)
+        │
+   switchMap: unsubscribe previous inner ─▶ subscribe new ─▶ flatten value
+   (concurrency strategy decides what happens to overlapping inners)
+</pre>
+
+<h3 class="part">6. Architecture — decision table</h3>
+<table>
+<tr><td><b>Operator</b></td><td><b>On overlap</b></td><td><b>Use case</b></td></tr>
+<tr><td><code>switchMap</code></td><td>Cancel previous</td><td><strong>Search/typeahead</strong>, route-param fetch — only latest matters</td></tr>
+<tr><td><code>mergeMap</code></td><td>All parallel</td><td>Independent parallel tasks (multiple uploads) — order irrelevant</td></tr>
+<tr><td><code>concatMap</code></td><td>Queue, in order</td><td><strong>Sequential mutations</strong> (ordered saves) — order matters</td></tr>
+<tr><td><code>exhaustMap</code></td><td>Ignore new while busy</td><td><strong>Login/submit button</strong> — prevent double-submit</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">typeahead (switchMap) — cancel stale</div>
+<pre><code>results$ = this.searchControl.valueChanges.pipe(
+  debounceTime(300),
+  distinctUntilChanged(),
+  switchMap(term =&gt; this.http.get&lt;Result[]&gt;('/api/search', { params: { q: term } })),
+  // ↑ har naye term pe purani request CANCEL — sirf latest response
+);</code></pre>
+<div class="code-label">login (exhaustMap) — no double-submit</div>
+<pre><code>this.loginClicks$.pipe(
+  exhaustMap(() =&gt; this.auth.login(this.form.value)),
+  // ↑ jab tak login in-progress, extra clicks IGNORE
+).subscribe(...);</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { of, concatMap, delay } from 'rxjs';
+
+of('a', 'b', 'c').pipe(
+  concatMap(x =&gt; of(x).pipe(delay(500)))   // one at a time, in order
+).subscribe(console.log);   // a...b...c (500ms apart, ordered)</code></pre>
+
+<h3 class="part">9. Advanced Example — mergeMap with concurrency limit</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { from, mergeMap } from 'rxjs';
+
+from(fileList).pipe(
+  mergeMap(file =&gt; this.uploadFile(file), 3),  // max 3 parallel uploads
+).subscribe(res =&gt; console.log('uploaded', res));
+// concurrency limit (3) → server ko flood nahi, par parallel speed</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>switchMap(term =&gt; http.get(...))</code> — outer term → inner HTTP; naye term pe purani cancel.</li>
+<li><code>exhaustMap(() =&gt; auth.login())</code> — in-progress ke dauraan naye clicks ignore.</li>
+<li><code>concatMap(x =&gt; ...)</code> — queue; strict order.</li>
+<li><code>mergeMap(fn, 3)</code> — parallel with concurrency cap (2nd arg).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Typeahead mein <code>mergeMap</code> — stale/out-of-order results (race). Use <code>switchMap</code>.</li>
+<li>Sequential ordered saves mein <code>mergeMap</code> — order toot jaata. Use <code>concatMap</code>.</li>
+<li>Double-submit protection ke liye <code>switchMap</code> — ye purani cancel karta, par exhaustMap ignore karta (correct).</li>
+<li>Nested subscribe rakhna instead of flattening — callback hell + leak.</li>
+<li><code>switchMap</code> ko mutations (POST) pe use karna — beech mein cancel = incomplete write.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this — pick by intent</div>
+<ul style="margin-bottom:0">
+<li>"Sirf latest matters" (search, autocomplete, latest route) → <strong>switchMap</strong>.</li>
+<li>"Order matters, one-by-one" (sequential writes) → <strong>concatMap</strong>.</li>
+<li>"Parallel, order irrelevant" (independent tasks) → <strong>mergeMap</strong> (+ limit).</li>
+<li>"Ignore while busy" (submit/login) → <strong>exhaustMap</strong>.</li>
+<li>Nested subscribe kabhi nahi.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>switchMap</code> in-flight requests cancel karke bandwidth bachata (typeahead ka core). <code>mergeMap</code> bina concurrency limit ke server ko flood kar sakta — 2nd arg se cap. <code>concatMap</code> slow inners pe queue backlog bana sakta (latency). Sahi operator = right concurrency = right perf.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>switchMap + POST</td><td>Cancellable mutation risk — server side-effect incomplete ho sakta. Mutations pe concatMap/exhaustMap.</td></tr>
+<tr><td>Inner error</td><td>Inner error outer stream ko kill kar deta (jab tak <code>catchError</code> inner mein na ho).</td></tr>
+<tr><td>Never-completing inner</td><td><code>concatMap</code> mein infinite inner → queue kabhi aage nahi badhta (stuck).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Flattening operator ki zaroorat kab?</summary><div class="ans"><p>Jab ek Observable ki har value se ek naya (inner) Observable banta hai — jaise har search term pe ek HTTP call. Nested subscribe (callback hell + no cancel) ki jagah flattening operator inner ko subscribe + flatten karta hai, concurrency/cancellation handle karke.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> switchMap vs mergeMap vs concatMap vs exhaustMap — ek-ek line?</summary><div class="ans"><p><strong>switchMap</strong>: nayi aane pe purani cancel (latest jeetta) — search. <strong>mergeMap</strong>: sab parallel, no order — independent tasks. <strong>concatMap</strong>: queue, strict order — sequential writes. <strong>exhaustMap</strong>: busy hone pe nayi ignore (first jeetta) — double-submit prevention.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Typeahead mein <code>mergeMap</code> se kya bug aayega, aur <code>switchMap</code> kaise fix karta hai?</summary><div class="ans"><p><code>mergeMap</code> saari requests parallel chalata — "reac" ki slow response "react" ki fast response ke baad aakar galat/stale result dikha sakti (race condition), plus zyada API calls. <code>switchMap</code> naye term pe purani in-flight request cancel karta — sirf latest ka result aata, race khatam + bandwidth bachta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> "Save" button pe user tez-tez 5 baar click karta hai aur 5 duplicate POST ja rahe hain. Kaunsa operator?</summary><div class="ans"><p><code>exhaustMap</code> — jab tak current save in-progress hai, extra clicks ignore honge (sirf pehla process hoga, complete hone tak baaki drop). switchMap yahan galat (purani save cancel kar dega — incomplete write); exhaustMap double-submit ka sahi fix.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Flatten higher-order Observable (Obs of Obs). Fixes nested subscribe.</li>
+<li><b>switch</b>=cancel prev (search) · <b>merge</b>=parallel (tasks) · <b>concat</b>=queue/order (writes) · <b>exhaust</b>=ignore while busy (submit).</li>
+<li>Search→switchMap, ordered saves→concatMap, parallel→mergeMap(+limit), double-submit→exhaustMap.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.8 · 4-operator marble demo</div><p>Ek outer stream (fast emits) banao jahan har value ek delayed inner Observable maps kare. Chaaro operators swap karke output difference observe karo (cancel/parallel/queue/ignore).</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-13.9 · Right operator per case</div><p>3 features banao: (1) typeahead search, (2) sequential ordered auto-saves, (3) double-submit-safe login. Har ek ke liye sahi flattening operator choose karke justify karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Combination Operators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>forkJoin · combineLatest · zip · parallel HTTP · dependent streams · emit timing differences · merge/concat</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Combination operators multiple Observables ko ek mein jodte hain. Teen sabse important: <strong>forkJoin</strong> (sab complete hone pe last values), <strong>combineLatest</strong> (kisi ke change pe sabki latest), <strong>zip</strong> (index-wise pair). Farak: <em>kab aur kya emit hota hai</em>.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Aksar ek screen ko multiple sources chahiye — 3 parallel API calls jinke sab aane pe render karo; ya do filters jinme se koi bhi badle toh list refresh; ya do streams ko pair karo. Combination operators ye coordination declaratively karte hain.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Multiple async sources ko coordinate karna — bina manual counters/flags ("teeno aa gaye kya?"). forkJoin parallel-then-combine, combineLatest reactive-latest, zip strict-pairing deta hai.</p>
+
+<h3 class="part">4. Internal Working — emit timing</h3>
+<div class="panel why"><div class="ptitle">Teeno ka core farak</div><p>• <strong>forkJoin</strong> — saare source <strong>complete</strong> hone ka wait; phir har ek ki <em>last</em> value ek array/object mein, ek baar. (Finite sources chahiye — jaise HTTP.)
+<br>• <strong>combineLatest</strong> — har source ne kam-se-kam ek value emit ki ho, phir <em>kisi bhi</em> source ke change pe sabki <em>latest</em> combine karke emit. (Ongoing.)
+<br>• <strong>zip</strong> — sources ko index-wise pair — 1st with 1st, 2nd with 2nd. Slowest source dictate karta.</p></div>
+
+<div class="dg-title">Diagram — timing</div>
+<pre class="diagram">
+ A: --1------2----|      B: ----a------b--|
+
+ forkJoin:      -------------[2,b]|     (both complete → last values, once)
+ combineLatest: ----[1,a]-[2,a]-[2,b]   (any change → latest of each)
+ zip:           ----[1,a]----[2,b]      (pair by index: 1&amp;a, 2&amp;b)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ forkJoin([a$, b$, c$]) ─▶ wait ALL complete ─▶ emit [lastA, lastB, lastC] ─▶ complete
+ combineLatest([a$, b$]) ─▶ each emitted once ─▶ on any emit ─▶ [latestA, latestB]
+ zip([a$, b$]) ─▶ pair index 0, index 1, ... ─▶ [a0,b0], [a1,b1]
+</pre>
+
+<h3 class="part">6. Architecture — pick one</h3>
+<table>
+<tr><td><code>forkJoin</code></td><td>Parallel finite calls, sab aane pe combine. <strong>Multiple HTTP at once.</strong> "Promise.all" of RxJS.</td></tr>
+<tr><td><code>combineLatest</code></td><td>Ongoing streams; any change → latest snapshot. <strong>Dependent filters/form.</strong></td></tr>
+<tr><td><code>zip</code></td><td>Index-wise pairing. Rare — jab do streams ko strictly pair karna ho.</td></tr>
+<tr><td><code>merge</code> / <code>concat</code></td><td>Interleave (any) / sequential (one after other) — combine values, not tuples.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — parallel HTTP (forkJoin)</h3>
+<div class="code-label">load dashboard data in parallel</div>
+<pre><code>import { forkJoin } from 'rxjs';
+
+ngOnInit() {
+  forkJoin({
+    user:   this.http.get&lt;User&gt;('/api/me'),
+    orders: this.http.get&lt;Order[]&gt;('/api/orders'),
+    stats:  this.http.get&lt;Stats&gt;('/api/stats'),
+  }).subscribe(({ user, orders, stats }) =&gt; {
+    // teeno parallel gaye, teeno aane pe ek saath yahan (named keys!)
+    this.vm = { user, orders, stats };
+  });
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — combineLatest (dependent filters)</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { combineLatest, startWith } from 'rxjs';
+
+list$ = combineLatest([
+  this.category$.pipe(startWith('all')),
+  this.sort$.pipe(startWith('name')),
+]).pipe(
+  switchMap(([category, sort]) =&gt;
+    this.http.get&lt;Item[]&gt;('/api/items', { params: { category, sort } }))
+);
+// category ya sort — koi bhi badle → nayi filtered list</code></pre>
+
+<h3 class="part">9. Advanced Example — forkJoin gotcha (empty/no-emit)</h3>
+<div class="code-label">typescript</div>
+<pre><code>// ⚠️ agar koi source bina emit kiye complete ho (EMPTY),
+//    forkJoin bhi bina emit kiye complete — poora result gum!
+forkJoin([
+  this.http.get('/a'),
+  this.maybeEmpty$.pipe(defaultIfEmpty(null)),   // guard: ensure an emit
+]).subscribe(...);</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>forkJoin({ user, orders, stats })</code> — object form; result named keys ke saath (readable).</li>
+<li>Teeno HTTP parallel fire; sab complete hone pe ek combined emit.</li>
+<li><code>combineLatest([a$, b$])</code> + <code>startWith</code> — initial emit ensure (warna pehla combine tab tak nahi jab tak dono emit na karein).</li>
+<li><code>switchMap</code> combineLatest ke output pe — filter change pe nayi request (purani cancel).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>forkJoin</code> ko infinite/non-completing source ke saath — kabhi emit nahi karega (complete ka wait).</li>
+<li><code>combineLatest</code> mein koi source pehli value emit na kare → poora combine kabhi start nahi. <code>startWith</code>.</li>
+<li><code>forkJoin</code> mein ek source bina emit complete (EMPTY) → poora result gayab. <code>defaultIfEmpty</code>.</li>
+<li>Sequential/dependent calls ke liye forkJoin — wo parallel hai; dependent ke liye <code>switchMap</code> chain.</li>
+<li>Ek source error → forkJoin/combineLatest poora error (jab tak inner <code>catchError</code> na ho).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Parallel independent HTTP → <code>forkJoin</code> (object form for named results).</li>
+<li>Dependent/reactive combos (filters, form fields) → <code>combineLatest</code> + <code>startWith</code>.</li>
+<li>Har source pe inner <code>catchError</code> taaki ek fail poora na girae.</li>
+<li>Dependent (A ke result se B) → forkJoin nahi, <code>switchMap</code> chain.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>forkJoin</code> requests parallel bhejta — sequential se tez (waterfall avoid). <code>combineLatest</code> har source change pe re-emit — heavy downstream (jaise HTTP) ho toh <code>debounceTime</code>/<code>distinctUntilChanged</code> lagao warna redundant calls. Independent errors ko inner-level catch karke resilience.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Single-emit sources</td><td>HTTP forkJoin ke liye perfect (emit + complete). interval nahi (never completes).</td></tr>
+<tr><td>combineLatest initial</td><td>Har source ka pehla emit chahiye pehle combine se pehle — <code>startWith</code>.</td></tr>
+<tr><td>zip backpressure</td><td>Fast source slow ke liye buffer karta — memory grow ho sakti.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Teen parallel API calls, sab aane pe render — kaunsa operator?</summary><div class="ans"><p><code>forkJoin</code> — saari requests parallel fire, saari complete hone pe ek combined result (array ya named object). RxJS ka "Promise.all". Requests finite (HTTP) honi chahiye kyunki forkJoin complete ka wait karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> forkJoin vs combineLatest?</summary><div class="ans"><p><code>forkJoin</code>: sab complete hone par ek baar (last values) — one-shot parallel loads. <code>combineLatest</code>: har source ke pehle emit ke baad, kisi bhi change pe latest sabki combine — ongoing reactive (dependent filters/form). forkJoin finite sources; combineLatest live streams.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> <code>combineLatest([category$, sort$])</code> laga par list load hi nahi ho rahi jab tak dono change na karo. Fix?</summary><div class="ans"><p><code>combineLatest</code> tab tak emit nahi karta jab tak <em>har</em> source ne kam-se-kam ek value na di ho. Initial pe koi source silent hai. Fix: har source pe <code>startWith(defaultValue)</code> lagao (jaise <code>category$.pipe(startWith('all'))</code>) — ab initial combine turant fire hoga.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><b>forkJoin</b>: all complete → last values, once (parallel HTTP, "Promise.all").</li>
+<li><b>combineLatest</b>: any change → latest of each (dependent filters; needs <code>startWith</code>).</li>
+<li><b>zip</b>: index-wise pairing (rare). Inner <code>catchError</code> so one failure doesn't kill all.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.10 · Parallel dashboard</div><p><code>forkJoin</code> (object form) se 3 mock APIs parallel load karo, teeno aane pe ek view-model banao. Ek source ko fail karke prove karo poora girta hai — phir inner <code>catchError</code> se resilient banao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-13.11 · Reactive filters</div><p><code>combineLatest</code> ([category, sort, search]) + <code>startWith</code> + <code>debounceTime</code> + <code>switchMap</code> se ek reactive filtered list banao. Koi bhi filter badle → nayi request (purani cancel).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Rate-Limiting &amp; Timing</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>debounceTime · throttleTime · distinctUntilChanged · auditTime · sampleTime · debounce vs throttle · when to use</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Rate-limiting operators high-frequency streams (keystrokes, scroll, resize, clicks) ko "seedha kar dete hain" — kitni baar aur kab value aage jaaye control karke. Do main: <strong>debounceTime</strong> (rukne ka wait) aur <strong>throttleTime</strong> (fixed interval pe ek).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>User har keystroke pe API call = server flood + wasted work. Scroll har pixel pe handler = jank. Rate-limiting emissions ko kam karke performance + UX improve karta — sirf meaningful moments pe react karo.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Event storms (typing, scrolling, resizing) ko manageable rate mein convert karna. Redundant work (same value pe dobara), noise (har micro-event) ko filter karke sirf relevant emissions.</p>
+
+<h3 class="part">4. Internal Working — debounce vs throttle</h3>
+<div class="panel why"><div class="ptitle">Core farak</div><p>• <strong>debounceTime(ms)</strong> — value ko hold karo; agar <em>ms tak koi nayi value na aaye</em> tabhi emit. Yani "typing ruk gayi" pe fire. Har naya value timer reset karta.
+<br>• <strong>throttleTime(ms)</strong> — pehli value turant emit, phir <em>ms tak</em> baaki ignore, phir agli allow. Yani "har ms mein max ek". Continuous stream ko steady rate pe.</p></div>
+
+<div class="dg-title">Diagram — debounce vs throttle</div>
+<pre class="diagram">
+ input:        x-x-x-x--------x-x----|   (bursts of events)
+
+ debounceTime: ---------x---------x--|   (emit after pause — last of burst)
+ throttleTime: x----------x---x-----|   (first, then 1 per window)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ keystroke ─▶ debounceTime(300) ─▶ (wait 300ms silence) ─▶ distinctUntilChanged
+        ─▶ (skip if same as last) ─▶ switchMap(http) ─▶ results
+</pre>
+
+<h3 class="part">6. Architecture — timing operators</h3>
+<table>
+<tr><td><code>debounceTime(ms)</code></td><td>Emit after ms of silence. <strong>Search input.</strong> Last of burst.</td></tr>
+<tr><td><code>throttleTime(ms)</code></td><td>Max one per ms window. <strong>Scroll/resize/rapid clicks.</strong> First of window.</td></tr>
+<tr><td><code>auditTime(ms)</code></td><td>Like throttle but emits <em>last</em> value of window (not first).</td></tr>
+<tr><td><code>sampleTime(ms)</code></td><td>Emit latest value every ms tick (periodic snapshot).</td></tr>
+<tr><td><code>distinctUntilChanged()</code></td><td>Skip if value == previous. Paired with debounce.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — search (debounce)</h3>
+<div class="code-label">typescript</div>
+<pre><code>results$ = this.searchControl.valueChanges.pipe(
+  debounceTime(300),          // typing ruko, phir chalo
+  distinctUntilChanged(),     // same text → skip
+  filter(q =&gt; q.length &gt;= 2),  // min length
+  switchMap(q =&gt; this.api.search(q)),   // cancel stale
+);</code></pre>
+
+<h3 class="part">8. Beginner Example — throttle scroll</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { fromEvent, throttleTime } from 'rxjs';
+
+fromEvent(window, 'scroll').pipe(
+  throttleTime(200),   // max ek event per 200ms (jank avoid)
+).subscribe(() =&gt; this.checkInfiniteScroll());</code></pre>
+
+<h3 class="part">9. Advanced Example — debounce + distinct + full search pipeline</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.searchControl.valueChanges.pipe(
+  map(v =&gt; (v ?? '').trim()),
+  debounceTime(300),
+  distinctUntilChanged(),
+  tap(() =&gt; this.loading.set(true)),
+  switchMap(q =&gt; q
+    ? this.api.search(q).pipe(catchError(() =&gt; of([])))
+    : of([])),
+  tap(() =&gt; this.loading.set(false)),
+  takeUntilDestroyed(),
+).subscribe(r =&gt; this.results.set(r));</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>debounceTime(300)</code> — 300ms typing-pause ke baad hi emit.</li>
+<li><code>distinctUntilChanged()</code> — pichhle jaisa value skip (e.g. type-delete-retype).</li>
+<li><code>throttleTime(200)</code> — scroll storm ko 200ms window mein ek event.</li>
+<li><code>auditTime</code> vs <code>throttleTime</code>: audit window ka <em>last</em> deta, throttle <em>first</em>.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Search pe <code>throttleTime</code> use karna — user beech mein type kar raha, aadha term pe fire. Search = <code>debounceTime</code>.</li>
+<li>Scroll pe <code>debounceTime</code> — sirf ruk-ne pe fire, continuous scroll pe kuch nahi. Scroll = <code>throttle</code>.</li>
+<li><code>debounceTime</code> ke saath <code>distinctUntilChanged</code> na lagana → same value pe redundant call.</li>
+<li>Debounce time bahut kam (50ms) → filtering weak; bahut zyada (1s) → laggy feel. 250-400ms sweet spot.</li>
+<li>Rate-limit ke baad bhi cancellation (switchMap) na lagana → stale results.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Search/typeahead → <code>debounceTime(300)</code> + <code>distinctUntilChanged</code> + <code>switchMap</code>.</li>
+<li>Scroll/resize/mousemove → <code>throttleTime</code> (ya <code>auditTime</code> for last value).</li>
+<li>Rapid button clicks → <code>throttleTime</code> ya <code>exhaustMap</code> (S-05).</li>
+<li>Debounce ~300ms; tune UX + backend load ke hisaab se.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ye operators <em>hi</em> perf tools hain — 20 keystrokes → 1 API call (debounce), 500 scroll events → ~5 handler runs (throttle). Bina inke event storms server + CPU + re-renders ko thrash karte. <code>distinctUntilChanged</code> redundant downstream work katta. Sahi timing = drastic load reduction.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Leading/trailing</td><td>throttle default leading (first); config se trailing. debounce trailing (last).</td></tr>
+<tr><td>distinct by key</td><td><code>distinctUntilChanged((a,b) =&gt; a.id === b.id)</code> — objects ke liye custom comparator.</td></tr>
+<tr><td>debounce vs debounceTime</td><td><code>debounce(() =&gt; timer(x))</code> dynamic duration; <code>debounceTime(x)</code> fixed.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> debounceTime vs throttleTime?</summary><div class="ans"><p><code>debounceTime(ms)</code>: value ko hold karta, ms tak silence hone par emit ("typing ruki" pe) — last of burst. <code>throttleTime(ms)</code>: pehli value turant, phir ms tak ignore, phir agli — max one per window. Search → debounce; scroll/resize → throttle.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Search input mein <code>debounceTime</code> ke saath <code>distinctUntilChanged</code> kyun?</summary><div class="ans"><p>User type-delete-retype karke same value pe aa sakta, ya focus/blur se same value re-emit ho sakti — <code>distinctUntilChanged</code> pichhle jaisa value skip karke redundant API call rokta hai. debounce timing control karta, distinct duplicate content rokta — dono milkar minimal calls.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Infinite-scroll ke liye scroll pe <code>debounceTime</code> lagaya, par jab tak user scroll karta rahe kuch load nahi hota, sirf rukne pe. Fix?</summary><div class="ans"><p><code>debounceTime</code> sirf silence pe fire karta — continuous scroll ke dauraan kabhi nahi. Scroll ke liye <code>throttleTime</code> (ya <code>auditTime</code>) use karo — ye scrolling ke <em>dauraan</em> steady rate pe events dega, jisse tum near-bottom check karke load kar sako.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><b>debounceTime</b>: emit after silence (search) — last of burst. <b>throttleTime</b>: max 1/window (scroll) — first.</li>
+<li><code>auditTime</code>=throttle-but-last; <code>sampleTime</code>=periodic snapshot; <code>distinctUntilChanged</code>=skip repeats.</li>
+<li>Search: debounce(300)+distinct+switchMap. Scroll/resize: throttle. ~300ms sweet spot.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.12 · Debounced search</div><p>Search input pe <code>debounceTime(300)</code> + <code>distinctUntilChanged</code> + min-length + <code>switchMap</code>. Console/network se prove karo 10 fast keystrokes → 1 API call.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-13.13 · Throttled scroll</div><p><code>fromEvent(window,'scroll')</code> + <code>throttleTime(200)</code> se infinite-scroll trigger banao. Debounce se replace karke fark observe karo (kyun debounce yahan galat).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Multicasting &amp; Sharing</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>shareReplay · share · unicast vs multicast · refCount footgun · caching HTTP · cold→hot · bufferSize</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Multicasting = ek Observable execution ko <strong>multiple subscribers</strong> ke saath share karna (cold → hot). <code>shareReplay</code> aur <code>share</code> operators ek source ko multicast karke duplicate executions (jaise duplicate HTTP) rokte hain, aur late subscribers ko cached value dete hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Cold Observable har subscriber ke liye dobara chalta — 3 components ek HTTP service subscribe karein = 3 identical requests. Multicasting ek execution ko share karta, aur <code>shareReplay</code> result cache karke naye subscribers ko turant deta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Duplicate work (duplicate HTTP, repeated computation) aur cold-source ki inefficiency. <code>shareReplay</code> = "ek baar fetch, sabko share + cache". Classic HTTP caching pattern.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">shareReplay = Subject + replay buffer</div><p><code>shareReplay</code> andar ek <code>ReplaySubject</code> use karta hai. Pehla subscriber source ko subscribe karta (execution shuru); response ReplaySubject mein buffer hota; baaki subscribers ussi Subject se cached value paate hain — source dobara nahi chalta. <code>bufferSize</code> (usually 1) batata kitni last values replay karni. Ye cold ko hot banata.</p></div>
+
+<div class="dg-title">Diagram — shareReplay dedupe</div>
+<pre class="diagram">
+ WITHOUT share:  subA ─▶ HTTP  ✗ dup
+                 subB ─▶ HTTP  ✗ dup     3 requests!
+                 subC ─▶ HTTP  ✗ dup
+
+ WITH shareReplay(1):  subA ─▶ HTTP ─▶ [cache]
+                       subB ─▶ cache          1 request, shared
+                       subC ─▶ cache
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ source$.pipe(shareReplay(1))
+   1st subscribe ─▶ source runs ─▶ value ─▶ ReplaySubject buffers(1)
+   2nd/3rd subscribe ─▶ get buffered value immediately (no re-run)
+   (refCount config decides whether source resets when subscribers → 0)
+</pre>
+
+<h3 class="part">6. Architecture — share vs shareReplay</h3>
+<table>
+<tr><td><code>shareReplay(1)</code></td><td>Multicast + replay last 1 to late subscribers. <strong>HTTP caching.</strong></td></tr>
+<tr><td><code>shareReplay({ bufferSize:1, refCount:true })</code></td><td>Reset when subscribers hit 0 — avoids leak on infinite sources.</td></tr>
+<tr><td><code>share()</code></td><td>Multicast, no replay (late subscriber misses past). RxJS 7 config-rich.</td></tr>
+<tr><td><code>share({ connector, resetOnRefCountZero })</code></td><td>Modern flexible sharing (v7+).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — cache config once</h3>
+<div class="code-label">config.service.ts</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class ConfigService {
+  private http = inject(HttpClient);
+  // fetched ONCE, shared across all subscribers, cached for late ones
+  readonly config$ = this.http.get&lt;AppConfig&gt;('/api/config').pipe(
+    shareReplay(1)
+  );
+}
+// 10 components use config$ → 1 HTTP request total</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const shared$ = this.http.get('/api/data').pipe(shareReplay(1));
+shared$.subscribe(...);   // fires request
+shared$.subscribe(...);   // gets cached — no 2nd request</code></pre>
+
+<h3 class="part">9. Advanced Example — refCount footgun</h3>
+<div class="code-label">typescript</div>
+<pre><code>// ⚠️ default shareReplay(1) — refCount FALSE:
+//    source subscription hamesha alive; infinite source (interval) → LEAK
+const leaky$ = interval(1000).pipe(shareReplay(1));   // never cleans up
+
+// ✅ refCount true — subscribers 0 hone pe source unsubscribe
+const safe$ = interval(1000).pipe(
+  shareReplay({ bufferSize: 1, refCount: true })
+);
+// HTTP (completes) ke liye default theek; infinite sources pe refCount:true zaroori</code></pre>
+<div class="panel warn-p"><div class="ptitle">refCount footgun</div><p>Default <code>shareReplay(1)</code> mein <code>refCount: false</code> hota hai — matlab source subscription tab tak alive rehta hai bhale saare subscribers chale jaayein. Finite sources (HTTP jo complete ho jaati) ke liye theek. Par <strong>infinite sources (interval, fromEvent)</strong> pe ye <strong>leak</strong> — <code>{ refCount: true }</code> lagao taaki subscribers 0 hone pe source unsubscribe ho.</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>shareReplay(1)</code> — multicast + last 1 value replay to late subscribers.</li>
+<li>Pehla subscribe source run karta; baaki cached paate — no duplicate HTTP.</li>
+<li><code>refCount: true</code> — subscribers 0 → source unsubscribe (infinite sources ke liye zaroori).</li>
+<li>HTTP (auto-completes) pe default OK; long-lived streams pe refCount.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Infinite source pe default <code>shareReplay(1)</code> (refCount false) → leak. <code>{ refCount: true }</code>.</li>
+<li><code>share()</code> use karke late-subscriber ko cached value expect karna — share replay nahi karta (shareReplay chahiye).</li>
+<li><code>shareReplay</code> ko har HTTP call pe blindly lagana — sirf shared/repeated-access data pe zaroorat.</li>
+<li>Cache invalidation na sochna — <code>shareReplay</code> stale rakhता hai; refresh ke liye source re-create ya reset.</li>
+<li>Deprecated <code>publishReplay + refCount</code> use karna — <code>shareReplay</code>/<code>share</code> config use karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Shared/config data (once-fetch, many-read) → <code>shareReplay(1)</code>.</li>
+<li>Infinite/long-lived sources → <code>shareReplay({ bufferSize:1, refCount:true })</code>.</li>
+<li>Replay na chahiye (sirf multicast) → <code>share()</code>.</li>
+<li>Cache invalidation strategy socho (manual refresh trigger).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Multicasting ka poora point perf hai — N duplicate executions → 1. HTTP dedupe (bandwidth), expensive computation dedupe (CPU). Par <code>shareReplay</code> ka buffer memory hold karta (bounded rakho), aur refCount footgun infinite sources pe leak deta. Sahi config = big win.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Error caching</td><td><code>shareReplay</code> error ko replay nahi karta by default (v7) — naya subscribe re-runs. Behavior version-dependent, test karo.</td></tr>
+<tr><td>Cache bust</td><td>Fresh data ke liye source Observable dobara banana ya a "refresh" Subject se re-trigger.</td></tr>
+<tr><td>Signals alternative</td><td>Modern Angular: shared derived state ke liye <code>signal</code>/<code>computed</code> ya <code>httpResource</code> bhi option.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>shareReplay</code> kya karta hai?</summary><div class="ans"><p>Cold Observable ko multicast (hot) banata hai + last n values cache karta hai. Pehla subscriber source run karta, baaki (aur late subscribers) cached value paate — duplicate executions (jaise duplicate HTTP) avoid. HTTP caching ka classic tool: <code>shareReplay(1)</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>share</code> vs <code>shareReplay</code>?</summary><div class="ans"><p>Dono multicast karte hain. <code>shareReplay(n)</code> last n values buffer karta — late subscriber ko past values milti (caching). <code>share()</code> replay nahi karta — late subscriber sirf future values dekhta. Cached HTTP ke liye <code>shareReplay(1)</code>; pure multicast (koi replay nahi) ke liye <code>share()</code>.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> <code>shareReplay</code> ka refCount footgun kya hai?</summary><div class="ans"><p>Default <code>shareReplay(1)</code> mein <code>refCount: false</code> — source subscription tab tak alive rehta hai bhale saare subscribers unsubscribe kar dein. Finite sources (HTTP complete) ke liye OK, par infinite sources (interval/fromEvent) pe ye leak: source hamesha chalta rehta, cleanup nahi hota. Fix: <code>shareReplay({ bufferSize:1, refCount:true })</code> — subscribers 0 hone pe source unsubscribe.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> App config 8 components use karte hain aur network mein 8 identical <code>/api/config</code> requests dikhte hain. Fix?</summary><div class="ans"><p>Cold HTTP Observable har subscriber pe re-runs. Source pe <code>shareReplay(1)</code> lagao — pehla component request fire karega, response cache hoga, baaki 7 (aur late-mounting components) cached config paayenge. 8 requests → 1.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Multicast = share 1 execution across subscribers (cold→hot). <code>shareReplay(1)</code> = share + cache.</li>
+<li><code>shareReplay</code> replays to late subs; <code>share</code> doesn't. Uses ReplaySubject internally.</li>
+<li>Footgun: default refCount:false leaks infinite sources → use <code>{ bufferSize:1, refCount:true }</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.14 · Config cache</div><p>Ek <code>ConfigService</code> banao jiska <code>config$</code> <code>shareReplay(1)</code> use kare. 5 components se subscribe karke network tab mein prove karo sirf 1 request gayi.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-13.15 · refCount leak fix</div><p>Ek <code>interval</code> pe <code>shareReplay(1)</code> laga ke leak dikhao (source kabhi nahi rukta bhale sab unsubscribe karein), phir <code>{refCount:true}</code> se fix karke prove karo cleanup hota hai.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s9">
+<div class="sec-head">
+  <span class="sec-num">S-09</span>
+  <h2>Error Handling</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s9"> Done</label>
+</div>
+<p class="covers">Covers: <b>catchError · throwError · retry({count,delay}) · EMPTY · of(fallback) · error is terminal · inner catch in flattening · finalize</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>RxJS error handling = jab stream error kare (HTTP fail, exception) toh use gracefully manage karna — recover (fallback value), retry, ya transform-and-rethrow. Main tools: <code>catchError</code>, <code>retry</code>, <code>throwError</code>, <code>EMPTY</code>.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Error ek Observable mein <strong>terminal</strong> hai — bina handle kiye stream mar jaata hai aur (khaas UI streams jaise <code>valueChanges</code>-driven pipes mein) dobara kaam nahi karta. Proper handling stream ko alive rakhta ya gracefully recover karta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Silent stream death</div><p>Agar ek search pipe (<code>valueChanges → switchMap(http)</code>) mein HTTP error aaya aur handle nahi kiya, toh poora stream complete/dead ho jaata — aage typing pe kuch nahi hota. User ko lagता hai search toot gaya. Yeh sabse common RxJS bug hai.</p></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">catchError returns a NEW Observable</div><p><code>catchError</code> error ko pakadta hai aur ek <strong>naya Observable</strong> return karta hai jo error wale ki jagah continue karta. <code>of(fallback)</code> → recover (value emit + complete). <code>throwError(() =&gt; e)</code> → re-propagate. <code>EMPTY</code> → chup-chaap complete. Critical: outer stream ko alive rakhna ho toh error ko <em>inner</em> (switchMap ke andar) catch karo — bahar catch karne se outer already dead ho chuka hota.</p></div>
+
+<div class="dg-title">Diagram — where to catch (inner vs outer)</div>
+<pre class="diagram">
+ search$ .pipe(
+   switchMap(q =&gt; http.get(q).pipe(catchError(() =&gt; of([]))))  ✓ inner: outer survives
+ )
+ vs
+ search$ .pipe(
+   switchMap(q =&gt; http.get(q)),
+   catchError(() =&gt; of([]))     ✗ outer: after 1 error, search$ is DEAD
+ )
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ http error ─▶ catchError(err =&gt; ...)
+   ├─ of(fallback)      ─▶ emit fallback, complete (recovered)
+   ├─ throwError(()=&gt;e) ─▶ error propagates to subscriber's error cb
+   └─ EMPTY             ─▶ complete silently (no value)
+ retry({count,delay}) ─▶ re-subscribe (new request) N times before failing
+</pre>
+
+<h3 class="part">6. Architecture — error tools</h3>
+<table>
+<tr><td><code>catchError(fn)</code></td><td>Catch + return replacement Observable. Recover or rethrow.</td></tr>
+<tr><td><code>retry({count, delay})</code></td><td>Re-subscribe on error (S-06 of Ch12). Transient failures.</td></tr>
+<tr><td><code>throwError(() =&gt; e)</code></td><td>Create an error-Observable (factory form, RxJS 7+).</td></tr>
+<tr><td><code>EMPTY</code> / <code>of(x)</code></td><td>Complete silently / emit fallback then complete.</td></tr>
+<tr><td><code>finalize(fn)</code></td><td>Runs on complete OR error (cleanup, hide spinner).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — resilient search</h3>
+<div class="code-label">typescript</div>
+<pre><code>results$ = this.searchControl.valueChanges.pipe(
+  debounceTime(300),
+  switchMap(q =&gt;
+    this.api.search(q).pipe(
+      catchError(err =&gt; {
+        this.toast.error('Search failed');
+        return of([]);           // ← INNER catch: stream stays alive
+      })
+    )
+  ),
+);
+// ab HTTP error aaye bhi search box aage kaam karta rahega</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Data&gt;('/api/data').pipe(
+  catchError(err =&gt; of(DEFAULT))   // error → default value, no crash
+).subscribe(data =&gt; this.data = data);</code></pre>
+
+<h3 class="part">9. Advanced Example — retry + catchError + finalize</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Data&gt;(url).pipe(
+  retry({ count: 2, delay: 1000 }),      // 2 retries first
+  catchError(err =&gt; throwError(() =&gt; new Error('Failed after retries'))),
+  finalize(() =&gt; this.loading.set(false)),  // always runs (success/error)
+).subscribe({ next: d =&gt; ..., error: e =&gt; this.err = e.message });</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>catchError</code> INNER (switchMap ke andar) → outer stream error ke baad bhi alive.</li>
+<li><code>of([])</code> — fallback empty; stream continue karta hai.</li>
+<li><code>retry({count,delay})</code> → catchError ke pehle: attempts exhaust phir catch.</li>
+<li><code>throwError(() =&gt; ...)</code> — factory form (RxJS 7+).</li>
+<li><code>finalize</code> — success/error dono pe cleanup (spinner off).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><strong>Outer</strong> catchError in a long-lived stream (valueChanges) → ek error ke baad stream dead. Inner catch use karo.</li>
+<li><code>catchError</code> mein Observable return na karna → error.</li>
+<li><code>throwError(err)</code> (old) vs <code>throwError(() =&gt; err)</code> (RxJS 7+) — factory form.</li>
+<li><code>catchError</code> ko <code>retry</code> se pehle rakhna → retry kabhi trigger nahi (error already caught).</li>
+<li>Error swallow karke user ko batana bhoolna → silent failure, confused user.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Long-lived streams mein error ko <strong>inner</strong> (flattening operator ke andar) catch karo.</li>
+<li>Recover (<code>of</code>) non-critical data pe; rethrow (<code>throwError</code>) critical pe.</li>
+<li><code>finalize</code> se cleanup (spinner, resources) — success + error dono.</li>
+<li>Cross-cutting HTTP errors → interceptor (Ch12 S-08); local catch specific cases.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Error handling khud cheap. Par <code>retry</code> ka backoff poorly-tuned ho toh server hammer (Ch12 S-06). Silent stream death subtle perf/UX bug hai — feature dead lagta hai. Inner catch se stream resilient rehti (no re-subscribe overhead). <code>finalize</code> se resources reliably free.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Error after emit</td><td>Kuch values aane ke baad error → wo values already deliver ho chuki, phir error.</td></tr>
+<tr><td>catchError re-subscribe</td><td>catchError ka returned Observable bhi error kar sakta — nested handling.</td></tr>
+<tr><td>finalize order (v7)</td><td>Multiple <code>finalize</code> pipe mein likhne ke order mein chalte (v7 change).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>catchError</code> kya return karna chahiye?</summary><div class="ans"><p>Ek naya Observable. <code>of(fallback)</code> → recover (value + complete). <code>throwError(() =&gt; e)</code> → error re-propagate. <code>EMPTY</code> → silently complete. Kuch bhi return na karna ya raw value return karna galat — hamesha Observable.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Search pipe mein HTTP error ke baad search "mar" gaya. Kyun aur fix?</summary><div class="ans"><p>Error <code>switchMap</code> ke bahar (outer) propagate ho gaya — error terminal hai, isliye poora <code>valueChanges</code> stream complete/dead ho gaya, aage typing pe kuch nahi. Fix: error ko <strong>inner</strong> catch karo — <code>switchMap(q =&gt; http.get(q).pipe(catchError(() =&gt; of([]))))</code>. Ab error sirf inner ko affect karta, outer search stream alive rehti.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>retry</code> aur <code>catchError</code> ka order?</summary><div class="ans"><p><code>retry</code> pehle, <code>catchError</code> baad. retry attempts exhaust hone ke baad hi error catchError tak pahunchta hai. Ulta rakhne se (catchError pehle) error turant catch ho jaata aur retry kabhi trigger nahi hoga.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Loading spinner error case mein kabhi off nahi hota. Fix?</summary><div class="ans"><p><code>finalize(() =&gt; this.loading.set(false))</code> pipe mein add karo — ye success (complete) aur error dono pe chalta hai, isliye error case mein bhi spinner reliably off. (Sirf subscribe ke <code>next</code>/<code>complete</code> mein set karna error case miss karta.)</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Error is TERMINAL — kills stream if unhandled. <code>catchError</code> returns replacement Observable.</li>
+<li>Long-lived streams: catch <strong>inner</strong> (inside switchMap) so outer survives. <code>of</code>=recover, <code>throwError(()=&gt;e)</code>=rethrow.</li>
+<li>Order: <code>retry</code> then <code>catchError</code>. <code>finalize</code> = cleanup on complete OR error.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.16 · Resilient search</div><p>Ek search pipe banao aur ek failing endpoint use karo. Pehle outer catchError se prove karo error ke baad search dead ho jaata, phir inner catchError se fix karke prove karo search alive rehti.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-13.17 · retry + finalize</div><p>Ek flaky endpoint (random fail) pe <code>retry({count:2, delay:1000})</code> + <code>catchError</code> + <code>finalize</code> lagao. Spinner ko <code>finalize</code> se manage karke error case bhi cover karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s10">
+<div class="sec-head">
+  <span class="sec-num">S-10</span>
+  <h2>Memory Leaks &amp; Unsubscribe</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s10"> Done</label>
+</div>
+<p class="covers">Covers: <b>leak sources · AsyncPipe · takeUntilDestroyed · takeUntil+Subject · finite auto-complete · toSignal · what needs cleanup</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Memory leak tab hota hai jab ek subscription component destroy hone ke baad bhi <strong>alive</strong> rehti hai — callback chalti rehti, memory + CPU khaati, purani component instance ko GC hone se rokti. Unsubscribe patterns ise prevent karte hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>SPA mein components baar-baar mount/unmount hote hain (routing). Har leaked subscription accumulate hoti — 100 navigations = 100 zombie subscriptions running. Result: slow app, growing memory, ghost callbacks (destroyed component pe update → errors).</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Zombie subscriptions ki accumulation. Proper cleanup se destroyed components ki subscriptions band ho jaati, memory free hoti, aur "cannot update destroyed component" errors nahi aate.</p>
+
+<h3 class="part">4. Internal Working — kya leak karta hai?</h3>
+<div class="panel why"><div class="ptitle">Finite vs infinite</div><p><strong>Finite streams</strong> (HTTP, <code>of</code>, <code>timer(x)</code>) complete karte hain → complete pe auto-unsubscribe → <em>usually</em> no leak. <strong>Infinite/long-lived streams</strong> (<code>interval</code>, <code>fromEvent</code>, <code>Subject</code>-based, form <code>valueChanges</code>, router events) khud complete nahi hote → manual/declarative cleanup <strong>zaroori</strong>, warna leak. Rule: agar stream khud khatam nahi hota, tumhe khatam karna padega.</p></div>
+
+<div class="dg-title">Diagram — what leaks</div>
+<pre class="diagram">
+ HTTP / of / timer   ─▶ completes ─▶ auto-cleanup ─▶ ✓ usually safe
+ interval / fromEvent ─▶ never completes ─▶ MUST clean up:
+   ├─ AsyncPipe (template destroy)
+   ├─ takeUntilDestroyed()  (component destroy)
+   └─ takeUntil(destroy$)   (manual signal)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ subscribe ─▶ stream alive ─▶ component destroyed
+   without cleanup ─▶ subscription STILL alive ─▶ leak (zombie callback)
+   with takeUntilDestroyed/AsyncPipe ─▶ auto-unsubscribe ─▶ teardown ─▶ ✓ freed
+</pre>
+
+<h3 class="part">6. Architecture — cleanup patterns (best → worst)</h3>
+<table>
+<tr><td><code>AsyncPipe</code> (<code>| async</code>)</td><td>Best — template subscribe/unsubscribe automatic. No TS code.</td></tr>
+<tr><td><code>takeUntilDestroyed()</code></td><td>v16+ — auto-unsubscribe on destroy. Manual subscribe ka cleanest.</td></tr>
+<tr><td><code>toSignal(obs$)</code></td><td>Observable → signal; cleanup automatic. Modern.</td></tr>
+<tr><td><code>takeUntil(destroy$)</code></td><td>Classic — <code>Subject</code> in <code>ngOnDestroy</code>. Verbose but works.</td></tr>
+<tr><td>Manual <code>ngOnDestroy</code></td><td>Store + <code>unsubscribe()</code>. Error-prone (bhoolna easy).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — takeUntilDestroyed</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+export class SearchBar {
+  // in injection context (field initializer / constructor)
+  private query$ = this.searchControl.valueChanges.pipe(
+    debounceTime(300),
+    switchMap(q =&gt; this.api.search(q)),
+    takeUntilDestroyed()          // auto-cleanup on destroy — no ngOnDestroy needed
+  );
+  results = toSignal(this.query$, { initialValue: [] });   // even cleaner
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — AsyncPipe (best)</h3>
+<div class="code-label">typescript + html</div>
+<pre><code>// component
+users$ = this.http.get&lt;User[]&gt;('/api/users');   // no manual subscribe!
+// template — AsyncPipe subscribes AND unsubscribes for you
+// &lt;li *ngFor="let u of users$ | async"&gt;{{ u.name }}&lt;/li&gt;</code></pre>
+
+<h3 class="part">9. Advanced Example — classic takeUntil pattern</h3>
+<div class="code-label">typescript</div>
+<pre><code>private destroy$ = new Subject&lt;void&gt;();
+
+ngOnInit() {
+  interval(1000).pipe(takeUntil(this.destroy$)).subscribe(...);
+  this.route.params.pipe(takeUntil(this.destroy$)).subscribe(...);
+}
+ngOnDestroy() {
+  this.destroy$.next();       // signal all takeUntil to complete
+  this.destroy$.complete();
+}
+// modern replacement: takeUntilDestroyed() — no Subject/ngOnDestroy boilerplate</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>takeUntilDestroyed()</code> — component/directive destroy pe stream complete → auto-unsubscribe.</li>
+<li>Injection context ke bahar → <code>takeUntilDestroyed(this.destroyRef)</code>.</li>
+<li>Classic: <code>takeUntil(destroy$)</code> jahan <code>destroy$</code> <code>ngOnDestroy</code> mein <code>next()+complete()</code>.</li>
+<li><code>AsyncPipe</code> — template hi subscribe + unsubscribe manage karta, koi TS cleanup nahi.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Infinite streams (interval/fromEvent/valueChanges) manual subscribe bina cleanup → leak.</li>
+<li><code>takeUntil</code> ko pipe ke <em>beech</em> mein rakhna — hamesha <strong>last</strong> operator hona chahiye (warna baad wale operators leak).</li>
+<li>Har finite HTTP ke liye elaborate cleanup — HTTP auto-completes, AsyncPipe kaafi.</li>
+<li>Nested subscribes → har inner alag leak; flattening operators use karo.</li>
+<li><code>takeUntilDestroyed()</code> injection context ke bahar bina <code>DestroyRef</code> — error.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Default: <strong>AsyncPipe</strong> — subscribe hi mat karo template mein.</li>
+<li>Manual subscribe zaroori → <code>takeUntilDestroyed()</code> (last operator).</li>
+<li>Observable → <code>toSignal()</code> se signal (modern, auto-cleanup).</li>
+<li><code>takeUntil</code> hamesha pipe ka last operator. Nested subscribe kabhi nahi.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Leaks direct perf killer — accumulated zombie subscriptions memory grow karti (eventual crash/slowdown) aur ghost callbacks CPU + wrong updates. AsyncPipe/takeUntilDestroyed se automatic cleanup = stable memory. Ye long-running SPAs mein critical — 100s of navigations ke baad bhi memory flat rehni chahiye.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Finite auto-complete</td><td>HTTP/of complete → auto-unsubscribe; technically leak nahi, par AsyncPipe still cleaner.</td></tr>
+<tr><td><code>takeUntil</code> position</td><td>Last operator hona chahiye — beech mein rakha toh downstream leak.</td></tr>
+<tr><td>Signals era</td><td><code>toSignal</code>/AsyncPipe se manual subscribe ki zaroorat drastically kam.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Kaunse Observables leak karte hain?</summary><div class="ans"><p>Infinite/long-lived streams jo khud complete nahi hote — <code>interval</code>, <code>fromEvent</code>, <code>Subject</code>-based, form <code>valueChanges</code>, router events. Finite streams (HTTP, <code>of</code>, <code>timer</code>) complete pe auto-unsubscribe, usually safe. Rule: khud khatam na ho toh tum karo.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Subscription cleanup ke tareeke, best to worst?</summary><div class="ans"><p>(1) <strong>AsyncPipe</strong> — template auto sub/unsub, best. (2) <code>takeUntilDestroyed()</code> — v16+, auto on destroy. (3) <code>toSignal()</code> — Observable→signal, auto. (4) <code>takeUntil(destroy$)</code> — classic Subject pattern. (5) Manual <code>ngOnDestroy</code> unsubscribe — error-prone. Prefer top options.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>takeUntil</code> ko pipe mein kahan rakhna chahiye aur kyun?</summary><div class="ans"><p>Hamesha <strong>last</strong> operator. Agar beech mein rakha, uske baad wale operators (jaise ek internal subscribe/side-effect) <code>takeUntil</code> ke complete signal se protect nahi honge → leak. Last position ensure karti hai poori chain teardown ho.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek component route se baar-baar khulta-band hota hai, aur har baar app thoda slow hota jaata hai. Kya ho raha?</summary><div class="ans"><p>Memory leak — component mein koi long-lived subscription (interval/valueChanges/router events) bina cleanup subscribe ho rahi. Har mount ek nayi zombie subscription add karta jo destroy pe cleanup nahi hoti. Fix: <code>takeUntilDestroyed()</code> ya AsyncPipe lagao — har destroy pe subscription band hogi, memory flat rahegi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Leak = subscription alive after destroy (infinite streams). Finite (HTTP) auto-complete, usually safe.</li>
+<li>Cleanup: AsyncPipe (best) &gt; <code>takeUntilDestroyed()</code> &gt; <code>toSignal()</code> &gt; <code>takeUntil(destroy$)</code> &gt; manual.</li>
+<li><code>takeUntil</code> must be LAST operator. Never nested subscribe.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.18 · Prove &amp; fix a leak</div><p>Ek component banao jo <code>interval</code> subscribe karta hai bina cleanup. Route se mount/unmount karke leak dikhao (destroy ke baad bhi logs). Phir <code>takeUntilDestroyed()</code> se fix karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-13.19 · 3 cleanup styles</div><p>Same infinite stream ko teen tarike se clean karo: AsyncPipe, <code>takeUntilDestroyed()</code>, aur classic <code>takeUntil(destroy$)</code>. Trade-offs note karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s11">
+<div class="sec-head">
+  <span class="sec-num">S-11</span>
+  <h2>RxJS in Real Angular Projects</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s11"> Done</label>
+</div>
+<p class="covers">Covers: <b>typeahead · dependent dropdowns · auto-save · polling · caching · loading state · combining everything · signals interop</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Ab sab tools ek saath — asli production patterns jo har Angular app mein aate hain, aur exactly kaunse operators combine hote hain. Ye section "putting it all together" hai: har recipe ek ya do interview questions ke barabar hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Individual operators jaanna alag baat hai; unhe sahi combine karke real problem solve karna interview + job dono ka asli test hai. Ye patterns muscle-memory ban jaane chahiye.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>"Theory to practice" gap. Har pattern batata hai kaunsa operator kis role mein — taaki naya problem aane pe tum decompose kar sako: "ye rate-limiting + cancellation + error-recovery hai".</p>
+
+<h3 class="part">4. Internal Working — pattern = operator recipe</h3>
+<div class="panel why"><div class="ptitle">Har pattern ek combination hai</div><p>Real RxJS "ek operator" nahi hota — ek <em>pipeline</em> hota hai. Typeahead = debounce (rate) + distinct (dedupe) + switchMap (cancel) + catchError (resilience) + takeUntilDestroyed (cleanup). Har pattern ko in roles mein decompose karke socho.</p></div>
+
+<h3 class="part">5. Execution Flow — the mental model</h3>
+<pre class="diagram">
+ SOURCE (event/input/timer)
+   ─▶ RATE-LIMIT (debounce/throttle)
+   ─▶ FILTER/DEDUPE (filter/distinctUntilChanged)
+   ─▶ FLATTEN (switchMap/concatMap/exhaustMap)  ← inner: catchError
+   ─▶ SHARE (shareReplay if multi-subscriber)
+   ─▶ CLEANUP (takeUntilDestroyed / AsyncPipe / toSignal)
+</pre>
+
+<h3 class="part">6. Architecture — pattern → operators map</h3>
+<table>
+<tr><td>Typeahead search</td><td>debounceTime + distinctUntilChanged + switchMap + catchError</td></tr>
+<tr><td>Dependent dropdowns</td><td>country valueChanges → switchMap(loadStates)</td></tr>
+<tr><td>Auto-save</td><td>valueChanges + debounceTime + concatMap(save) + emitEvent:false</td></tr>
+<tr><td>Polling</td><td>timer(0, interval) + switchMap(fetch) + takeUntilDestroyed</td></tr>
+<tr><td>Caching</td><td>shareReplay(1) on the source</td></tr>
+<tr><td>Loading state</td><td>tap(show) / finalize(hide) or combineLatest with a loading$</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — typeahead (full)</h3>
+<div class="code-label">typeahead</div>
+<pre><code>results = toSignal(
+  this.searchControl.valueChanges.pipe(
+    map(v =&gt; (v ?? '').trim()),
+    debounceTime(300),
+    distinctUntilChanged(),
+    switchMap(q =&gt; q.length &lt; 2 ? of([])
+      : this.api.search(q).pipe(catchError(() =&gt; of([])))),
+  ), { initialValue: [] }
+);</code></pre>
+
+<h3 class="part">8. Beginner Example — dependent dropdowns</h3>
+<div class="code-label">country → states</div>
+<pre><code>states$ = this.countryControl.valueChanges.pipe(
+  switchMap(country =&gt; this.api.getStates(country)),   // country change → load its states
+);
+// template: state dropdown ← states$ | async</code></pre>
+
+<h3 class="part">9. Advanced Example — polling + auto-save</h3>
+<div class="code-label">polling (live data)</div>
+<pre><code>liveData$ = timer(0, 5000).pipe(     // now, then every 5s
+  switchMap(() =&gt; this.api.getStatus().pipe(catchError(() =&gt; of(null)))),
+  takeUntilDestroyed(),
+);</code></pre>
+<div class="code-label">auto-save (ordered, no loop)</div>
+<pre><code>this.form.valueChanges.pipe(
+  debounceTime(800),
+  concatMap(value =&gt; this.api.saveDraft(value)),   // ordered saves
+  takeUntilDestroyed(),
+).subscribe();
+// load existing draft with { emitEvent:false } to avoid save-loop</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Typeahead: <code>debounceTime</code>(rate) + <code>distinctUntilChanged</code>(dedupe) + <code>switchMap</code>(cancel stale) + inner <code>catchError</code>(resilient).</li>
+<li>Dropdowns: <code>switchMap</code> — country change purani states-request cancel karke nayi.</li>
+<li>Polling: <code>timer(0, 5000)</code> immediate + periodic; <code>switchMap</code> fetch; <code>catchError</code> so one fail poll na rukAAye.</li>
+<li>Auto-save: <code>concatMap</code> (ordered saves), <code>debounceTime</code> (batch typing), <code>emitEvent:false</code> on load (no loop).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps (real-world)</div>
+<ul style="margin-bottom:0">
+<li>Typeahead mein mergeMap (race) instead of switchMap.</li>
+<li>Auto-save mein switchMap (saves cancel ho jaate) instead of concatMap.</li>
+<li>Polling mein inner catchError bhoolna → ek fail poori polling ko maar deta.</li>
+<li>Dependent dropdown mein nested subscribe instead of switchMap.</li>
+<li>Multi-subscriber source pe shareReplay na lagana → duplicate HTTP.</li>
+<li>Kisi bhi pattern mein cleanup (takeUntilDestroyed/AsyncPipe) bhoolna → leak.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Har pattern ko roles mein decompose karo (rate / filter / flatten / share / cleanup).</li>
+<li>Prefer declarative (AsyncPipe / <code>toSignal</code>) over manual subscribe.</li>
+<li>Inner <code>catchError</code> in every polling/search pipe for resilience.</li>
+<li>Right flattening operator per intent (search→switch, save→concat, submit→exhaust).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ye patterns hi perf-conscious hain: debounce/throttle (fewer calls), switchMap (cancel waste), shareReplay (dedupe), polling with backoff, cleanup (no leaks). Sahi combination = fast, resource-friendly app. Galat operator (mergeMap in search) = race + waste.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Polling + visibility</td><td>Tab background mein polling pause karo (<code>document.visibilitychange</code>) — battery/bandwidth.</td></tr>
+<tr><td>Auto-save conflict</td><td>Fast edits + slow save → concatMap backlog; consider latest-only (switchMap) if intermediate saves irrelevant.</td></tr>
+<tr><td>Signals interop</td><td><code>toSignal</code>/<code>toObservable</code> se signals ↔ RxJS bridge — modern hybrid apps.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-med">MEDIUM</span> Typeahead search ka poora operator stack batao.</summary><div class="ans"><p><code>valueChanges</code> → <code>debounceTime(300)</code> (rate-limit typing) → <code>distinctUntilChanged</code> (skip repeats) → <code>filter</code>/min-length → <code>switchMap</code> (cancel stale requests) → inner <code>catchError(of([]))</code> (resilient) → <code>takeUntilDestroyed</code>/AsyncPipe (cleanup). Har operator ka ek clear role.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Auto-save mein switchMap kyun galat, concatMap kyun sahi?</summary><div class="ans"><p><code>switchMap</code> naye value pe purani save-request cancel kar deta — beech ki edits kabhi save nahi hoti (data loss). Auto-save mein har edit persist honi chahiye <em>order mein</em>, isliye <code>concatMap</code> (queue, sequential). Debounce se rapid typing batch karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Live dashboard har 5s update karna hai, par ek fail hone pe poora polling ruk jaata hai. Fix?</summary><div class="ans"><p>Fetch error outer stream ko kill kar raha. Inner <code>catchError</code> lagao: <code>switchMap(() =&gt; api.get().pipe(catchError(() =&gt; of(null))))</code> — ab ek fetch fail ho toh us tick pe fallback (null) aayega par polling (<code>timer</code>) chalti rahegi. Cleanup <code>takeUntilDestroyed</code>.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Dependent dropdowns (country→state→city) 3 levels — kaise banaoge?</summary><div class="ans"><p>Chain switchMaps: <code>country.valueChanges.pipe(switchMap(c =&gt; loadStates(c)))</code> → states dropdown. State change pe city: <code>state.valueChanges.pipe(switchMap(s =&gt; loadCities(s)))</code>. Har level pe parent change purani child-request cancel karta (switchMap). Reset child selections on parent change. Inner catchError for resilience.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Pattern = pipeline of roles: rate-limit → dedupe → flatten (inner catchError) → share → cleanup.</li>
+<li>Typeahead=debounce+distinct+switchMap · auto-save=debounce+concatMap · polling=timer+switchMap+catchError · cache=shareReplay(1).</li>
+<li>Dependent dropdowns=switchMap chain. Always cleanup (AsyncPipe/takeUntilDestroyed).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-13.20 · Dependent dropdowns</div><p>Country → State → City (3-level) dependent dropdowns banao (switchMap chain). Parent change pe child selections reset, purani requests cancel, inner catchError.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-13.21 · Polling dashboard</div><p><code>timer(0, 5000)</code> + <code>switchMap</code> + inner <code>catchError</code> + <code>takeUntilDestroyed</code> se ek live-updating status widget banao. Tab background mein pause karke bonus.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-13.22 · Auto-save form</div><p>Form <code>valueChanges</code> + <code>debounceTime</code> + <code>concatMap(save)</code> se auto-save banao. Existing draft load pe <code>emitEvent:false</code> se save-loop avoid. "Saving…/Saved" status dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 13 complete.</b><br>
+  Observable → Observer/Subscription → Operators → Subjects → Flattening → Combination → Rate-limiting → Sharing → Errors → Leaks → Real patterns.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. RxJS 7.x ke hisaab se (v8 deprecations noted). Angular ka reactive core ab tumhaare haath mein. Agla chapter: <b>State Management (NgRx / Signals)</b> ya <b>Change Detection &amp; Zoneless</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch13_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

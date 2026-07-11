@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 11 — Angular Forms | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 8 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 11 — <span>Angular Forms</span></h1>
+  <p class="subtitle">Form ek "controlled input" ka contract hai — user jo type kare wo aapke model se sync rahe, validate ho, aur galti par bataye. Is chapter mein hum dono approaches (template vs reactive) ko engine level tak todenge: <em>WHY-first</em> — pehle problem, phir solution, phir internals. FormBuilder se lekar async + custom validators tak, sab production-grade patterns ke saath.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Angular: <b>v17 → v20</b> (+ Signal Forms note)</span>
+    <span class="chip">Sections: <b>8</b> · Topics: <b>24+</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Template-Driven Forms</a><div class="sub">ngModel · FormsModule · two-way binding · template refs · when to use</div></li>
+    <li><a href="#s2">Reactive Forms</a><div class="sub">FormControl · FormGroup · typed forms · valueChanges · setValue vs patchValue</div></li>
+    <li><a href="#s3">FormBuilder</a><div class="sub">fb.group/control/array · nonNullable · boilerplate cut · inject(FormBuilder)</div></li>
+    <li><a href="#s4">Validators (built-in)</a><div class="sub">required · min/max · pattern · errors object · showing messages</div></li>
+    <li><a href="#s5">Async Validators</a><div class="sub">AsyncValidatorFn · PENDING state · debounce · server-side uniqueness</div></li>
+    <li><a href="#s6">Dynamic Forms (FormArray)</a><div class="sub">push/removeAt · add/remove rows · iterate in template · FormRecord</div></li>
+    <li><a href="#s7">Nested Forms</a><div class="sub">nested FormGroup · formGroupName · child form components · ControlContainer</div></li>
+    <li><a href="#s8">Custom Validators</a><div class="sub">ValidatorFn · cross-field · factory validators · ControlValueAccessor peek</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>Template-Driven Forms</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>FormsModule · ngModel · [(ngModel)] · template reference vars · ngForm · ngModelGroup · when to use vs reactive</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Template-driven form ek approach hai jahan <strong>form ka logic HTML template mein rehta hai</strong>, TS class mein nahi. Tum <code>ngModel</code> directives lagate ho, aur Angular <em>background mein</em> automatically <code>FormControl</code>/<code>FormGroup</code> bana deta hai. Model, validation, state — sab template directives se derive.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Chhote, simple, mostly-static forms (login, contact, ek-do field settings) ke liye reactive ka poora TS setup overkill hai. Template-driven mein 2 lines mein two-way binding + validation mil jaati hai — fast to write, kam boilerplate.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Simple forms ke liye "form model banao, control map karo, subscribe karo" wala ceremony hata deta hai. AngularJS-style familiar <code>ngModel</code> two-way binding — quick prototypes aur chhote forms ke liye ideal.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Asal mein hota kya hai</div><p><code>ngModel</code> directive har input ke liye ek <code>FormControl</code> banata hai aur ise parent <code>NgForm</code> (jo <code>&lt;form&gt;</code> pe auto-apply hota hai) mein register kar deta hai. Yani reactive jaisa hi model banta hai — bas tum banate nahi, Angular banata hai, template ke through. Isiliye ye "template-driven" hai.</p></div>
+
+<div class="dg-title">Diagram — template-driven binding</div>
+<pre class="diagram">
+ &lt;input ngModel name="email"&gt;
+        │
+        ▼
+ NgModel directive ──creates──▶ FormControl  ──registers──▶ NgForm (on &lt;form&gt;)
+        ▲                                                        │
+        └──────────── two-way [(ngModel)] sync ─────────────────┘
+              (view ⇄ component property, async via ngModelChange)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+user types ─▶ input event ─▶ ControlValueAccessor ─▶ FormControl.setValue
+      ─▶ NgForm state update (valid/dirty/touched) ─▶ [(ngModel)] writes to component prop
+      ─▶ change detection ─▶ view (error messages) update
+</pre>
+<div class="panel info-p"><div class="ptitle">Async note</div><p>Template-driven mein control creation <em>asynchronous</em> hai (Angular ise ek microtask mein register karta hai). Isliye <code>ngOnInit</code> mein turant <code>form.controls.x</code> access karne pe <code>undefined</code> mil sakta — reactive mein aisa nahi.</p></div>
+
+<h3 class="part">6. Architecture (Building blocks)</h3>
+<table>
+<tr><td><code>FormsModule</code></td><td>Import zaroori (standalone component ke <code>imports</code> mein). Ye <code>ngModel</code>, <code>ngForm</code> laata hai.</td></tr>
+<tr><td><code>ngModel</code></td><td>Ek input ko control banata hai. <code>name</code> attribute zaroori (registration key).</td></tr>
+<tr><td><code>NgForm</code></td><td><code>&lt;form&gt;</code> pe auto-directive — poore form ka aggregate (value, valid, dirty).</td></tr>
+<tr><td><code>ngModelGroup</code></td><td>Related controls ko ek nested group mein bundle karta hai.</td></tr>
+<tr><td>Template ref <code>#f="ngForm"</code></td><td>Form/control ki state template mein expose karta hai.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">contact.ts</div>
+<pre><code>import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-contact',
+  standalone: true,
+  imports: [FormsModule],
+  templateUrl: './contact.html',
+})
+export class Contact {
+  model = { email: '', message: '' };
+  submit(form: NgForm) {
+    if (form.valid) this.api.send(this.model);
+  }
+}</code></pre>
+<div class="code-label">contact.html</div>
+<pre><code>&lt;form #f="ngForm" (ngSubmit)="submit(f)"&gt;
+  &lt;input name="email" [(ngModel)]="model.email" required email #email="ngModel"&gt;
+  &lt;small *ngIf="email.invalid &amp;&amp; email.touched"&gt;Valid email daalo&lt;/small&gt;
+
+  &lt;textarea name="message" [(ngModel)]="model.message" required&gt;&lt;/textarea&gt;
+
+  &lt;button [disabled]="f.invalid"&gt;Send&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">html</div>
+<pre><code>&lt;input name="username" [(ngModel)]="username"&gt;
+&lt;p&gt;Hello {{ username }}&lt;/p&gt;   &lt;!-- live two-way binding --&gt;</code></pre>
+
+<h3 class="part">9. Advanced Example — ngModelGroup + refs</h3>
+<div class="code-label">html</div>
+<pre><code>&lt;form #f="ngForm"&gt;
+  &lt;div ngModelGroup="address" #addr="ngModelGroup"&gt;
+    &lt;input name="city" ngModel required&gt;
+    &lt;input name="zip"  ngModel required&gt;
+  &lt;/div&gt;
+  &lt;span *ngIf="addr.invalid"&gt;Address incomplete&lt;/span&gt;
+&lt;/form&gt;
+&lt;!-- f.value → { address: { city, zip } } --&gt;</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>#f="ngForm"</code> — template ref jo <code>NgForm</code> instance deta hai (<code>f.valid</code>, <code>f.value</code>).</li>
+<li><code>name="email"</code> — control ka registration key; iske bina <code>ngModel</code> error dega.</li>
+<li><code>[(ngModel)]="model.email"</code> — two-way: view↔component property.</li>
+<li><code>#email="ngModel"</code> — is control ki state (touched/invalid/errors) template mein.</li>
+<li><code>required email</code> — built-in validator directives (S-04 details).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>name</code> attribute bhoolna → runtime error, control register nahi hota.</li>
+<li><code>FormsModule</code> import na karna → <code>ngModel</code> silently ignore.</li>
+<li><code>ngOnInit</code> mein turant control access → async creation ke kaaran <code>undefined</code>.</li>
+<li>Bade/dynamic forms template-driven mein banana → template bloat, testing hard. Reactive use karo.</li>
+<li>Error dikhane ke liye sirf <code>invalid</code> check → user ke type karne se pehle hi red. <code>touched</code>/<code>dirty</code> bhi lagao.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Sirf chhote/simple forms ke liye — 5-6 se zyada fields ya dynamic ho toh reactive.</li>
+<li>Error <code>*ngIf="ctrl.invalid &amp;&amp; (ctrl.dirty || ctrl.touched)"</code> — premature red avoid.</li>
+<li>Submit pe <code>form.valid</code> check + button <code>[disabled]="f.invalid"</code>.</li>
+<li>Template ref vars se granular state; magic string field names consistent rakho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Template-driven forms har CD cycle mein template directives evaluate karte hain — bade forms mein ye mehnga (aur debug-hard) ho jaata. Chhote forms mein negligible. Bade forms mein reactive zyada efficient + predictable, kyunki model TS mein explicit hai aur RxJS se fine-grained control milta hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Standalone <code>ngModel</code></td><td><code>&lt;form&gt;</code> ke bina bhi kaam karta hai — ek isolated two-way binding.</td></tr>
+<tr><td>Dynamic <code>name</code></td><td><code>[name]="'item'+i"</code> — <code>*ngFor</code> mein unique names zaroori warna collide.</td></tr>
+<tr><td>Typed value?</td><td>Template-driven forms <strong>typed nahi</strong> hote — type safety sirf reactive mein (v14+).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Template-driven vs reactive — ek line farak?</summary><div class="ans"><p>Template-driven: form logic template mein, Angular controls implicitly banata hai (<code>ngModel</code>), chhote/simple forms ke liye. Reactive: form model TS class mein explicit, programmatic, typed, dynamic + complex forms + testing ke liye. Template-driven = async control creation; reactive = synchronous.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> <code>ngModel</code> ke liye <code>name</code> kyun zaroori?</summary><div class="ans"><p><code>name</code> control ki registration key hai — <code>NgForm</code> isi se control ko form model mein register karta hai. Bina <code>name</code> ke Angular error deta hai kyunki wo control ko address nahi kar paata.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Template-driven mein control creation async kyun, aur iska impact?</summary><div class="ans"><p>Angular <code>ngModel</code> controls ko ek microtask mein register karta hai (template render ke baad). Isliye <code>ngOnInit</code>/constructor mein <code>form.controls.x</code> turant access karo toh <code>undefined</code> mil sakta. Fix: <code>ngAfterViewInit</code> ya <code>setTimeout</code>, ya bas reactive use karo jahan model synchronous hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek form mein user ne kuch type nahi kiya par saare fields already red error dikha rahe hain. Fix?</summary><div class="ans"><p>Error condition sirf <code>invalid</code> pe hai. Add <code>touched</code>/<code>dirty</code>: <code>*ngIf="ctrl.invalid &amp;&amp; (ctrl.touched || ctrl.dirty)"</code> — ab error tabhi dikhega jab user ne field ko touch/edit kiya ho.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Import <code>FormsModule</code>. <code>ngModel</code> + <code>name</code> → Angular implicitly control banata hai.</li>
+<li><code>#f="ngForm"</code>, <code>#c="ngModel"</code> for state; <code>ngModelGroup</code> for nesting.</li>
+<li>Async control creation; NOT typed. Small/simple forms only. Error on <code>invalid &amp;&amp; (touched||dirty)</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.1 · Contact form (template-driven)</div><p>Email + message wala contact form banao (template-driven). Email required + valid-email, message required. Errors sirf <code>touched</code> pe dikhein. Submit button form invalid pe disabled ho.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-11.2 · Grouped address</div><p><code>ngModelGroup="address"</code> se city/zip ko nested group banao. <code>f.value</code> ko <code>{ address: {...} }</code> shape mein aana chahiye. Group-level invalid message dikhao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Reactive Forms</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>ReactiveFormsModule · FormControl · FormGroup · typed forms (v14+) · valueChanges/statusChanges · setValue vs patchValue · state flags</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Reactive forms mein <strong>form model TS class mein explicitly define</strong> hota hai — <code>FormControl</code>, <code>FormGroup</code>, <code>FormArray</code> objects ka tree. Template sirf is model ko bind karta hai (<code>[formGroup]</code>, <code>formControlName</code>). Model source-of-truth hai; template uska view.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Complex forms — multi-step, dynamic fields, cross-field validation, conditional logic, heavy testing — template-driven mein manage karna nightmare. Reactive model explicit + synchronous + typed + RxJS-powered hai, isliye ye sab clean ho jaata hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel good-p"><div class="ptitle">Reactive deta hai</div>
+<ul style="margin-bottom:0">
+<li><strong>Type safety</strong> (v14+ default) — galat field access compile-time error.</li>
+<li><strong>Synchronous access</strong> — control turant available, testing easy.</li>
+<li><strong>RxJS streams</strong> — <code>valueChanges</code>/<code>statusChanges</code> se reactive logic (auto-save, dependent fields).</li>
+<li><strong>Dynamic structure</strong> — runtime pe controls add/remove (S-06).</li>
+</ul></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<p>Har <code>FormControl</code> ek object hai jismein value, validators, aur status hota hai, plus do RxJS Subjects: <code>valueChanges</code> aur <code>statusChanges</code>. Template ka <code>formControlName</code> ek <code>ControlValueAccessor</code> (CVA) ke through DOM input ko is control se jodta hai — dono direction sync. Value badalne pe control validators re-run karta hai aur parent tak status cascade karta hai.</p>
+
+<div class="dg-title">Diagram — reactive model ⇄ view</div>
+<pre class="diagram">
+ Component (source of truth)          Template (view)
+ ┌───────────────────────────┐        ┌──────────────────────────┐
+ │ FormGroup                 │        │ &lt;form [formGroup]="form"&gt; │
+ │  ├─ email:  FormControl   │◀──CVA──▶│   &lt;input formControlName │
+ │  └─ pass:   FormControl   │  sync  │          ="email"&gt;        │
+ │  valueChanges$ / status$  │        └──────────────────────────┘
+ └───────────────────────────┘
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+user types ─▶ input event ─▶ CVA writes FormControl.value
+   ─▶ validators run ─▶ control status (VALID/INVALID) ─▶ cascade up to FormGroup
+   ─▶ valueChanges$ / statusChanges$ emit ─▶ your subscriptions react (auto-save, etc.)
+</pre>
+
+<h3 class="part">6. Architecture — the three building blocks</h3>
+<table>
+<tr><td><code>FormControl</code></td><td>Single field — value + validators + status. Atom.</td></tr>
+<tr><td><code>FormGroup</code></td><td>Named collection of controls (object shape). Ek form / ek nested section.</td></tr>
+<tr><td><code>FormArray</code></td><td>Indexed list of controls (dynamic rows). S-06.</td></tr>
+<tr><td>Base: <code>AbstractControl</code></td><td>Teeno ka parent — <code>value</code>, <code>valid</code>, <code>errors</code>, <code>valueChanges</code>, <code>setValue</code> yahin se.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">login.ts</div>
+<pre><code>import { Component, inject } from '@angular/core';
+import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+
+@Component({ standalone: true, imports: [ReactiveFormsModule], templateUrl: './login.html' })
+export class Login {
+  form = new FormGroup({
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
+  });
+
+  ngOnInit() {
+    // reactive dependent logic — RxJS ka fayda
+    this.form.controls.email.valueChanges.subscribe(v => console.log('email:', v));
+  }
+
+  submit() {
+    if (this.form.invalid) return;
+    const { email, password } = this.form.getRawValue();   // typed!
+    this.auth.login(email, password);
+  }
+}</code></pre>
+<div class="code-label">login.html</div>
+<pre><code>&lt;form [formGroup]="form" (ngSubmit)="submit()"&gt;
+  &lt;input formControlName="email" placeholder="Email"&gt;
+  &lt;small *ngIf="form.controls.email.touched &amp;&amp; form.controls.email.invalid"&gt;
+    Valid email chahiye
+  &lt;/small&gt;
+  &lt;input formControlName="password" type="password"&gt;
+  &lt;button [disabled]="form.invalid"&gt;Login&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>name = new FormControl('');
+// template: &lt;input [formControl]="name"&gt;
+// this.name.value → current value; this.name.setValue('Karan')</code></pre>
+
+<h3 class="part">9. Advanced Example — setValue vs patchValue + typed forms</h3>
+<div class="code-label">typescript</div>
+<pre><code>// TYPED (v14+): email/password auto-inferred as string (nonNullable)
+form = new FormGroup({
+  email: new FormControl('', { nonNullable: true }),
+  age:   new FormControl&lt;number | null&gt;(null),
+});
+
+// setValue → SAARE controls dena zaroori (strict, typo pakadta hai)
+this.form.setValue({ email: 'a@b.com', age: 25 });
+
+// patchValue → subset OK (partial update)
+this.form.patchValue({ email: 'x@y.com' });
+
+// suppress valueChanges emit (auto-save loop avoid)
+this.form.patchValue(draft, { emitEvent: false });</code></pre>
+<div class="panel info-p"><div class="ptitle">nonNullable kyun</div><p>Default <code>FormControl('')</code> ka type <code>string | null</code> hota hai (reset pe <code>null</code> aata). <code>{ nonNullable: true }</code> se reset bhi initial value pe jaata aur type sirf <code>string</code> — cleaner. Ya <code>NonNullableFormBuilder</code> (S-03).</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>new FormGroup({...})</code> — form model, keys = control names.</li>
+<li><code>{ nonNullable: true, validators: [...] }</code> — control ka options object.</li>
+<li><code>valueChanges.subscribe</code> — har value change pe react (dependent fields, auto-save).</li>
+<li><code>getRawValue()</code> — disabled controls sameth pura typed value (<code>.value</code> disabled ko skip karta hai).</li>
+<li>Template <code>[formGroup]="form"</code> + <code>formControlName="email"</code> — model ko view se bind.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>ReactiveFormsModule</code> import bhoolna (standalone imports mein) → <code>formControlName</code> dead.</li>
+<li><code>valueChanges.subscribe</code> ka unsubscribe na karna → memory leak. <code>takeUntilDestroyed()</code> / <code>AsyncPipe</code>.</li>
+<li><code>setValue</code> ko partial object dena → error (saare controls chahiye). Partial ke liye <code>patchValue</code>.</li>
+<li>Disabled control ka value <code>.value</code> se expect karna → wo skip hota hai; <code>getRawValue()</code> use karo.</li>
+<li>Auto-save loop: <code>valueChanges</code> mein <code>patchValue</code> → infinite. <code>emitEvent: false</code>.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Type inference pe bharosa karo — extra annotations mat likho; <code>nonNullable</code> se null hatao.</li>
+<li>Subscriptions ko <code>takeUntilDestroyed()</code> ya <code>toSignal()</code> se manage karo.</li>
+<li>Template mein controls ko getter (<code>get email() { return this.form.controls.email }</code>) se access — cleaner.</li>
+<li>Submit pe <code>invalid</code> guard + <code>markAllAsTouched()</code> se saare errors dikhao.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Reactive forms model-driven hain, isliye CD template parsing pe depend nahi karta — bade forms mein template-driven se fast + predictable. <code>valueChanges</code> pe heavy work ho toh <code>debounceTime</code>/<code>distinctUntilChanged</code> lagao. <code>OnPush</code> components ke saath acche baithte hain kyunki updates observable-driven hain.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td><code>updateOn</code></td><td><code>new FormControl('', { updateOn: 'blur' })</code> — har keystroke ki jagah blur pe validate (perf/UX).</td></tr>
+<tr><td><code>markAsTouched</code>/<code>Pristine</code></td><td>Programmatic state control — submit pe saare errors reveal karne ke liye.</td></tr>
+<tr><td>Signal Forms (v21+)</td><td>Naya experimental API — <code>form()</code> + <code>[formField]</code>, signals pe based. Abhi <code>@experimental</code>, production ke liye Reactive stable choice.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>setValue</code> vs <code>patchValue</code>?</summary><div class="ans"><p><code>setValue</code> ko form ke <em>saare</em> controls dena zaroori — strict, missing/extra key pe error (typos pakadta hai). <code>patchValue</code> subset accept karta hai — partial update. Backend se pura object aaye toh <code>setValue</code>, kuch fields update karne ho toh <code>patchValue</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Reactive forms typed kab se, aur <code>nonNullable</code> ka role?</summary><div class="ans"><p>Angular v14 (preview) se, v15 mein stable — default typed. <code>FormControl('')</code> ka type <code>string | null</code> (reset pe null). <code>{ nonNullable: true }</code> null hatata hai aur reset ko initial value pe le jaata — type sirf <code>string</code>. Template-driven forms typed nahi hote.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>.value</code> vs <code>getRawValue()</code>?</summary><div class="ans"><p><code>.value</code> disabled controls ko <em>skip</em> karta hai. <code>getRawValue()</code> disabled sameth pura value deta hai. Backend ko disabled fields bhi bhejne ho (jaise read-only computed) toh <code>getRawValue()</code>.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Auto-save <code>valueChanges</code> se banaya aur infinite loop aa gaya. Kyun aur fix?</summary><div class="ans"><p><code>valueChanges</code> subscription ke andar <code>patchValue</code>/<code>setValue</code> call kiya → wo phir <code>valueChanges</code> emit karta hai → loop. Fix: programmatic writes pe <code>{ emitEvent: false }</code> pass karo, aur <code>debounceTime</code> + <code>distinctUntilChanged</code> se redundant saves rokо.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Submit pe form invalid hai par user ko koi error nahi dikh raha (kyunki fields untouched hain). Fix?</summary><div class="ans"><p>Errors <code>touched</code> pe gated hain aur user ne submit direct dabaya. Submit handler mein <code>this.form.markAllAsTouched()</code> call karo — saare controls touched ho jaayenge aur errors reveal ho jaayenge.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Import <code>ReactiveFormsModule</code>. Model = <code>FormControl</code>/<code>FormGroup</code>/<code>FormArray</code> in TS.</li>
+<li>Typed since v14; <code>nonNullable</code> removes null. <code>setValue</code> (full) vs <code>patchValue</code> (partial).</li>
+<li><code>.value</code> skips disabled; <code>getRawValue()</code> includes. <code>emitEvent:false</code> to avoid loops. <code>markAllAsTouched()</code> to reveal errors.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.3 · Typed login form</div><p>Reactive login form (email + password) with validators. <code>getRawValue()</code> se typed value nikaalo. Submit pe invalid ho toh <code>markAllAsTouched()</code> se saare errors dikhao.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-11.4 · Auto-save draft</div><p><code>valueChanges</code> + <code>debounceTime(500)</code> + <code>distinctUntilChanged</code> se draft auto-save karo. Existing draft load karte waqt <code>emitEvent:false</code> se save-loop avoid karo. <code>takeUntilDestroyed()</code> se cleanup.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>FormBuilder</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>inject(FormBuilder) · fb.group/control/array · shorthand syntax · NonNullableFormBuilder · when it helps</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>FormBuilder</code> ek injectable service hai jo reactive form banane ka <strong>shorthand</strong> deta hai. <code>new FormControl(...)</code> / <code>new FormGroup(...)</code> baar-baar likhne ki jagah <code>fb.group({...})</code>, <code>fb.control(...)</code>, <code>fb.array([...])</code>.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bade forms mein <code>new FormControl</code> ka repetition verbose aur noisy ho jaata. FormBuilder same model ko concise, readable syntax mein likhne deta hai — kam boilerplate, same power.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Verbosity. Ye koi nayi capability nahi deta — bas ergonomics. Type safety, validators, structure — sab wahi, bas syntax chhota.</p>
+
+<h3 class="part">4. Internal Working</h3>
+<p>FormBuilder ek factory hai: <code>fb.group(config)</code> internally <code>new FormGroup</code> banaता hai, har key ke value ko <code>FormControl</code> mein wrap karta hai (agar array shorthand diya toh <code>[initialValue, validators, asyncValidators]</code> unpack karta hai). Output bilkul wahi typed model hai jo tum manually banate.</p>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+fb.group({ email: ['', [Validators.required]] })
+        │
+        ▼
+FormBuilder.group ─▶ for each key ─▶ new FormControl(init, validators) ─▶ new FormGroup
+        │
+        ▼
+   typed FormGroup (same as manual)
+</pre>
+
+<h3 class="part">6. Architecture — the shorthands</h3>
+<table>
+<tr><td><code>fb.control(init, validators)</code></td><td>= <code>new FormControl(...)</code></td></tr>
+<tr><td><code>fb.group({ k: [init, validators] })</code></td><td>= <code>new FormGroup({ k: new FormControl(...) })</code></td></tr>
+<tr><td><code>fb.array([...])</code></td><td>= <code>new FormArray([...])</code></td></tr>
+<tr><td><code>fb.nonNullable</code> (<code>NonNullableFormBuilder</code>)</td><td>Saare controls <code>nonNullable</code> — no null in types.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">signup.ts</div>
+<pre><code>import { Component, inject } from '@angular/core';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+
+@Component({ standalone: true, imports: [ReactiveFormsModule], templateUrl: './signup.html' })
+export class Signup {
+  private fb = inject(FormBuilder);
+
+  form = this.fb.nonNullable.group({
+    name:  ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    address: this.fb.group({          // nested group
+      city: ['', Validators.required],
+      zip:  ['', Validators.required],
+    }),
+    hobbies: this.fb.array([]),        // dynamic (S-06)
+  });
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>private fb = inject(FormBuilder);
+form = this.fb.group({
+  username: [''],
+  age: [null],
+});</code></pre>
+
+<h3 class="part">9. Advanced Example — array-form validators</h3>
+<div class="code-label">typescript</div>
+<pre><code>form = this.fb.group({
+  // [ initialValue, syncValidators, asyncValidators ]
+  email: ['', [Validators.required, Validators.email], [uniqueEmailValidator]],
+  password: ['', [Validators.required, Validators.minLength(8)]],
+});</code></pre>
+<div class="panel info-p"><div class="ptitle">Array tuple ka order</div><p><code>[value, syncValidators, asyncValidators]</code> — teen positions. Sirf value + sync chahiye toh do; async chahiye toh third position. Order important — galat position pe validator silently ignore.</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>inject(FormBuilder)</code> — modern DI (constructor injection ki jagah).</li>
+<li><code>this.fb.nonNullable.group</code> — null-free typed controls.</li>
+<li><code>name: ['', [Validators.required]]</code> — tuple: initial value + sync validators.</li>
+<li>Nested <code>fb.group</code> aur <code>fb.array</code> — same builder se compose.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Tuple positions confuse: <code>['', asyncValidator]</code> — async ko sync position mein daalna. Sync = 2nd, async = 3rd.</li>
+<li><code>fb.group</code> ke bina <code>nonNullable</code> — types mein <code>null</code> ghus jaata; reset behaviour unexpected.</li>
+<li>FormBuilder ko naya capability samajhna — ye sirf shorthand hai; power same.</li>
+<li>Legacy constructor injection habit — modern <code>inject(FormBuilder)</code> use karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Bade forms → FormBuilder; ek-do control → plain <code>new FormControl</code> bhi theek.</li>
+<li><code>fb.nonNullable.group</code> default banao — cleaner types + predictable reset.</li>
+<li>Consistency: poore codebase mein ek style (FormBuilder ya plain) rakho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>FormBuilder ka koi runtime overhead nahi — ye sirf construction-time factory hai, output identical <code>FormGroup</code>. Perf reactive forms jaisi hi. Fayda purely developer-ergonomics + readability.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Mixed nullable/nonNullable</td><td>Ek nonNullable group ke andar bhi specific control ko nullable rakh sakte ho manually.</td></tr>
+<tr><td>Deeply nested</td><td>FormBuilder nested groups/arrays ko concisely compose karta — manual se readable.</td></tr>
+<tr><td>Typed inference</td><td>FormBuilder full type inference deta hai — extra annotations ki zaroorat nahi.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> FormBuilder kya hai, kya extra deta hai?</summary><div class="ans"><p>Reactive form banane ka shorthand injectable service. <code>fb.group/control/array</code>. Ye koi nayi capability nahi deta — <code>new FormControl/FormGroup</code> ka concise, readable version. Type safety + validators same. Bade forms mein boilerplate kam.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>fb.group({ email: ['', [required], [asyncV]] })</code> mein teen elements ka matlab?</summary><div class="ans"><p>Tuple: <code>[initialValue, syncValidators, asyncValidators]</code>. Pehla value, doosra sync validators array, teesra async validators array. Position matter karti hai — async ko sync position mein daalna silent bug.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Reset ke baad form controls <code>null</code> ho ja rahe hain aur types mein <code>string | null</code> aa raha hai. Clean fix?</summary><div class="ans"><p><code>this.fb.nonNullable.group({...})</code> (ya <code>NonNullableFormBuilder</code>) use karo — reset initial value pe jaayega (null nahi) aur types se null hat jaayega.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>inject(FormBuilder)</code>. <code>fb.group/control/array</code> = shorthand, same power.</li>
+<li>Tuple: <code>[value, syncValidators, asyncValidators]</code> (order matters).</li>
+<li><code>fb.nonNullable.group</code> for null-free typed controls + clean reset.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.5 · Signup with FormBuilder</div><p><code>fb.nonNullable.group</code> se signup form banao: name, email (+email validator), nested address group (city/zip). Manual <code>new FormGroup</code> version se compare karke boilerplate difference note karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Validators (built-in)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>Validators.required/min/max/minLength/pattern/email · errors object · hasError · showing messages · status VALID/INVALID · group-level</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Validators wo functions hain jo ek control ki value check karke batate hain valid hai ya nahi. Angular kai <strong>built-in validators</strong> deta hai (<code>Validators.required</code>, <code>minLength</code>, <code>email</code>, <code>pattern</code>...). Invalid pe ye control ke <code>errors</code> object mein ek key daalte hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Garbage/invalid data ko submit hone se rokna, aur user ko turant, specific feedback dena ("email galat hai", "password chhota hai"). Validation UX + data integrity dono ka core hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Manual <code>if (value.length < 8)</code> checks scatter ho jaate. Validators declarative, reusable, aur control ke status system se integrated hain — <code>form.valid</code> automatically sab controls se derive hota hai.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">errors object ka contract</div><p>Har validator ek function hai: <code>(control) =&gt; ValidationErrors | null</code>. Valid → <code>null</code>. Invalid → ek object jaise <code>{ required: true }</code> ya <code>{ minlength: { requiredLength: 8, actualLength: 3 } }</code>. Angular saare validators ke errors merge karke control ke <code>errors</code> mein daal deta hai, aur status <code>INVALID</code> kar deta hai. Ek bhi control invalid → parent group bhi invalid.</p></div>
+
+<div class="dg-title">Diagram — validation status cascade</div>
+<pre class="diagram">
+ value change ─▶ run validators ─▶ errors: {minlength:{...}} | null
+                                        │
+              control.status = INVALID ◀┘  ─▶ cascade up ─▶ FormGroup.status = INVALID
+                                                              ─▶ form.valid = false
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+control.setValue('ab') ─▶ Validators.minLength(8) runs ─▶ returns {minlength:{requiredLength:8,actualLength:2}}
+        ─▶ control.errors = {minlength:...} ─▶ control.invalid = true
+        ─▶ template: *ngIf ctrl.hasError('minlength') ─▶ show message
+</pre>
+
+<h3 class="part">6. Architecture — built-in validators</h3>
+<table>
+<tr><td><code>Validators.required</code></td><td>Non-empty. Error key: <code>required</code></td></tr>
+<tr><td><code>Validators.requiredTrue</code></td><td>Checkbox must be checked (terms accept).</td></tr>
+<tr><td><code>Validators.min / max</code></td><td>Numeric bounds. Keys: <code>min</code>/<code>max</code></td></tr>
+<tr><td><code>Validators.minLength / maxLength</code></td><td>String/array length. Keys: <code>minlength</code>/<code>maxlength</code></td></tr>
+<tr><td><code>Validators.email</code></td><td>Email format. Key: <code>email</code></td></tr>
+<tr><td><code>Validators.pattern(regex)</code></td><td>Regex match. Key: <code>pattern</code></td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">reactive validators</div>
+<pre><code>form = this.fb.group({
+  username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(20)]],
+  age:      [null, [Validators.required, Validators.min(18), Validators.max(120)]],
+  email:    ['', [Validators.required, Validators.email]],
+  phone:    ['', [Validators.pattern(/^\d{10}$/)]],
+  terms:    [false, Validators.requiredTrue],
+});</code></pre>
+<div class="code-label">template — showing messages</div>
+<pre><code>&lt;input formControlName="username"&gt;
+&lt;ng-container *ngIf="form.controls.username as u"&gt;
+  &lt;small *ngIf="u.touched &amp;&amp; u.hasError('required')"&gt;Username zaroori&lt;/small&gt;
+  &lt;small *ngIf="u.hasError('minlength')"&gt;
+    Min {{ u.getError('minlength').requiredLength }} chars
+  &lt;/small&gt;
+&lt;/ng-container&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>email = new FormControl('', [Validators.required, Validators.email]);
+// email.valid, email.errors → { required: true } jab khaali</code></pre>
+
+<h3 class="part">9. Advanced Example — template-driven equivalents + dynamic validators</h3>
+<div class="code-label">html (template-driven)</div>
+<pre><code>&lt;input name="age" ngModel required min="18" max="120" #age="ngModel"&gt;
+&lt;small *ngIf="age.hasError('min')"&gt;18+ hona chahiye&lt;/small&gt;</code></pre>
+<div class="code-label">typescript (dynamic add/remove)</div>
+<pre><code>// runtime pe validators badlo
+this.form.controls.email.setValidators([Validators.required, Validators.email]);
+this.form.controls.email.clearValidators();
+this.form.controls.email.updateValueAndValidity();   // ← re-run ZAROORI</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>[Validators.required, Validators.minLength(3)]</code> — validators array; sab run hote hain.</li>
+<li><code>u.hasError('required')</code> — errors object mein key present hai?</li>
+<li><code>u.getError('minlength').requiredLength</code> — error ke details (dynamic message).</li>
+<li><code>setValidators</code> + <code>updateValueAndValidity()</code> — runtime pe validators change ke baad re-validate zaroori.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>setValidators</code> ke baad <code>updateValueAndValidity()</code> na call karna → naye validators run hi nahi hote.</li>
+<li>Error key case: template driven vs reactive — key hamesha lowercase (<code>minlength</code>, na <code>minLength</code>).</li>
+<li><code>Validators.required</code> ko <code>Validators.required()</code> call karna → wo function reference hai, call nahi.</li>
+<li>Sirf frontend validation pe bharosa → security nahi. Backend pe bhi validate.</li>
+<li>Errors ko <code>invalid</code> pe hi dikhana (touched/dirty bhoolna) → premature red.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Error messages ko ek shared component/directive mein centralize karo — DRY.</li>
+<li><code>hasError</code>/<code>getError</code> se specific, actionable messages (generic "invalid" nahi).</li>
+<li>Show on <code>(touched || dirty)</code>; submit pe <code>markAllAsTouched()</code>.</li>
+<li>Complex rules → custom validator (S-08), na ki template mein logic.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Sync validators har value change pe run hote hain — heavy regex (catastrophic backtracking wale <code>pattern</code>) bade inputs pe lag laga sakte. Regex simple rakho. Har-keystroke validation mehnga ho toh <code>updateOn: 'blur'</code>. Zaroorat se zyada validators avoid — har ek run hota hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Empty + non-required</td><td>Zyaadatar validators khaali value pe <code>null</code> (valid) return karte — <code>required</code> ke bina empty allowed.</td></tr>
+<tr><td>Whitespace-only</td><td><code>required</code> whitespace ko valid maan sakta — trim/custom validator chahiye.</td></tr>
+<tr><td>Group-level validator</td><td>Cross-field (password match) FormGroup pe lagta hai, control pe nahi — S-08.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Validator invalid pe kya return karta hai?</summary><div class="ans"><p>Ek <code>ValidationErrors</code> object jaise <code>{ required: true }</code> ya <code>{ minlength: { requiredLength, actualLength } }</code>. Valid pe <code>null</code>. Ye object control ke <code>errors</code> mein aata hai aur <code>hasError('key')</code>/<code>getError('key')</code> se padha jaata.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Runtime pe validators badle par kuch nahi hua. Kyun?</summary><div class="ans"><p><code>setValidators</code>/<code>clearValidators</code> validators set karte hain par re-run trigger nahi karte. Uske baad <code>control.updateValueAndValidity()</code> call karna zaroori — tabhi naye validators execute honge aur status update hoga.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> "Other" option select karne pe ek extra text field required banana hai, warna optional. Kaise?</summary><div class="ans"><p>Dropdown ke <code>valueChanges</code> subscribe karo; "other" pe text field ko <code>setValidators([Validators.required])</code>, warna <code>clearValidators()</code>, dono ke baad <code>updateValueAndValidity()</code>. Conditional validation ka classic pattern.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Validator: <code>(control) =&gt; ValidationErrors | null</code>. Invalid → errors object key (lowercase).</li>
+<li>Built-in: required, requiredTrue, min/max, minLength/maxLength, email, pattern.</li>
+<li>Read: <code>hasError('key')</code> / <code>getError('key')</code>. Dynamic: <code>setValidators</code> + <code>updateValueAndValidity()</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.6 · Registration with full validation</div><p>username (3-20 chars), age (18-120), email, 10-digit phone (pattern), terms (requiredTrue) — sab built-in validators se. Har field pe specific error message dikhao <code>getError</code> se (dynamic length wagairah).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-11.7 · Conditional validators</div><p>Ek "Do you have a referral?" toggle pe referral-code field ko required/optional switch karo runtime pe (<code>setValidators</code> + <code>updateValueAndValidity</code>).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Async Validators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>AsyncValidatorFn · Observable/Promise return · PENDING status · debounce/switchMap · server uniqueness · updateOn:'blur'</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Async validator wo validator hai jo decision ke liye <strong>async operation</strong> (usually HTTP) karta hai — jaise "kya ye username already taken hai?". Ye ek <code>Observable</code>/<code>Promise</code> return karta hai jo <code>ValidationErrors | null</code> emit karta hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Kuch rules client pe check nahi ho sakte — email/username uniqueness, coupon validity, server-side business rules. Inke liye backend se poochna padta hai, jo inherently async hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Server-dependent validation ko form ke status system mein integrate karta hai — control automatically <code>PENDING</code> hota hai jab tak server jawab na de, aur invalid ho toh <code>form.valid</code> false. Manual flags manage karne ki zaroorat nahi.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">PENDING status</div><p>Async validators <strong>sync validators pass hone ke baad</strong> chalte hain (taaki bekaar API calls na ho). Jab async chal raha ho, control ka status <code>PENDING</code> hota hai. Emit hone pe <code>VALID</code>/<code>INVALID</code>. Har async validator ka Observable <strong>complete</strong> hona chahiye (ya first-emit) warna status hamesha PENDING atka rehta.</p></div>
+
+<div class="dg-title">Diagram — async validation flow</div>
+<pre class="diagram">
+ value change ─▶ SYNC validators ─┬─ fail ─▶ INVALID (async skip)
+                                  └─ pass ─▶ status = PENDING ─▶ run ASYNC validator
+                                                    │
+                              HTTP ──▶ emit {taken:true} | null ─▶ INVALID | VALID
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+type "karan" ─▶ sync ok ─▶ PENDING ─▶ debounce ─▶ switchMap(http /check?u=karan)
+        ─▶ server: taken ─▶ emit {usernameTaken:true} ─▶ control INVALID
+        (agla keystroke → previous HTTP switchMap se cancel)
+</pre>
+
+<h3 class="part">6. Architecture — 3rd position</h3>
+<p>Async validators control ke <strong>teesre</strong> argument mein jaate hain: <code>new FormControl(value, [syncValidators], [asyncValidators])</code> ya FormBuilder tuple ka third element.</p>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">unique-username.validator.ts</div>
+<pre><code>import { AsyncValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
+import { inject } from '@angular/core';
+import { of, timer } from 'rxjs';
+import { switchMap, map, catchError, first } from 'rxjs';
+
+export function uniqueUsername(): AsyncValidatorFn {
+  return (control: AbstractControl): Observable&lt;ValidationErrors | null&gt; =&gt; {
+    const api = inject(UserService);
+    if (!control.value) return of(null);
+    return timer(400).pipe(                       // debounce
+      switchMap(() =&gt; api.checkUsername(control.value)),
+      map(taken =&gt; (taken ? { usernameTaken: true } : null)),
+      catchError(() =&gt; of(null)),                 // server error → don't block
+      first(),                                    // COMPLETE the stream
+    );
+  };
+}</code></pre>
+<div class="code-label">usage</div>
+<pre><code>username: ['', [Validators.required], [uniqueUsername()]],   // 3rd position!</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const asyncV: AsyncValidatorFn = (c) =&gt;
+  api.exists(c.value).pipe(map(x =&gt; x ? { taken: true } : null), first());
+email = new FormControl('', [], [asyncV]);   // empty sync, async 3rd</code></pre>
+
+<h3 class="part">9. Advanced Example — template me PENDING + updateOn</h3>
+<div class="code-label">typescript + html</div>
+<pre><code>// har keystroke pe API call avoid — blur pe validate
+username = new FormControl('', {
+  validators: [Validators.required],
+  asyncValidators: [uniqueUsername()],
+  updateOn: 'blur',
+});</code></pre>
+<pre><code>&lt;small *ngIf="username.pending"&gt;Checking availability…&lt;/small&gt;
+&lt;small *ngIf="username.hasError('usernameTaken')"&gt;Username already taken&lt;/small&gt;</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>timer(400)</code> — debounce; rapid typing pe har keystroke API na ho.</li>
+<li><code>switchMap</code> — naya value aaye toh pichhli HTTP cancel (stale response avoid).</li>
+<li><code>map(taken =&gt; taken ? {...} : null)</code> — server bool ko errors object mein badalna.</li>
+<li><code>catchError(() =&gt; of(null))</code> — server down pe form block na karo.</li>
+<li><code>first()</code> — stream complete karo, warna control PENDING mein atka rahega.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Stream complete na karna (<code>first()</code>/<code>take(1)</code> bhoolna) → control hamesha PENDING.</li>
+<li><code>switchMap</code> ki jagah <code>mergeMap</code> → stale/out-of-order responses.</li>
+<li>Debounce na lagana → har keystroke pe API hammering.</li>
+<li>Async validator ko 2nd (sync) position mein daalna → error/silent.</li>
+<li><code>form.valid</code> ko submit pe turant check jabki PENDING chal raha ho → PENDING valid nahi hai, handle karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Hamesha debounce (<code>timer</code>) + <code>switchMap</code> + <code>catchError</code> + <code>first()</code>.</li>
+<li><code>updateOn: 'blur'</code> se API calls drastically kam.</li>
+<li>PENDING state UI mein dikhao ("checking…"); submit button ko PENDING pe bhi disable.</li>
+<li>Server error pe block mat karo (<code>of(null)</code>) — user stuck na ho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Async validators = network calls, isliye sabse mehnge. Debounce + <code>switchMap</code> + <code>updateOn:'blur'</code> ke bina ye API ko flood kar dete hain. <code>switchMap</code> in-flight requests cancel karke bandwidth bachata. Server pe rate-limit/cache endpoint rakho.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Sync fail</td><td>Sync validator fail ho toh async chalta hi nahi (API waste avoid) — by design.</td></tr>
+<tr><td>Race with submit</td><td>Submit jab PENDING → status abhi decide nahi. <code>statusChanges</code> pe wait ya PENDING pe submit block.</td></tr>
+<tr><td>DI in validator</td><td>Functional validator mein <code>inject()</code> injection context mein chahiye — factory se banao.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Async validator kab use hota hai aur kya return karta hai?</summary><div class="ans"><p>Jab validation ke liye server/async operation chahiye (username/email uniqueness). Ye ek <code>Observable</code>/<code>Promise</code> return karta hai jo <code>ValidationErrors | null</code> emit karta hai. Chalne ke dauraan control <code>PENDING</code> status mein rehta hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Async validators sync ke baad kyun chalte hain?</summary><div class="ans"><p>Efficiency — agar sync validation (jaise "required"/"minLength") already fail hai toh server ko poochne ka koi matlab nahi (bekaar API call). Isliye Angular async validators ko tabhi run karta hai jab saare sync validators pass ho jaayein.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Username check ke liye <code>switchMap</code> vs <code>mergeMap</code> — kyun switchMap?</summary><div class="ans"><p><code>switchMap</code> naya emission (agla keystroke) aane pe pichhli in-flight HTTP ko cancel kar deta hai — sirf latest value ka response matter karta hai, stale/out-of-order responses avoid. <code>mergeMap</code> saari parallel chalata → purani (galat) response naye value pe apply ho sakti, aur zyada API calls.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Async validator laga par control hamesha "checking…" (PENDING) mein atka rehta hai. Kyun?</summary><div class="ans"><p>Validator ka Observable complete nahi ho raha. HTTP call complete hoti hai par agar tumne <code>switchMap(timer...)</code> jaisa non-completing source use kiya bina <code>first()</code>/<code>take(1)</code> ke, stream open rehta hai. Fix: pipe ke end mein <code>first()</code> ya <code>take(1)</code> add karo.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>AsyncValidatorFn</code> → <code>Observable&lt;ValidationErrors|null&gt;</code>. 3rd position. Status <code>PENDING</code> while running.</li>
+<li>Runs only after sync validators pass. Recipe: <code>timer</code> (debounce) → <code>switchMap</code> → <code>map</code> → <code>catchError(of(null))</code> → <code>first()</code>.</li>
+<li>Must complete the stream (<code>first()</code>). <code>updateOn:'blur'</code> cuts API calls. Disable submit on PENDING.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.8 · Username availability check</div><p>Ek async validator banao jo (mock) API se username uniqueness check kare. Debounce + <code>switchMap</code> + <code>catchError</code> + <code>first()</code>. "Checking…" (pending) aur "taken" (error) states template mein dikhao. <code>updateOn:'blur'</code> try karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Dynamic Forms (FormArray)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>FormArray · push/removeAt/insert/clear · iterate in template · add/remove rows · typed arrays · FormRecord</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Dynamic form = jiski structure <strong>runtime pe badalti</strong> hai — user "Add another phone" click kare toh naya field aaye. Iska tool hai <code>FormArray</code>: controls ki ek <em>indexed list</em> jise programmatically add/remove kar sakte ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bahut sare forms mein fields ki sankhya fixed nahi — multiple phone numbers, order line items, skill tags, quiz questions. Fixed <code>FormGroup</code> se ye handle nahi hota; <code>FormArray</code> variable-length collections deta hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Variable-length data ka model + validation + binding. Har row apna control/group hota hai apni validation ke saath, aur array-level pe bhi rules (min 1 item) lag sakte.</p>
+
+<h3 class="part">4. Internal Working</h3>
+<p><code>FormArray</code> internally <code>controls: AbstractControl[]</code> rakhta hai. <code>push()</code>/<code>removeAt()</code> is array ko mutate karke status recompute karte hain. Value ek <em>array</em> hoti hai (object nahi). Template mein <code>controls</code> pe <code>*ngFor</code> karke har item ko <code>[formGroupName]="i"</code>/<code>[formControlName]="i"</code> se bind karte ho.</p>
+
+<div class="dg-title">Diagram — FormArray structure</div>
+<pre class="diagram">
+ FormArray "phones"
+ ├─ [0] FormControl "9111111111"
+ ├─ [1] FormControl "9222222222"   ◀── push() adds here
+ └─ [2] FormControl "9333333333"
+       value → ["9111111111","9222222222","9333333333"]   (an array!)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+"Add phone" click ─▶ phones.push(fb.control('', Validators.required))
+        ─▶ FormArray recomputes status ─▶ template *ngFor re-renders ─▶ new input appears
+"Remove" click ─▶ phones.removeAt(i) ─▶ re-render (row gone)
+</pre>
+
+<h3 class="part">6. Architecture — FormArray API</h3>
+<table>
+<tr><td><code>push(ctrl)</code></td><td>End mein control add.</td></tr>
+<tr><td><code>removeAt(i)</code></td><td>Index i pe control hatao.</td></tr>
+<tr><td><code>insert(i, ctrl)</code> / <code>at(i)</code></td><td>Specific position insert / access.</td></tr>
+<tr><td><code>clear()</code></td><td>Saare controls hatao (reset list).</td></tr>
+<tr><td><code>controls</code></td><td>Array — template <code>*ngFor</code> ke liye.</td></tr>
+<tr><td><code>FormRecord</code></td><td>Dynamic <em>keyed</em> collection (object with dynamic keys) — array ka named cousin.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">phones.ts</div>
+<pre><code>private fb = inject(FormBuilder);
+form = this.fb.group({
+  name: [''],
+  phones: this.fb.array([ this.fb.control('', Validators.required) ]),  // start with 1
+});
+
+get phones() { return this.form.get('phones') as FormArray; }   // typed getter
+
+addPhone()    { this.phones.push(this.fb.control('', Validators.required)); }
+removePhone(i: number) { this.phones.removeAt(i); }</code></pre>
+<div class="code-label">phones.html</div>
+<pre><code>&lt;div [formGroup]="form"&gt;
+  &lt;div formArrayName="phones"&gt;
+    &lt;div *ngFor="let ctrl of phones.controls; let i = index"&gt;
+      &lt;input [formControlName]="i" placeholder="Phone {{ i + 1 }}"&gt;
+      &lt;button type="button" (click)="removePhone(i)"&gt;✕&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;button type="button" (click)="addPhone()"&gt;+ Add phone&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>tags = new FormArray([ new FormControl('angular') ]);
+tags.push(new FormControl('rxjs'));   // tags.value → ['angular','rxjs']</code></pre>
+
+<h3 class="part">9. Advanced Example — array of groups</h3>
+<div class="code-label">typescript</div>
+<pre><code>items: this.fb.array([]),   // order line items
+
+addItem() {
+  this.items.push(this.fb.group({
+    product: ['', Validators.required],
+    qty:     [1, [Validators.required, Validators.min(1)]],
+  }));
+}
+// template: formArrayName="items" → *ngFor → [formGroupName]="i" → formControlName="product"</code></pre>
+<div class="panel info-p"><div class="ptitle">Control vs Group in array</div><p>Simple list (phone strings) → <code>FormArray</code> of <code>FormControl</code>, bind with <code>[formControlName]="i"</code>. Complex rows (product+qty) → <code>FormArray</code> of <code>FormGroup</code>, bind with <code>[formGroupName]="i"</code> then inner <code>formControlName</code>.</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>fb.array([...])</code> — initial controls list.</li>
+<li><code>get phones()</code> — typed getter; template + TS dono is se access karte hain.</li>
+<li><code>formArrayName="phones"</code> — array ko template se bind.</li>
+<li><code>*ngFor="let ctrl of phones.controls; let i = index"</code> — har control render.</li>
+<li><code>[formControlName]="i"</code> — index se bind (array positional hai).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>form.get('phones')</code> ko cast na karna → TS ko <code>FormArray</code> API (<code>push</code>) nahi pata. Typed getter banao.</li>
+<li>Template mein <code>formArrayName</code> bhoolna → controls bind nahi hote.</li>
+<li>Groups ke array mein <code>formControlName="i"</code> use karna (chahiye <code>formGroupName="i"</code>).</li>
+<li><code>*ngFor</code> pe <code>trackBy</code> na dena → remove pe wrong row focus/re-render.</li>
+<li>Array value ko object samajhna — <code>FormArray.value</code> ek <em>array</em> hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Typed getter (<code>get phones(): FormArray</code>) banao — template + logic clean.</li>
+<li><code>trackBy</code> se stable rendering (khaaskar remove/reorder pe).</li>
+<li>Array-level validator (min 1 item) FormArray pe lagao (S-08).</li>
+<li>Row add/remove ke liye chhote helper methods — template thin rakho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Bade FormArrays (100+ rows) har CD pe saare controls evaluate karte — <code>OnPush</code> + <code>trackBy</code> zaroori. Rows ko virtualize (CDK virtual scroll) karo agar bahut zyada. Add/remove pe pura array re-validate hota; heavy validators ho toh <code>updateOn:'blur'</code>.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Empty array + required</td><td>Array-level "min 1" validator chahiye — individual control required kaafi nahi.</td></tr>
+<tr><td><code>clear()</code> + re-populate</td><td>Backend data load pe <code>clear()</code> phir loop se <code>push()</code> — patchValue array pe seedhe kaam nahi karta agar length mismatch.</td></tr>
+<tr><td><code>FormRecord</code></td><td>Jab keys dynamic ho (checkbox list by id) — array ki jagah keyed record.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>FormArray</code> vs <code>FormGroup</code>?</summary><div class="ans"><p><code>FormGroup</code> = named controls (object shape, fixed keys). <code>FormArray</code> = indexed controls (list, variable length), value ek array. Dynamic add/remove rows ke liye FormArray. Dynamic <em>keys</em> ke liye <code>FormRecord</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Runtime pe field add/remove kaise karte ho?</summary><div class="ans"><p><code>FormArray</code> use karo. <code>push(control)</code> se add, <code>removeAt(i)</code> se remove, <code>clear()</code> se sab hatao. Template mein <code>formArrayName</code> + <code>*ngFor</code> over <code>controls</code>, har item <code>[formControlName]="i"</code> (ya groups ke liye <code>[formGroupName]="i"</code>).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Order form mein items add/remove ho rahe hain par remove karne pe galat row ka data reset/focus ho jaata hai. Fix?</summary><div class="ans"><p><code>*ngFor</code> pe <code>trackBy</code> missing hai — Angular index se track kar raha, remove pe indices shift ho jaate. Ek stable id (ya control reference) se <code>trackBy</code> do taaki DOM/state sahi row se bandhe rahein.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>FormArray</code> = indexed list; value is an array. <code>push/removeAt/insert/clear/at</code>.</li>
+<li>Template: <code>formArrayName</code> + <code>*ngFor</code> over <code>.controls</code> + <code>[formControlName]="i"</code> (or <code>[formGroupName]="i"</code>).</li>
+<li>Typed getter + <code>trackBy</code>. Dynamic keys → <code>FormRecord</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.9 · Dynamic phone list</div><p>Ek form banao jahan user multiple phone numbers add/remove kar sake (FormArray of controls). Har phone required. "Add" button naya field, "✕" us row ko remove. <code>form.value</code> array shape mein aaye.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-11.10 · Order line items</div><p>FormArray of FormGroups (product + qty). Add/remove rows, <code>trackBy</code>, aur ek array-level "at least 1 item" validation. Total quantity live compute karke dikhao (<code>valueChanges</code>).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Nested Forms</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>nested FormGroup · formGroupName · child form components · ControlContainer · reusable form sections</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Nested form = ek <code>FormGroup</code> ke andar doosra <code>FormGroup</code> — jab data naturally group hota hai (address = street+city+zip). Value bhi nested object banti hai. Bade forms ko logical sections mein todne ka tareeka.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Related fields ko group karke structure clean hoti hai, aur poore group pe validity/reset/enable-disable ek saath kar sakte ho. Backend ka nested payload shape bhi seedhe match ho jaata.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Flat form mein 20 fields ka jhamela + backend ke nested JSON se mismatch. Nesting logical grouping + payload-shape alignment + section-level operations (validate/reset address alone) deti hai. Plus reusable child form components.</p>
+
+<h3 class="part">4. Internal Working</h3>
+<p>Nested <code>FormGroup</code> parent ka ek control hi hai (bas value object hai). Validity bottom-up cascade hoti hai: child control invalid → nested group invalid → root invalid. Template mein <code>formGroupName="address"</code> ek scope banata hai jiske andar <code>formControlName</code> us nested group ke controls ko refer karta hai.</p>
+
+<div class="dg-title">Diagram — nested structure &amp; value</div>
+<pre class="diagram">
+ FormGroup (root)
+ ├─ name:   FormControl
+ └─ address: FormGroup            value:
+     ├─ city: FormControl          { name, address: { city, zip } }
+     └─ zip:  FormControl
+ (child invalid ─▶ address invalid ─▶ root invalid)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+type in city ─▶ child FormControl updates ─▶ address FormGroup value/status recompute
+        ─▶ root FormGroup value/status recompute ─▶ root.value = { name, address:{...} }
+</pre>
+
+<h3 class="part">6. Architecture — two patterns</h3>
+<table>
+<tr><td>Inline nested group</td><td>Parent component hi nested <code>FormGroup</code> banaता + <code>formGroupName</code> se bind.</td></tr>
+<tr><td>Child form component</td><td>Address ek reusable child component; parent ka FormGroup <code>ControlContainer</code> ke through share.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">profile.ts</div>
+<pre><code>form = this.fb.group({
+  name: ['', Validators.required],
+  address: this.fb.group({
+    city: ['', Validators.required],
+    zip:  ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
+  }),
+});
+// form.value → { name, address: { city, zip } }
+// form.get('address.city') → deep access</code></pre>
+<div class="code-label">profile.html</div>
+<pre><code>&lt;form [formGroup]="form"&gt;
+  &lt;input formControlName="name"&gt;
+  &lt;div formGroupName="address"&gt;
+    &lt;input formControlName="city"&gt;
+    &lt;input formControlName="zip"&gt;
+  &lt;/div&gt;
+&lt;/form&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>form = this.fb.group({
+  user: this.fb.group({ first: [''], last: [''] }),
+});
+// form.value → { user: { first, last } }</code></pre>
+
+<h3 class="part">9. Advanced Example — reusable child form (ControlContainer)</h3>
+<div class="code-label">address-form.ts (child)</div>
+<pre><code>import { Component, inject } from '@angular/core';
+import { ControlContainer, ReactiveFormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-address-form',
+  standalone: true,
+  imports: [ReactiveFormsModule],
+  // parent ka FormGroupDirective inherit karo (naya form nahi)
+  viewProviders: [{ provide: ControlContainer, useExisting: ControlContainer }],
+  template: `
+    &lt;div formGroupName="address"&gt;
+      &lt;input formControlName="city"&gt;
+      &lt;input formControlName="zip"&gt;
+    &lt;/div&gt;`,
+})
+export class AddressForm {}</code></pre>
+<div class="panel info-p"><div class="ptitle">ControlContainer ka jaadu</div><p><code>viewProviders</code> mein <code>ControlContainer</code> ko parent ka <code>useExisting</code> dene se child component parent ke form tree mein hi controls register karta hai — alag form nahi banta. Isse address form ek reusable, self-contained section ban jaata hai jise kai forms mein drop kar sakte ho.</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>address: this.fb.group({...})</code> — root ka ek control jo khud group hai.</li>
+<li><code>formGroupName="address"</code> — template scope; andar ke <code>formControlName</code> is group ko refer karte.</li>
+<li><code>form.get('address.city')</code> — dot-path se deep access.</li>
+<li>Child: <code>viewProviders ControlContainer useExisting</code> — parent form inherit.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Template mein <code>formGroupName</code> bhoolna → nested controls "cannot find control" error.</li>
+<li>Deep access <code>form.controls.address.controls.city</code> verbose/error-prone — <code>form.get('address.city')</code> use karo.</li>
+<li>Child form component mein naya <code>FormGroup</code> banana (parent inherit karne ki jagah) → do alag forms, sync toota.</li>
+<li>Nested group ko <code>setValue</code> karte waqt exact nested shape na dena → error.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Naturally-grouped data (address, payment, dimensions) ko nested groups mein — backend shape se match.</li>
+<li>Repeating sections ko reusable child form component (<code>ControlContainer</code>) banao.</li>
+<li>Deep access ke liye <code>get('a.b.c')</code> path syntax.</li>
+<li>Section-level reset/disable ka fayda uthao (<code>form.get('address').reset()</code>).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Nesting khud koi overhead nahi — bas structure. Reusable child form components ke saath <code>OnPush</code> lagao. Bahut deep nesting (5+ levels) debug-hard ho jaati; flatten kar sako toh karo. Value/status cascade bottom-up efficient hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Nested + FormArray</td><td>Group ke andar array, array ke andar group — arbitrarily compose hota hai.</td></tr>
+<tr><td><code>patchValue</code> nested</td><td>Partial nested object OK: <code>patchValue({ address: { city: 'X' } })</code> — sirf city update.</td></tr>
+<tr><td>Cross-group validation</td><td>Do nested groups ke beech rule → common ancestor group pe validator (S-08).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Nested FormGroup ka value kaisa dikhta hai?</summary><div class="ans"><p>Nested object. <code>{ name, address: { city, zip } }</code>. Template mein <code>formGroupName="address"</code> se bind, TS mein <code>form.get('address.city')</code> se deep access. Validity bottom-up cascade karti hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Ek reusable address-form component banana hai jo parent ke form mein register ho. Kaise?</summary><div class="ans"><p>Child component ke <code>viewProviders</code> mein <code>{ provide: ControlContainer, useExisting: ControlContainer }</code> do — isse child parent ka <code>FormGroupDirective</code> inherit karta hai aur apne controls parent tree mein (nested group ke andar) register karta hai, naya form banaye bina. Ab wahi component multiple forms mein reuse ho sakta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Nested address fields pe "cannot find control 'city'" error aa raha hai. Kyun?</summary><div class="ans"><p>Template mein wrapping <code>formGroupName="address"</code> missing hai (ya galat name). <code>formControlName="city"</code> ko batana hota hai ki wo kis group ke andar hai. Wrapping <code>&lt;div formGroupName="address"&gt;</code> add karo.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Nested <code>FormGroup</code> → nested value object. Template: <code>formGroupName</code> + inner <code>formControlName</code>.</li>
+<li>Deep access: <code>form.get('address.city')</code>. Partial: <code>patchValue({address:{city}})</code>.</li>
+<li>Reusable child form: <code>viewProviders: [{provide: ControlContainer, useExisting: ControlContainer}]</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.11 · Profile with nested address</div><p>Profile form: name + nested address group (city, 6-digit zip). <code>form.value</code> nested object shape mein aaye. Address group ko alag se reset karne ka button bhi do.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-11.12 · Reusable address component</div><p>Address ko ek standalone child component banao jo <code>ControlContainer</code> se parent form mein register ho. Do alag parent forms (billing + shipping) mein reuse karke dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Custom Validators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>ValidatorFn · factory (parameterized) validators · cross-field (group) validators · reusability · ControlValueAccessor peek</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Jab built-in validators kaafi na ho, tum apna validator likhte ho — ek function <code>(control) =&gt; ValidationErrors | null</code>. Isse business-specific rules (password strength, PAN format, cross-field match) enforce karte ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Har app ke apne rules hote hain jo Angular ship nahi karta — "password aur confirm-password same ho", "start-date &lt; end-date", "IFSC valid ho". Custom validators inhe reusable, testable functions mein daal dete hain.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Business logic ko template/component se hatakar declarative, reusable validator mein rakhta hai. Cross-field rules (jo single control ke bas ki baat nahi) group-level validators se solve hote hain.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Control-level vs Group-level</div><p>Control validator ek control ki value dekhta hai. Cross-field rule (do fields compare) ke liye validator ko <strong>parent FormGroup</strong> pe lagana padta hai — kyunki tabhi dono controls ek jagah accessible hote hain. Group validator <code>group.get('password')</code> aur <code>group.get('confirm')</code> dono padh sakta hai. Error group pe set hota hai (ya specific control pe <code>setErrors</code>).</p></div>
+
+<div class="dg-title">Diagram — cross-field (group) validator</div>
+<pre class="diagram">
+ FormGroup ──validator──▶ passwordMatch(group)
+   ├─ password: "abc123"        │
+   └─ confirm:  "abc124"        ├─ group.get('password').value
+                                └─ group.get('confirm').value
+                                     not equal ─▶ return { passwordMismatch: true } on GROUP
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+any control changes ─▶ group re-validates ─▶ passwordMatch(group) runs
+        ─▶ compare password vs confirm ─▶ {passwordMismatch:true} | null
+        ─▶ template: form.hasError('passwordMismatch') ─▶ show message
+</pre>
+
+<h3 class="part">6. Architecture — 3 flavours</h3>
+<table>
+<tr><td>Simple <code>ValidatorFn</code></td><td><code>(control) =&gt; errors|null</code> — ek field ka rule (e.g. no-whitespace).</td></tr>
+<tr><td>Factory (parameterized)</td><td>Function jo config leke <code>ValidatorFn</code> return kare (e.g. <code>forbiddenValue('admin')</code>).</td></tr>
+<tr><td>Group (cross-field)</td><td>Group pe lagta hai; multiple controls compare karta.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — cross-field</h3>
+<div class="code-label">password-match.validator.ts</div>
+<pre><code>import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+
+export const passwordMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null =&gt; {
+  const pass = group.get('password')?.value;
+  const confirm = group.get('confirm')?.value;
+  return pass === confirm ? null : { passwordMismatch: true };
+};
+
+// usage — validator GROUP pe (3rd arg / options)
+form = this.fb.group({
+  password: ['', Validators.required],
+  confirm:  ['', Validators.required],
+}, { validators: passwordMatch });</code></pre>
+<div class="code-label">template</div>
+<pre><code>&lt;small *ngIf="form.hasError('passwordMismatch') &amp;&amp; form.get('confirm')?.touched"&gt;
+  Passwords match nahi karte
+&lt;/small&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example — simple field validator</h3>
+<div class="code-label">typescript</div>
+<pre><code>export const noWhitespace: ValidatorFn = (c) =&gt;
+  (c.value || '').trim().length === 0 &amp;&amp; c.value?.length
+    ? { whitespace: true } : null;
+
+name = new FormControl('', [Validators.required, noWhitespace]);</code></pre>
+
+<h3 class="part">9. Advanced Example — factory (parameterized)</h3>
+<div class="code-label">forbidden-value.validator.ts</div>
+<pre><code>export function forbiddenValue(...banned: string[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null =&gt; {
+    const v = (control.value || '').toLowerCase();
+    return banned.includes(v) ? { forbidden: { value: control.value } } : null;
+  };
+}
+// usage — reusable + configurable
+username: ['', [Validators.required, forbiddenValue('admin', 'root', 'null')]],</code></pre>
+<div class="panel info-p"><div class="ptitle">Factory pattern kyun</div><p>Validator ko parameter chahiye (banned list, min-age) toh seedhe <code>ValidatorFn</code> nahi likh sakte — ek <em>factory</em> function likho jo config leke <code>ValidatorFn</code> <strong>return</strong> kare. Yahi <code>Validators.minLength(8)</code> bhi karta hai andar se.</p></div>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Simple: <code>(control) =&gt; ValidationErrors | null</code> — value check, object ya null.</li>
+<li>Group: argument poora <code>group</code> hai; <code>group.get('x')</code> se multiple controls.</li>
+<li>Factory: outer function config leta, inner <code>ValidatorFn</code> return karta (closure).</li>
+<li>Error object ki key template mein <code>hasError('key')</code> se match karo.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Cross-field validator ko <em>control</em> pe lagana (chahiye group pe) → doosra field accessible nahi.</li>
+<li>Factory ki jagah seedhe parameterized function pass karna → <code>ValidatorFn</code> signature mismatch.</li>
+<li>Error object return karne ki jagah <code>true</code>/<code>false</code> return → Angular object expect karta hai (ya null).</li>
+<li>Empty value pe error dena jab field optional hai → <code>required</code> ka kaam mat karo; empty pe <code>null</code>.</li>
+<li>Group error ko control-level pe dikhane ki koshish bina <code>setErrors</code> — group error group pe hota hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Validators ko standalone pure functions rakho — easily unit-testable.</li>
+<li>Parameterized rules → factory pattern (<code>Validators.minLength</code> jaisa).</li>
+<li>Optional field: empty value pe <code>null</code> (valid) return karo; required alag validator.</li>
+<li>Descriptive error keys + error object mein useful details (dynamic messages).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Custom sync validators har value change pe run — mahenga computation (heavy regex, large loops) avoid ya memoize karo. Cross-field group validator poore group ke har change pe chalta; keep it cheap. Server-dependent rules ko sync mein mat ghusaao — async validator (S-05) use karo.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>ControlValueAccessor</td><td>Custom input component ko form se jodne ke liye CVA implement karo — tabhi <code>formControlName</code> tumhare component pe kaam karega.</td></tr>
+<tr><td>Validator + async combo</td><td>Sync custom + async ek saath — sync pehle, pass hone pe async.</td></tr>
+<tr><td>Dynamic error clearing</td><td>Group validator ne control pe <code>setErrors</code> kiya toh manually clear bhi karna pad sakta jab valid ho.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Custom validator ka signature aur return?</summary><div class="ans"><p><code>(control: AbstractControl) =&gt; ValidationErrors | null</code>. Valid pe <code>null</code>, invalid pe ek error object (jaise <code>{ forbidden: true }</code>). Template mein <code>hasError('forbidden')</code> se check.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Password aur confirm-password match validate kaise? Validator kahan lagega?</summary><div class="ans"><p>Cross-field rule hai, isliye validator <strong>FormGroup</strong> pe lagega (control pe nahi) — <code>fb.group({...}, { validators: passwordMatch })</code>. Validator <code>group.get('password')</code> aur <code>group.get('confirm')</code> dono padhkar compare karta; mismatch pe group pe <code>{ passwordMismatch: true }</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Parameterized validator (jaise min-age 18) kaise banate ho?</summary><div class="ans"><p>Factory pattern: ek function jo config (<code>minAge</code>) leta hai aur ek <code>ValidatorFn</code> <em>return</em> karta hai (closure). <code>function minAge(age){ return (c) =&gt; c.value &lt; age ? {minAge:true} : null }</code>. Yahi Angular ke apne <code>Validators.minLength(n)</code> ka pattern hai.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Apna custom input component (jaise star-rating) ko reactive forms se kaise integrate karoge?</summary><div class="ans"><p><code>ControlValueAccessor</code> interface implement karo: <code>writeValue</code> (model→view), <code>registerOnChange</code> (view→model), <code>registerOnTouched</code>, <code>setDisabledState</code>. Component ko <code>NG_VALUE_ACCESSOR</code> provider se register karo. Tab <code>formControlName="rating"</code> tumhare component pe waise hi kaam karega jaise native input pe — validators bhi apply honge.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Cross-field validator laga par confirm field pe error highlight nahi ho raha (error form-level pe hai). Kaise dikhao/clear karo?</summary><div class="ans"><p>Group validator ka error group pe rehta hai, control pe nahi. Do options: (1) template mein <code>form.hasError('passwordMismatch')</code> check karke confirm ke paas message dikhao; (2) validator ke andar <code>group.get('confirm').setErrors({ mismatch: true })</code> set karo — par phir valid hone pe manually clear (<code>setErrors(null)</code>) bhi karna hoga warna atka rahega.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>ValidatorFn</code>: <code>(control) =&gt; ValidationErrors | null</code>. Optional field → null on empty.</li>
+<li>Parameterized → factory (returns ValidatorFn). Cross-field → validator on the <strong>FormGroup</strong>.</li>
+<li>Custom input in forms → implement <code>ControlValueAccessor</code> + <code>NG_VALUE_ACCESSOR</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-11.13 · Password match + strength</div><p>Signup form: password (custom strength validator — upper+lower+digit+8 chars) + confirm (cross-field match validator on the group). Dono errors ke specific messages dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-11.14 · Parameterized forbidden-username</div><p>Ek factory validator <code>forbiddenValue(...banned)</code> banao jo given list ke usernames reject kare. Reusable — do alag fields pe alag banned lists ke saath use karke dikhao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-11.15 · Star-rating CVA</div><p>Ek star-rating custom component banao jo <code>ControlValueAccessor</code> implement kare, taaki wo <code>formControlName="rating"</code> se reactive form mein plug ho. Required validator bhi apply karke dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 11 complete.</b><br>
+  Template-driven → reactive → FormBuilder → validators → async → dynamic (FormArray) → nested → custom validators.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. Next-gen: <b>Signal Forms</b> (v21, experimental) — Reactive abhi bhi production choice. Agla chapter: <b>State Management</b> ya <b>RxJS Deep-Dive</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch11_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

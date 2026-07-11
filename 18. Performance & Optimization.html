@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 18 — Performance &amp; Optimization | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 11 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 18 — <span>Performance</span> &amp; Optimization</h1>
+  <p class="subtitle">Enterprise Angular mein "kaam karta hai" kaafi nahi — <em>fast</em> hona chahiye: quick initial load, snappy interactions, no jank, chhota bundle. Ye chapter har major optimization technique cover karta hai jo real enterprise projects mein use hoti — ek <em>measure-first, WHY-first</em> story ke roop mein: pehle <strong>measure</strong> (Core Web Vitals + profiling), phir <strong>render fast</strong> (change detection, lists, virtual scroll), phir <strong>load less</strong> (lazy loading, <code>@defer</code>, preloading), phir <strong>assets optimize</strong> (images), phir <strong>server-render</strong> (SSR + incremental hydration), phir <strong>data optimize</strong> (caching, debounce), aur aakhir <strong>build/ship</strong> (bundle budgets, tree-shaking, service workers, memory). Ye MAANG/product interviews ka high-signal senior-level topic hai.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Perf: <b>Core Web Vitals</b> · Angular <b>v17→v21+</b></span>
+    <span class="chip">Sections: <b>11</b> · Parts: <b>187</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Performance Mindset &amp; Measurement</a><div class="sub">Core Web Vitals (LCP/INP/CLS) · Angular DevTools profiler · Lighthouse · budgets · measure first</div></li>
+    <li><a href="#s2">Change Detection Optimization</a><div class="sub">OnPush · signals · zoneless · no function calls in templates · pure pipes · runOutsideAngular</div></li>
+    <li><a href="#s3">Efficient List Rendering (track)</a><div class="sub">@for track · trackBy · DOM node reuse · why re-creation is slow · stable identity</div></li>
+    <li><a href="#s4">Virtual Scrolling &amp; Large Data</a><div class="sub">CDK virtual scroll · windowing · *cdkVirtualFor · pagination · rendering only what's visible</div></li>
+    <li><a href="#s5">Lazy Loading &amp; Code Splitting</a><div class="sub">loadComponent · loadChildren · standalone · route-level chunks · smaller initial bundle</div></li>
+    <li><a href="#s6">Deferrable Views (@defer)</a><div class="sub">on idle/viewport/interaction/hover/timer · prefetch · @placeholder/@loading/@error</div></li>
+    <li><a href="#s7">Preloading Strategies</a><div class="sub">PreloadAllModules · custom PreloadingStrategy · network-aware · anticipatory loading</div></li>
+    <li><a href="#s8">Image &amp; Asset Optimization</a><div class="sub">NgOptimizedImage · ngSrc · priority (LCP) · fill · placeholder · srcset · fonts</div></li>
+    <li><a href="#s9">SSR, Hydration &amp; Prerendering</a><div class="sub">SSR · full + incremental hydration · event replay · hybrid render modes · SSG</div></li>
+    <li><a href="#s10">Network &amp; Data Optimization</a><div class="sub">HTTP caching · shareReplay · debounce · request dedup · pagination · prefetch/resolvers</div></li>
+    <li><a href="#s11">Build, Bundle &amp; Memory Hygiene</a><div class="sub">bundle analysis · budgets · tree-shaking · AOT · Brotli · service workers · web workers · leaks</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>Performance Mindset &amp; Measurement</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>Core Web Vitals (LCP/INP/CLS) · measure-first discipline · Angular DevTools profiler · Chrome DevTools · Lighthouse · performance budgets · finding the real bottleneck</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Performance optimization ki foundation ek <em>mindset</em> hai: guess mat karo, <strong>measure karo</strong>. Pehle metrics define karo (kya "fast" ka matlab), phir profile karke asli bottleneck dhoondho, phir <em>usi</em> ko fix karo, phir dobara measure karke verify. Baaki poora chapter techniques deta — par ye section decide karta ki <em>kaunsi</em> technique kab lagani hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bina measurement ke optimization = guesswork. Log aksar galat cheez optimize karte (jo slow lagti, na ki jo actually slow hai) — effort waste, complexity add. "Premature optimization is the root of all evil." Measure-first ensure karta ki tum bottleneck pe kaam karo, aur prove kar sako ki fix ne actually help kiya.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Blind optimization. Data ke bina tum galat area optimize karte, ya micro-optimizations pe time waste karte jinka user-facing impact zero. Measurement objective priorities deta: sabse bada user-facing slowdown pehle, aur har change ka verified impact.</p>
+
+<h3 class="part">4. Internal Working — Core Web Vitals</h3>
+<div class="panel why"><div class="ptitle">The three user-centric metrics</div><p>Google ke <strong>Core Web Vitals</strong> real user-experience measure karte: (1) <strong>LCP (Largest Contentful Paint)</strong> — sabse bada content element (hero image/heading) kitni jaldi visible; loading speed. Target &lt; 2.5s. (2) <strong>INP (Interaction to Next Paint)</strong> — user interaction (click/type) se next visual update tak ka delay; responsiveness. Target &lt; 200ms. (INP ne 2024 mein FID ko replace kiya.) (3) <strong>CLS (Cumulative Layout Shift)</strong> — page load ke dauraan content kitna "jump" karta; visual stability. Target &lt; 0.1. Angular perf work in teeno ko target karta: LCP (fast load — lazy/SSR/images), INP (responsive — change detection/zoneless), CLS (stable — image dimensions/skeleton). Baaki metrics: <strong>TTI</strong> (time to interactive), <strong>FCP</strong> (first contentful paint), <strong>TBT</strong> (total blocking time).</p></div>
+
+<div class="dg-title">Diagram — the measure→optimize→verify loop</div>
+<pre class="diagram">
+  MEASURE ────▶ IDENTIFY ────▶ OPTIMIZE ────▶ VERIFY
+ (Lighthouse,   (biggest       (apply the     (re-measure:
+  DevTools,      bottleneck,    right          did it
+  profiler,      not guess)     technique)     actually help?)
+  Web Vitals)         ▲                              │
+                      └──────────────────────────────┘
+</pre>
+
+<h3 class="part">5. Execution Flow — a profiling session</h3>
+<pre class="diagram">
+ 1. Lighthouse audit ─▶ scores + Web Vitals + opportunities
+ 2. Chrome DevTools Performance ─▶ record ─▶ flame chart ─▶ find long tasks
+ 3. Angular DevTools Profiler ─▶ record ─▶ which components take CD time
+ 4. Bundle analysis ─▶ what's bloating the bundle
+ 5. fix the biggest offender ─▶ re-measure ─▶ compare
+</pre>
+
+<h3 class="part">6. Architecture — the tools</h3>
+<table>
+<tr><td>Lighthouse</td><td>Overall audit: Web Vitals, opportunities, PWA. In Chrome DevTools / CI.</td></tr>
+<tr><td>Chrome DevTools Performance</td><td>Flame charts, long tasks, main-thread blocking, layout thrashing.</td></tr>
+<tr><td>Angular DevTools Profiler</td><td>Per-component CD time, why a component re-checked, change-detection frequency.</td></tr>
+<tr><td>Web Vitals (field data)</td><td>Real-user metrics (CrUX, <code>web-vitals</code> lib) — lab vs field.</td></tr>
+<tr><td>Bundle budgets</td><td><code>angular.json</code> budgets → build fails if bundle exceeds limits.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — performance budgets in angular.json</h3>
+<div class="code-label">angular.json — fail the build if bundles bloat</div>
+<pre><code>"budgets": [
+  { "type": "initial", "maximumWarning": "500kb", "maximumError": "1mb" },
+  { "type": "anyComponentStyle", "maximumWarning": "2kb", "maximumError": "4kb" }
+]
+// CI enforces size limits → prevents silent bundle creep over time.
+// A budget is a guardrail: perf regressions get caught before merge.</code></pre>
+
+<h3 class="part">8. Beginner Example — measuring real interactions</h3>
+<div class="code-label">the web-vitals library</div>
+<pre><code>import { onLCP, onINP, onCLS } from 'web-vitals';
+onLCP(m =&gt; console.log('LCP', m.value));   // loading
+onINP(m =&gt; console.log('INP', m.value));   // responsiveness
+onCLS(m =&gt; console.log('CLS', m.value));   // visual stability
+// send these to analytics for FIELD data (real users), not just lab (Lighthouse).</code></pre>
+
+<h3 class="part">9. Advanced Example — profiling change detection</h3>
+<div class="code-label">finding CD hotspots</div>
+<pre><code>// Angular DevTools → Profiler → record an interaction →
+//   shows each component's change-detection time as a bar chart.
+// Look for: components checked too often, or taking too long per check.
+// Common culprits: function calls in templates, missing OnPush, huge lists.
+// Also: enable "Preserve log" + throttle CPU 4x to simulate low-end devices.</code></pre>
+
+<h3 class="part">10. Code Explanation — the discipline</h3>
+<ol>
+<li>Define "fast" via metrics (Core Web Vitals + app-specific).</li>
+<li>Measure with the right tool (Lighthouse overall, DevTools for detail).</li>
+<li>Identify the single biggest bottleneck (data, not intuition).</li>
+<li>Apply the matching technique (rest of this chapter).</li>
+<li>Re-measure → verify the improvement → repeat.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Optimize without measuring — galat area fix, real bottleneck untouched.</li>
+<li>Sirf lab data (Lighthouse) pe bharosa — field data (real users) alag ho sakta.</li>
+<li>Micro-optimizations pe time (jinka user-facing impact ~0) jab bada issue elsewhere.</li>
+<li>Fast machine pe test karna — low-end devices/slow networks pe throttle karke test karo.</li>
+<li>Fix karke re-measure na karna — "improvement" assume karna without proof.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Measure-first, always. Bottleneck data se find karo, guess se nahi.</li>
+<li>Core Web Vitals target karo (LCP/INP/CLS) — user-centric metrics.</li>
+<li>Lab (Lighthouse) + field (web-vitals/CrUX) dono track karo.</li>
+<li>CPU/network throttle karke low-end conditions simulate.</li>
+<li>Budgets set karo (angular.json) — regressions CI mein catch.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ye section khud "the performance of doing performance work" hai — measurement time invest karke tum sirf high-impact fixes karte (effort ROI maximize). Angular DevTools profiler CD hotspots pinpoint karta; Lighthouse overall picture; budgets regressions rokte. Sabse bada meta-lesson: 20% fixes 80% improvement dete — unhe find karna measurement ka kaam hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Lab vs field divergence</td><td>Lighthouse (lab) ≠ real users (field, varied devices/networks). Track both.</td></tr>
+<tr><td>Dev vs prod</td><td>Dev build slow (no AOT/minify); always profile production builds.</td></tr>
+<tr><td>Variance</td><td>Single run noisy — average multiple runs / use CI trends.</td></tr>
+<tr><td>INP tail</td><td>Worst interactions matter (p75/p95), not just average.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Core Web Vitals kya hain?</summary><div class="ans"><p>Google ke teen user-centric performance metrics: <strong>LCP</strong> (Largest Contentful Paint — loading speed, sabse bada content kab visible, target &lt;2.5s), <strong>INP</strong> (Interaction to Next Paint — responsiveness, interaction se next paint tak delay, target &lt;200ms, FID ko replace kiya), aur <strong>CLS</strong> (Cumulative Layout Shift — visual stability, content jumping, target &lt;0.1). Ye real user experience measure karte, isliye perf work ka north star.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Performance optimize karne se pehle kya karte ho?</summary><div class="ans"><p>Measure. Guess mat karo — profile karo. Lighthouse se overall audit + Web Vitals; Chrome DevTools Performance se flame chart + long tasks; Angular DevTools Profiler se per-component CD time; bundle analysis se size bloat. Biggest bottleneck identify karke <em>usi</em> ko fix karo, phir re-measure karke verify. Bina measurement ke tum galat cheez optimize karke effort waste karte ho.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Angular DevTools profiler kis liye?</summary><div class="ans"><p>Change detection profiling. Record karke ye dikhata hai har component ki CD kitni baar chali aur kitna time liya — CD hotspots pinpoint karta. Common findings: koi component bar-bar check ho raha (missing OnPush ya template function calls), ya ek component per-check slow (heavy binding). Isse pata chalta kahan OnPush/signals/trackBy lagana hai. Chrome DevTools general JS/rendering ke liye; Angular DevTools Angular-specific CD ke liye.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Manager bolte "app slow hai, OnPush sab jagah laga do". Tumhara response?</summary><div class="ans"><p>Pehle measure. "Slow" kahan — initial load (LCP), interactions (INP), ya scrolling? Blanket OnPush sabhi jagah premature — complexity add karta bina proof ke ki CD hi bottleneck hai. Main pehle Lighthouse + Angular DevTools profiler se actual bottleneck identify karunga. Agar CD hotspot mila toh <em>us area</em> mein OnPush/signals; agar bundle size ya images LCP maar rahe toh alag fix (lazy/NgOptimizedImage). Right technique for the measured problem — na ki blanket guess.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>MEASURE first. Core Web Vitals: LCP (&lt;2.5s load), INP (&lt;200ms responsiveness), CLS (&lt;0.1 stability).</li>
+<li>Tools: Lighthouse (audit), Chrome DevTools Perf (flame chart), Angular DevTools Profiler (CD time), bundle analysis.</li>
+<li>Loop: measure → find biggest bottleneck → fix → re-measure. Budgets in angular.json catch regressions.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.1 · Baseline audit</div><p>Ek app ka Lighthouse audit chalao (production build), teeno Core Web Vitals record karo. <code>web-vitals</code> lib se field-style logging add karo. Ek performance budget angular.json mein set karo.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-18.2 · Profile a hotspot</div><p>Ek deliberately-slow component (template function call + big list) banao. Angular DevTools Profiler se CD hotspot identify karo. Fix ke baad re-profile karke before/after compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Change Detection Optimization</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>OnPush · signals · zoneless · no function calls in templates · pure pipes · memoization · runOutsideAngular · detach · immutability</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Change detection (CD) optimization ka matlab: Angular kitni baar aur kitne components ke bindings check karta, use minimize karna. Kyunki CD har interaction/async pe chalti (Ch16), unnecessary/expensive CD sabse common runtime slowdown hai. Techniques: OnPush, signals, zoneless, pure expressions, aur zone-escaping.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Default CD har tick pe poore tree ko check karti (Ch16 S-04). Bade apps + frequent triggers (zone.js) mein ye INP (responsiveness) ka #1 killer ban jaata — main thread block, janky interactions. CD optimize karke tum fewer + cheaper checks karte, UI snappy rehta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Over-checking aur expensive re-evaluation. OnPush views skip karta; signals targeted updates dete; zoneless blanket-async ticks hatata; pure expressions redundant recompute rokte; runOutsideAngular high-frequency async ko CD se bahar rakhta. Sab milkar CD cost (frequency × components × work) minimize.</p>
+
+<h3 class="part">4. Internal Working — the CD cost levers</h3>
+<div class="panel why"><div class="ptitle">Reduce: frequency, scope, per-check work</div><p>CD cost = <em>frequency</em> (kitni baar tick) × <em>scope</em> (kitne views checked) × <em>per-check work</em> (bindings + expressions). Har lever attack karo: <strong>Scope</strong> — <code>OnPush</code> se non-dirty subtrees skip (Ch16 S-05); <strong>Frequency</strong> — <code>zoneless</code> (Ch16 S-08) se sirf real changes pe tick, blanket-async nahi; aur <code>runOutsideAngular</code> se high-frequency async (rAF, mousemove) ko zone ke bahar (no ticks); <strong>Per-check work</strong> — template mein <code>{{ fn() }}</code> function calls avoid (har tick re-run) — pure pipes ya <code>computed</code> signals se memoize. <strong>Signals</strong> teeno improve karte: fine-grained (sirf affected consumers update), zoneless-native, aur <code>computed</code> memoized. Modern approach: signals + OnPush + (eventually) zoneless.</p></div>
+
+<div class="dg-title">Diagram — the three levers</div>
+<pre class="diagram">
+ CD cost = FREQUENCY × SCOPE × PER-CHECK WORK
+             │           │          │
+   zoneless ─┘   OnPush ─┘   pure pipes / computed ─┘
+   runOutside      (skip        (memoize; no fn calls
+   Angular         subtrees)     in templates)
+   signals ──────── improve ALL THREE ──────────────
+</pre>
+
+<h3 class="part">5. Execution Flow — signals + OnPush</h3>
+<pre class="diagram">
+ signal.set(x) ─▶ only views reading that signal marked ─▶ targeted CD
+ OnPush view: skipped unless (new input ref | event | async pipe | signal | markForCheck)
+ computed(): memoized — recomputes only when its signal deps change
+ runOutsideAngular(fn): fn runs with NO CD triggered
+</pre>
+
+<h3 class="part">6. Architecture — the techniques</h3>
+<table>
+<tr><td>OnPush</td><td>Skip a component's CD unless triggered (Ch16 S-05). Biggest single CD win.</td></tr>
+<tr><td>Signals</td><td>Fine-grained reactivity; <code>computed</code> memoizes; OnPush/zoneless-friendly.</td></tr>
+<tr><td>Zoneless</td><td>CD only on explicit changes; no blanket async ticks (Ch16 S-08).</td></tr>
+<tr><td>No template fn calls</td><td>Replace <code>{{ fn() }}</code> with computed / pure pipe / precomputed value.</td></tr>
+<tr><td>Pure pipes</td><td>Memoized by input — cheaper than function calls for derived values.</td></tr>
+<tr><td><code>runOutsideAngular</code> / <code>detach</code></td><td>Escape CD for high-frequency work (Ch16 S-03/S-07).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — replacing function calls</h3>
+<div class="code-label">the #1 template perf fix</div>
+<pre><code>// ❌ runs on EVERY change detection tick:
+// template: {{ getFullName() }}  {{ items.filter(i =&gt; i.active).length }}
+
+// ✅ computed signal — memoized, recomputes only when deps change:
+fullName = computed(() =&gt; `${this.first()} ${this.last()}`);
+activeCount = computed(() =&gt; this.items().filter(i =&gt; i.active).length);
+// template: {{ fullName() }}  {{ activeCount() }}
+
+// ✅ or a pure pipe (memoized by input):
+// template: {{ items | activeCount }}</code></pre>
+
+<h3 class="part">8. Beginner Example — OnPush + signals</h3>
+<div class="code-label">the modern default component</div>
+<pre><code>@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,   // skip unless triggered
+  template: `{{ count() }} — {{ double() }}`,
+})
+export class CounterComponent {
+  count = signal(0);
+  double = computed(() =&gt; this.count() * 2);   // memoized
+  inc() { this.count.update(n =&gt; n + 1); }      // fine-grained update
+}</code></pre>
+
+<h3 class="part">9. Advanced Example — runOutsideAngular for hot paths</h3>
+<div class="code-label">escaping CD for 60fps work</div>
+<pre><code>private zone = inject(NgZone);
+startAnimation() {
+  this.zone.runOutsideAngular(() =&gt; {          // no CD per frame
+    const loop = () =&gt; { this.render(); requestAnimationFrame(loop); };
+    loop();
+  });
+}
+onComplete(result: string) {
+  this.zone.run(() =&gt; this.status.set(result));  // re-enter → one CD
+}
+// 60 frames/sec without 60 CD passes/sec.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>OnPush — view har tick check nahi hoti, sirf trigger pe.</li>
+<li>Signals — <code>count.set</code> sirf affected views mark karta (targeted).</li>
+<li><code>computed</code> — derived value memoized (deps na badle toh cached).</li>
+<li>Template fn calls → computed/pure pipe (no per-tick re-run).</li>
+<li><code>runOutsideAngular</code> — high-frequency async CD-free; <code>run</code> se re-enter.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Template mein function/getter calls — har tick re-run (sabse common CD perf bug).</li>
+<li>OnPush ke saath mutable objects — reference same → stale UI (Ch16 S-05).</li>
+<li>Impure pipe use karna jahan pure kaafi — pure memoizes, impure har tick.</li>
+<li>High-frequency async zone ke andar — har event full CD.</li>
+<li>OnPush blindly sab jagah bina measure — complexity without proven benefit (S-01).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Signals-first + OnPush naye components mein — fine-grained + skippable.</li>
+<li>Template expressions cheap + pure; derived values → <code>computed</code>/pure pipes.</li>
+<li>High-frequency async → <code>runOutsideAngular</code>; enterprise → zoneless (Ch16 S-08).</li>
+<li>Immutable updates (naya reference) OnPush ke saath.</li>
+<li>Measure (S-01) — CD optimization jahan profiler hotspot dikhaye.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>CD optimization INP (responsiveness) ka biggest lever. OnPush bade trees mein checked-views drastically kam karta. Signals fine-grained — sirf badla widget update. Zoneless blanket over-triggering hatata. Template function-call elimination + pure pipes redundant compute rokte. runOutsideAngular 60fps work ko main-thread-friendly rakhta. Combined: janky → smooth interactions. (Deep dive: Chapter 16.)</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Signals in zoneless</td><td>Ideal combo — signals precisely drive CD, no zone overhead.</td></tr>
+<tr><td>Impure pipe need</td><td>Rare (time-based) — accept per-tick cost knowingly.</td></tr>
+<tr><td>Third-party libs + zone</td><td>Some rely on zone.js — verify before zoneless.</td></tr>
+<tr><td>detach discipline</td><td>Detached views need manual detectChanges (Ch16 S-07) — leak/stale risk.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> CD optimize karne ke main tareeke?</summary><div class="ans"><p><strong>OnPush</strong> (views skip unless triggered), <strong>signals</strong> (fine-grained + <code>computed</code> memoization + zoneless-friendly), <strong>zoneless</strong> (CD only on real changes, no blanket async), template mein <strong>function calls avoid</strong> (pure pipes/computed se replace), aur <strong>runOutsideAngular</strong> (high-frequency async ko CD se bahar). Sab CD cost (frequency × scope × per-check work) ko attack karte.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Template mein <code>{{ getData() }}</code> kyun perf problem hai aur fix?</summary><div class="ans"><p>Har CD tick pe woh function re-execute hota (Angular result cache nahi karta). Default CD + zone.js mein har mousemove/timer/click → tick → function phir chalti — heavy function pe massive waste. Fix: value ko <code>computed</code> signal banao (memoized — deps na badle toh cached), ya pure pipe use karo (input se memoized), ya change pe precompute karke ek property mein rakho. Template expression ko cheap + pure rakho.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Signals CD ke liye kyun better?</summary><div class="ans"><p>Signals fine-grained reactivity dete — jab ek signal badalta, sirf woh views/computeds update hote jo use padhte hain, na ki poora tree. <code>computed</code> automatically memoize karta. Signals OnPush views ko auto-mark karte aur zoneless ke saperfect fit hain (scheduler ko precisely batate kya badla). Yani signals CD ke teeno levers — frequency, scope, per-check work — improve karte.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek canvas-heavy dashboard 60fps animate kar raha par poora app janky ho gaya. CD-side fix?</summary><div class="ans"><p>Animation loop (rAF, 60x/sec) probably zone ke andar chal raha — har frame full CD trigger. Fix: loop ko <code>ngZone.runOutsideAngular(...)</code> mein rakho (zone bypass, no CD per frame). Jab actually UI status update karni ho, <code>ngZone.run(() =&gt; signal.set(...))</code> se re-enter karke ek CD. Ya canvas component ko <code>detach()</code> karke throttled <code>detectChanges()</code> (Ch16 S-07). Isse 60fps rendering ke saath main thread CD-free rehta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>CD cost = frequency × scope × per-check work. Attack all three.</li>
+<li>OnPush (scope) + signals/computed (all three, memoized) + zoneless (frequency) + no template fn calls (per-check).</li>
+<li>runOutsideAngular/detach for high-frequency async. Signals + OnPush = modern default. (Deep dive: Ch16.)</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.3 · Kill the function bindings</div><p>Ek component with 3 template function calls banao, profiler se per-tick re-run prove karo. Sabko <code>computed</code> signals mein convert karke CD time drop measure karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.4 · OnPush + signals refactor</div><p>Ek Default, mutable-state component ko OnPush + signals mein refactor karo. Angular DevTools Profiler se before/after checked-views aur CD time compare karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Efficient List Rendering (track)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>@for track · trackBy · DOM node reuse · stable identity · why re-creation is slow · track by id vs index · list diffing</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>@for</code> (aur purana <code>*ngFor</code>) lists render karta. <strong>track</strong> Angular ko batata ki kaunsi property se ek item ko uniquely identify kare (usually <code>item.id</code>). Isse jab list badalti, Angular purane DOM nodes ko <em>reuse</em> kar sakta un items ke liye jo same hain — sab kuch destroy+recreate karne ke bajaye. Modern Angular mein <code>@for</code> ke saath <code>track</code> <strong>mandatory</strong> hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bina track, Angular list badalne pe items ko identify nahi kar pata — toh kaafi cases mein poore list ke DOM nodes destroy karke naye banata (expensive: DOM ops + component re-init + lost state jaise input focus/scroll). track se Angular "ye wahi item hai" samajhkar nodes reuse karta — bahut fewer DOM operations.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Unnecessary DOM re-creation. Bade/frequently-updating lists mein (tables, feeds), bina track har update poore DOM ko re-render karwa sakta — slow + janky + lost UI state. track stable identity deta, toh sirf actually-changed items ke nodes touch hote — minimal DOM work.</p>
+
+<h3 class="part">4. Internal Working — identity-based diffing</h3>
+<div class="panel why"><div class="ptitle">track = "kaunsa item wahi item hai"</div><p>Jab list array badalti, Angular purani aur nayi list ko diff karta. <code>track</code> expression (jaise <code>track item.id</code>) har item ki <em>identity key</em> deta. Angular keys ko compare karta: jo key dono lists mein hai → uska DOM node <strong>reuse</strong> (bas data update); jo nayi hai → naya node create; jo hat gayi → node remove. Bina track (ya <code>track $index</code> jab items reorder hote), Angular identity galat samajh sakta — jaise index-based tracking mein agar tum list ke start pe item insert karo, saare indices shift ho jaate, toh Angular sochta har item badal gaya → sab re-render. <code>track item.id</code> (stable unique id) sabse reliable hai. Reuse se DOM ops, component re-init, aur UI state (focus/scroll/animations) sab preserve hote.</p></div>
+
+<div class="dg-title">Diagram — track reuses nodes</div>
+<pre class="diagram">
+ old: [A, B, C]   new: [A, X, B, C]   (X inserted)
+
+ track item.id:  A→reuse, B→reuse, C→reuse, X→create   (1 DOM insert)
+ no track / bad: possibly destroy B,C + recreate as X,B,C  (many DOM ops)
+
+ stable id ─▶ Angular knows A,B,C are the SAME items ─▶ reuse their nodes
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ list changes ─▶ Angular diffs old vs new by track key
+   key exists in both ─▶ REUSE node, update bindings
+   key is new         ─▶ CREATE node
+   key removed        ─▶ DESTROY node
+ result: minimal DOM mutations (only real changes)
+</pre>
+
+<h3 class="part">6. Architecture — the syntax</h3>
+<table>
+<tr><td><code>@for (item of items; track item.id)</code></td><td>Modern control flow; <code>track</code> is REQUIRED.</td></tr>
+<tr><td><code>*ngFor="let i of items; trackBy: fn"</code></td><td>Legacy; <code>trackBy</code> function returns the key.</td></tr>
+<tr><td><code>track item.id</code></td><td>Best — stable unique identity.</td></tr>
+<tr><td><code>track $index</code></td><td>OK only for static/append-only lists (bad if items reorder/insert).</td></tr>
+<tr><td>Reuse benefits</td><td>Fewer DOM ops, preserved component state, smoother animations.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">@for with proper track</div>
+<pre><code>@Component({
+  template: `
+    @for (user of users(); track user.id) {
+      &lt;app-user-card [user]="user" /&gt;
+    } @empty {
+      &lt;p&gt;No users found&lt;/p&gt;
+    }
+  `,
+})
+export class UserListComponent {
+  users = signal&lt;User[]&gt;([]);
+  // when users() changes, only added/removed/changed cards touch the DOM.
+  // existing cards keep their state (expanded sections, focus, etc.)
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — legacy trackBy</h3>
+<div class="code-label">*ngFor trackBy</div>
+<pre><code>// template: &lt;li *ngFor="let item of items; trackBy: trackById"&gt;{{ item.name }}&lt;/li&gt;
+trackById(index: number, item: Item) { return item.id; }   // return the stable key
+// @for (item of items; track item.id) does this inline — cleaner.</code></pre>
+
+<h3 class="part">9. Advanced Example — why $index breaks on reorder</h3>
+<div class="code-label">the classic track bug</div>
+<pre><code>// track $index with a list that reorders/prepends:
+// old: [{id:1},{id:2}]  → indices 0,1
+// prepend {id:3}: [{id:3},{id:1},{id:2}] → indices 0,1,2
+// Angular sees index 0 changed (1→3), index 1 changed (2→1), index 2 new
+//   → re-renders nodes that didn't need to change; input focus/state lost.
+// FIX: track item.id → Angular sees 1,2 are the SAME items → reuses their nodes.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>@for (x of list; track x.id)</code> — id = stable identity.</li>
+<li>List change pe Angular keys diff karta (reuse/create/destroy).</li>
+<li>Same key → node reuse (data update, state preserved).</li>
+<li><code>track $index</code> reorder pe identity galat samajhta — id prefer.</li>
+<li><code>@empty</code> block empty-list ke liye.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>track $index</code> reorder/insert wali lists mein — spurious re-renders + lost state.</li>
+<li>Legacy <code>*ngFor</code> bina <code>trackBy</code> — object-reference-based diffing = poora re-render on new array.</li>
+<li>track expression mein object return karna (na ki primitive key) — identity comparison toot sakta.</li>
+<li>Sochna track cosmetic hai — bade lists mein ye major perf + state-preservation.</li>
+<li>Har render pe naya array banakar (immutable) bina track — sab items "naye" lagte.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li><code>@for</code> ke saath hamesha <code>track item.id</code> (stable unique id).</li>
+<li><code>$index</code> sirf static/append-only lists mein (no reorder/insert).</li>
+<li>Legacy <code>*ngFor</code> → hamesha <code>trackBy</code> function (id return).</li>
+<li>Bade lists → track + virtual scrolling (S-04) combine.</li>
+<li>Track key primitive (id/string) rakho, object nahi.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>track ka win DOM operations mein — bade lists (hundreds/thousands rows) jo frequently update hote (live tables, feeds) mein, proper track destroy+recreate ke storm ko reuse mein badal deta: fewer DOM mutations, no component re-init, preserved state/animations. Ye ek chhota syntax change hai par high-impact — profiler mein list-render time drastically girta. Virtual scrolling (S-04) ke saath combine = large-list gold standard.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>No stable id</td><td>Backend id na de toh client-side stable id assign karo (map on load).</td></tr>
+<tr><td>Duplicate ids</td><td>track keys unique hone chahiye — duplicates undefined behavior.</td></tr>
+<tr><td>Primitive lists</td><td><code>track item</code> (value itself) if items are unique primitives.</td></tr>
+<tr><td>$index legit</td><td>Static, never-reordered lists mein $index fine (id na ho toh).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>@for</code> mein <code>track</code> kya karta hai?</summary><div class="ans"><p>Angular ko batata ki ek list item ko uniquely kaise identify kare (usually <code>item.id</code>). Isse jab list badalti, Angular purane DOM nodes ko reuse kar sakta un items ke liye jo same hain — sab destroy+recreate karne ke bajaye. Fewer DOM operations, preserved component state. Modern <code>@for</code> mein track <strong>mandatory</strong> hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>track item.id</code> vs <code>track $index</code>?</summary><div class="ans"><p><code>track item.id</code> stable unique identity deta — items reorder/insert hone pe bhi Angular sahi samajhta kaunsa item wahi hai, nodes reuse karta. <code>track $index</code> position (index) se track karta — agar list ke start/middle mein item insert ya reorder ho, indices shift ho jaate, Angular sochta har item badal gaya → unnecessary re-renders + lost state (focus/scroll). <code>id</code> almost hamesha better; <code>$index</code> sirf static/append-only lists mein safe.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Bina track (ya bina trackBy) kya hota hai?</summary><div class="ans"><p>Legacy <code>*ngFor</code> bina <code>trackBy</code> object reference se diff karta — agar tum immutably naya array banate (naye object references), Angular sochta saare items naye hain → poora list destroy+recreate. Ye DOM-heavy, component re-init karta, aur UI state (input focus, scroll, animations) lose karta. Modern <code>@for</code> track ko mandatory bana deta taaki ye trap avoid ho. Hamesha stable id se track karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek editable table mein type karte waqt input focus randomly khoti hai jab background data refresh hota. Kyun aur fix?</summary><div class="ans"><p>Probably list <code>track $index</code> (ya no proper track) use kar rahi, aur data refresh pe array reorder/replace ho raha. Angular items ki identity galat samajhta → rows ke DOM nodes destroy+recreate → focused input ka element hi replace ho jaata → focus lost. Fix: <code>track item.id</code> (stable unique id) use karo — Angular existing rows ko same identify karke unke DOM nodes (aur focus) reuse karta, sirf badla data update. Focus preserved.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>@for (x of list; track x.id)</code> — track REQUIRED. Enables DOM node REUSE (vs destroy+recreate).</li>
+<li><code>track item.id</code> (stable) &gt;&gt; <code>track $index</code> (breaks on reorder/insert → lost state).</li>
+<li>Legacy <code>*ngFor</code> → always <code>trackBy</code>. Fewer DOM ops + preserved state (focus/scroll). Combine with virtual scroll for big lists.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.5 · Reproduce the focus bug</div><p>Ek editable list banao with <code>track $index</code>. Prepend/reorder pe input focus loss reproduce karo. <code>track item.id</code> se fix karke difference dikhao (+ DOM ops count in DevTools).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.6 · Diff visualization</div><p>1000-item list mein har second 10 items update/reorder karo. track-by-id vs track-by-index vs no-trackBy ka DOM-mutation count aur render time compare karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Virtual Scrolling &amp; Large Data</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>CDK virtual scroll · windowing · cdk-virtual-scroll-viewport · *cdkVirtualFor · itemSize · only render visible · pagination · infinite scroll</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Virtual scrolling (windowing) ek technique hai jismein ek badi list ke sirf woh items DOM mein render hote jo abhi <strong>viewport mein visible</strong> hain (plus thoda buffer) — chahe list mein 10,000 items hon. Jaise user scroll karta, DOM nodes recycle hote. Angular CDK ka <code>cdk-virtual-scroll-viewport</code> + <code>*cdkVirtualFor</code> ye deta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>10,000 rows ko DOM mein render karna = 10,000 DOM nodes + components. Ye browser ko ghutne pe la deta: slow initial render, huge memory, janky scroll. Par screen pe sirf ~20 rows dikhte hain! Virtual scrolling sirf woh ~20 render karke baaki ka <em>illusion</em> deta (spacer se scroll height maintain) — 10,000 ka experience, 20 ka cost.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Large-list DOM explosion. Thousands of rows = unusable perf. Virtual scrolling DOM node count ko constant (~visible + buffer) rakhta chahe data kitna bhi ho — O(visible) instead of O(total). Initial render fast, memory low, scroll smooth.</p>
+
+<h3 class="part">4. Internal Working — windowing</h3>
+<div class="panel why"><div class="ptitle">Render only the window; recycle on scroll</div><p><code>cdk-virtual-scroll-viewport</code> ek fixed-height scrollable container hai. Ye total list ki height ko calculate karta (<code>itemSize</code> × count) aur ek bada spacer se woh height "fake" karta — toh scrollbar sahi lagta jaise poori list hai. Par actually sirf viewport mein fit hone wale items (+ buffer above/below) ke DOM nodes create hote (<code>*cdkVirtualFor</code>). Jaise user scroll karta, viewport calculate karta ki ab kaunse items visible hone chahiye, aur DOM nodes ko <strong>recycle</strong> karta — purane (scrolled-out) nodes ka data naye (scrolling-in) items se replace, position adjust. Yani DOM node count constant rehta (~visible), data window shift hota. <code>itemSize</code> (fixed row height) se calculations fast; variable heights ke liye autosize (thoda costly).</p></div>
+
+<div class="dg-title">Diagram — only the window is real</div>
+<pre class="diagram">
+ data: 10,000 items          DOM: ~20 nodes (visible + buffer)
+ ┌─────────────┐  spacer      ┌──────────┐ ← viewport (fixed height)
+ │ items 0-4990│  (fake       │ item 4991│
+ │  (not in    │   height)    │ item 4992│  ← only these render
+ │   DOM)      │              │ ...      │
+ │ items 5011+ │              │ item 5010│
+ └─────────────┘              └──────────┘
+ scroll ─▶ recycle nodes: data window shifts, node count stays ~20
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ &lt;cdk-virtual-scroll-viewport itemSize="50"&gt;
+   *cdkVirtualFor renders only visible+buffer items
+ user scrolls ─▶ viewport computes new visible range
+   ─▶ recycle DOM nodes with new items' data ─▶ constant node count
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>cdk-virtual-scroll-viewport</code></td><td>Scrollable container (from <code>ScrollingModule</code>).</td></tr>
+<tr><td><code>itemSize</code></td><td>Fixed item height (px) — enables fast range math.</td></tr>
+<tr><td><code>*cdkVirtualFor</code></td><td>Like <code>@for</code>/<code>*ngFor</code> but only renders the window. Supports <code>trackBy</code>.</td></tr>
+<tr><td>Autosize</td><td><code>VIRTUAL_SCROLL_STRATEGY</code> / autosize for variable heights (costlier).</td></tr>
+<tr><td>Alternatives</td><td>Pagination, infinite scroll — for server-side large data.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">CDK virtual scroll</div>
+<pre><code>import { ScrollingModule } from '@angular/cdk/scrolling';
+
+@Component({
+  imports: [ScrollingModule],
+  template: `
+    &lt;cdk-virtual-scroll-viewport itemSize="50" class="viewport"&gt;
+      &lt;div *cdkVirtualFor="let user of users; trackBy: trackById" class="row"&gt;
+        {{ user.name }}
+      &lt;/div&gt;
+    &lt;/cdk-virtual-scroll-viewport&gt;
+  `,
+  styles: [`.viewport { height: 400px; } .row { height: 50px; }`],
+})
+export class BigListComponent {
+  users = Array.from({ length: 10000 }, (_, i) =&gt; ({ id: i, name: `User ${i}` }));
+  trackById(_: number, u: { id: number }) { return u.id; }
+}
+// 10,000 items, but only ~10-15 &lt;div&gt; nodes exist in the DOM at any time.</code></pre>
+
+<h3 class="part">8. Beginner Example — the core idea</h3>
+<div class="code-label">why it's fast</div>
+<pre><code>// WITHOUT virtual scroll: 10,000 rows → 10,000 DOM nodes
+//   → slow initial render, high memory, janky scroll
+// WITH virtual scroll: 10,000 rows → ~15 DOM nodes (only visible)
+//   → instant render, low memory, smooth scroll
+// the scrollbar still shows "10,000 rows worth" via a spacer element.</code></pre>
+
+<h3 class="part">9. Advanced Example — pagination vs virtual scroll vs infinite scroll</h3>
+<div class="code-label">choosing the large-data strategy</div>
+<pre><code>// VIRTUAL SCROLL: all data client-side, render only visible. Best for large
+//   client-side datasets (already loaded).
+// PAGINATION: load &amp; show N per page (server-side). Best when data is huge and
+//   you don't want to load it all — classic tables.
+// INFINITE SCROLL: load more as you scroll to the bottom (server-side).
+//   Feeds/social. Can combine with virtual scroll for rendered-node control.
+// Rule: don't load 10k rows if you can paginate; virtualize what you must render.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>cdk-virtual-scroll-viewport</code> — fixed-height scroll container.</li>
+<li><code>itemSize="50"</code> — row height for range math.</li>
+<li><code>*cdkVirtualFor</code> — renders only visible+buffer items (+ trackBy).</li>
+<li>Spacer se full scroll height maintain (scrollbar sahi).</li>
+<li>Scroll pe nodes recycle — constant DOM node count.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>10,000 rows plain <code>@for</code> se render karna — DOM explosion, jank.</li>
+<li>Viewport ko fixed height na dena — virtual scroll ko viewport bounds chahiye.</li>
+<li><code>itemSize</code> galat (actual row height se mismatch) — jumpy scroll/gaps.</li>
+<li>Variable-height rows ke liye fixed <code>itemSize</code> — autosize strategy chahiye.</li>
+<li>Sab data client-side load karna jab pagination/server-side better tha.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Large client-side lists → CDK virtual scroll (<code>itemSize</code> + <code>*cdkVirtualFor</code>).</li>
+<li>Virtual scroll + <code>trackBy</code> combine — recycle + reuse.</li>
+<li>Server-side huge data → pagination/infinite scroll (don't load all).</li>
+<li>Fixed row height where possible (fast math); autosize only if needed.</li>
+<li>Viewport ko explicit height do.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Virtual scrolling DOM node count ko O(total) se O(visible) le aata — 10,000-row list ~15 nodes mein. Initial render instant (thousands ke bajaye ~15 create), memory low (fewer components), scroll smooth (recycle, no mass re-render). Ye large-list perf ka single biggest lever. Pagination network + memory dono bachata (data hi na load). Combine track + virtual scroll for best.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Variable heights</td><td>Autosize strategy (costlier); ya fixed-height design.</td></tr>
+<tr><td>Horizontal scroll</td><td><code>orientation="horizontal"</code> supported.</td></tr>
+<tr><td>Nested scroll</td><td>Viewport-in-viewport tricky — careful layout.</td></tr>
+<tr><td>Jump-to-item</td><td><code>scrollToIndex</code> for programmatic scroll.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Virtual scrolling kya hai aur kyun?</summary><div class="ans"><p>Ek technique jismein badi list ke sirf viewport-visible items (+ buffer) DOM mein render hote, chahe list mein hazaaron items hon. Scroll pe DOM nodes recycle hote. Kyun: 10,000 rows = 10,000 DOM nodes = slow render + high memory + jank, jabki screen pe ~20 dikhte. Virtual scroll DOM node count constant (~visible) rakhta — large list ka experience, small cost. Angular CDK: <code>cdk-virtual-scroll-viewport</code> + <code>*cdkVirtualFor</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Virtual scrolling internally kaise kaam karta?</summary><div class="ans"><p>Viewport total list height ko <code>itemSize</code> × count se calculate karke ek spacer se woh height "fake" karta (scrollbar sahi lagta). Par sirf visible + buffer items ke DOM nodes create hote. Scroll pe viewport naya visible range compute karke DOM nodes ko recycle karta — purane (scrolled-out) nodes ka data naye items se replace, position adjust. Yani node count constant, data window shift. Fixed <code>itemSize</code> se range math fast.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Virtual scroll vs pagination vs infinite scroll?</summary><div class="ans"><p><strong>Virtual scroll:</strong> data client-side loaded, render only visible — large client-side datasets ke liye. <strong>Pagination:</strong> N-per-page load+show (server-side) — huge data jise poora load nahi karna. <strong>Infinite scroll:</strong> scroll-to-bottom pe aur load (server-side) — feeds. Rule: 10k rows load mat karo agar paginate kar sakte; jo render karna hai use virtualize karo. Bade cases mein pagination + virtual scroll combine.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek data table 5,000 rows dikhata hai aur page load pe 4 second freeze hota, scroll janky. Fix?</summary><div class="ans"><p>5,000 rows plain render = 5,000 DOM nodes/components — initial render freeze + janky scroll. Fix: CDK virtual scrolling — <code>cdk-virtual-scroll-viewport</code> with <code>itemSize</code> + <code>*cdkVirtualFor</code> — sirf ~15-20 visible rows render honge, DOM node count constant. Initial render instant, scroll smooth. Agar data server se aata aur zaroori nahi sab ek saath, toh pagination/server-side loading add karo (data hi na load karo). Plus <code>trackBy</code> for node reuse.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Virtual scroll = render only viewport-visible items (+buffer); recycle nodes on scroll. DOM count O(visible) not O(total).</li>
+<li>CDK: <code>cdk-virtual-scroll-viewport itemSize=".."</code> + <code>*cdkVirtualFor</code> (+ trackBy). Viewport needs fixed height.</li>
+<li>Large client-side → virtualize. Huge server data → paginate/infinite-scroll (don't load all).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.7 · Virtualize 10k rows</div><p>10,000-row list pehle plain <code>@for</code> se render karo (freeze observe), phir CDK virtual scroll se. DOM node count (DevTools Elements) + initial render time compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.8 · Strategy decision</div><p>3 scenarios (10k client-side rows, 1M server rows table, social feed) ke liye virtual-scroll / pagination / infinite-scroll choose karke justify karo. Ek ko implement karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Lazy Loading &amp; Code Splitting</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>loadComponent · loadChildren · standalone lazy routes · code splitting · chunks · smaller initial bundle · faster startup · route-level splitting</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Lazy loading matlab code ko <strong>on-demand</strong> load karna — jab actually zaroorat ho, na ki upfront. Angular routes ko lazy banate ho (<code>loadComponent</code>/<code>loadChildren</code>): ek feature ka code ek alag <strong>chunk</strong> (bundle) mein split hota jo tabhi download hota jab user us route pe jaata. Initial bundle chhota → faster startup.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Agar poori app ek bade bundle mein ho, user ko homepage dekhne ke liye admin-panel + settings + reports sab ka code download karna padega — bhale woh kabhi na jaaye. Ye initial load slow karta (LCP/TTI). Lazy loading sirf zaroori code pehle bhejta, baaki jab chahiye tab — startup fast.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Monolithic bundle bloat. Sab kuch upfront = bada initial download = slow first load. Code splitting app ko route-based chunks mein todta; user sirf woh download karta jo use chahiye. Initial bundle minimal, subsequent features on-demand.</p>
+
+<h3 class="part">4. Internal Working — build-time code splitting</h3>
+<div class="panel why"><div class="ptitle">Dynamic import() → separate chunk</div><p>Jab tum route mein <code>loadComponent: () =&gt; import('./admin.component')</code> likhte ho, build tool (esbuild/webpack) us dynamic <code>import()</code> ko dekhkar us component (aur uski dependencies) ko ek <strong>alag chunk file</strong> mein split kar deta — main bundle se bahar. Runtime pe, jab user us route pe navigate karta, Angular router us chunk ko dynamically fetch karta (network request), phir component render. Ye <strong>route-level code splitting</strong> hai. Standalone components ne ise aur clean banaya (<code>loadComponent</code> for a single standalone component; <code>loadChildren</code> for a lazy route sub-tree). Guards (<code>canMatch</code>, Ch17 S-05) chunk download ko bhi gate kar sakte — unauthorized users ke liye code hi na bheja jaaye. Standalone components (v14+, default v17+) better tree-shaking + finer splitting dete NgModules se.</p></div>
+
+<div class="dg-title">Diagram — code splitting</div>
+<pre class="diagram">
+ build: main.js (home + shell)   admin-chunk.js   reports-chunk.js
+        ↑ loaded on startup       ↑ loaded when     ↑ loaded when
+                                    /admin visited     /reports visited
+
+ initial download = main.js only (small) → fast startup
+ navigate /admin ─▶ fetch admin-chunk.js on demand ─▶ render
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ route { path:'admin', loadComponent: () =&gt; import('./admin') }
+ startup ─▶ only main bundle loads
+ user clicks "Admin" ─▶ router fetches admin chunk ─▶ component renders
+ (canMatch guard can block the fetch entirely for unauthorized users)
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>loadComponent: () =&gt; import(...)</code></td><td>Lazy-load a single standalone component.</td></tr>
+<tr><td><code>loadChildren: () =&gt; import(...)</code></td><td>Lazy-load a sub-route tree (returns Routes / NgModule).</td></tr>
+<tr><td>Standalone</td><td>Default in v17+; cleaner splitting, better tree-shaking than NgModules.</td></tr>
+<tr><td><code>canMatch</code> guard</td><td>Gate the chunk download (Ch17 S-05) — security + perf.</td></tr>
+<tr><td>Chunks</td><td>Build tool auto-splits at dynamic <code>import()</code> boundaries.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">app.routes.ts — lazy routes</div>
+<pre><code>export const routes: Routes = [
+  { path: '', component: HomeComponent },                    // eager (in main)
+  {
+    path: 'dashboard',
+    loadComponent: () =&gt; import('./dashboard/dashboard.component')
+      .then(m =&gt; m.DashboardComponent),                      // lazy chunk
+  },
+  {
+    path: 'admin',
+    canMatch: [adminGuard],                                  // gate the download
+    loadChildren: () =&gt; import('./admin/admin.routes')
+      .then(m =&gt; m.ADMIN_ROUTES),                            // lazy sub-tree
+  },
+];
+// only Home is in the initial bundle; dashboard/admin load on demand.</code></pre>
+
+<h3 class="part">8. Beginner Example — the split</h3>
+<div class="code-label">eager vs lazy</div>
+<pre><code>// EAGER (in initial bundle — loads at startup):
+{ path: 'home', component: HomeComponent }
+
+// LAZY (separate chunk — loads when visited):
+{ path: 'reports', loadComponent: () =&gt; import('./reports') }
+// rule: keep the initial bundle to the shell + landing; lazy-load the rest.</code></pre>
+
+<h3 class="part">9. Advanced Example — component-level lazy (beyond routes)</h3>
+<div class="code-label">lazy without a route → @defer (S-06)</div>
+<pre><code>// route-level lazy loading is great, but for HEAVY components that aren't
+// their own route (a chart, a rich editor, a map), use @defer (S-06):
+// @defer (on viewport) { &lt;heavy-chart /&gt; } @placeholder { &lt;div&gt;...&lt;/div&gt; }
+// @defer code-splits the component into its own chunk too — loaded on a trigger.
+// So: routes → loadComponent/loadChildren; in-page heavy bits → @defer.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>loadComponent: () =&gt; import(...)</code> — dynamic import → separate chunk.</li>
+<li>Build tool import boundary pe code split karta.</li>
+<li>Startup pe sirf main bundle; route visit pe chunk fetch.</li>
+<li><code>canMatch</code> unauthorized users ke liye chunk download block.</li>
+<li>Standalone components cleaner splitting + tree-shaking.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sab kuch eager rakhna — bada initial bundle, slow startup.</li>
+<li>Heavy libs (charts, editors) ko eagerly import karna jab lazy/defer better.</li>
+<li>Lazy route ko main se import karke accidentally eager bana dena (static import kahin se).</li>
+<li>Bahut zyada granular chunks — har chhoti cheez alag chunk = many requests (over-splitting).</li>
+<li>Guards se chunk gate na karna — unauthorized users ko bhi code milta.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Initial bundle = shell + landing; baaki features lazy.</li>
+<li><code>loadComponent</code> (single) / <code>loadChildren</code> (sub-tree) for routes.</li>
+<li>Heavy in-page components → <code>@defer</code> (S-06).</li>
+<li><code>canMatch</code> guards se chunk download gate (perf + security).</li>
+<li>Standalone components; avoid accidental static imports of lazy code.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Lazy loading initial bundle size ko drastically kam karta — sabse direct LCP/TTI improvement. User homepage ke liye poore app ka code download nahi karta. Route chunks parallel-fetchable, cacheable. <code>canMatch</code> unauthorized chunks bhi na bheje. Trade-off: route navigate pe ek chunk-fetch delay (preloading, S-07, isse hide karta). Over-splitting (bahut chunks) request overhead — balance rakho.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Shared deps</td><td>Common libs ek shared chunk mein — build tool dedupes; avoid duplication.</td></tr>
+<tr><td>Navigation delay</td><td>First visit pe chunk-fetch lag — preloading (S-07) mitigates.</td></tr>
+<tr><td>Static import leak</td><td>Ek static import lazy code ko main mein kheench leta — audit imports.</td></tr>
+<tr><td>NgModule lazy</td><td>Legacy <code>loadChildren</code> with NgModule still works; standalone preferred.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Lazy loading kya hai aur kyun?</summary><div class="ans"><p>Code ko on-demand load karna — jab zaroorat ho tab, na ki upfront. Routes lazy banate ho (<code>loadComponent</code>/<code>loadChildren</code>): feature ka code alag chunk mein split hota jo route visit pe download hota. Kyun: poori app ek bundle mein = bada initial download = slow startup (LCP/TTI). Lazy loading initial bundle chhota rakhta — sirf zaroori code pehle, baaki on-demand.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>loadComponent</code> vs <code>loadChildren</code>?</summary><div class="ans"><p><code>loadComponent: () =&gt; import(...)</code> ek single standalone component lazy-load karta. <code>loadChildren: () =&gt; import(...)</code> ek poora sub-route tree (child routes array ya NgModule) lazy-load karta — jab ek feature mein multiple routes ho. Dono dynamic <code>import()</code> use karte jise build tool alag chunk mein split karta. Single component → loadComponent; feature with sub-routes → loadChildren.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Code splitting build-time pe kaise hota?</summary><div class="ans"><p>Build tool (esbuild/webpack) dynamic <code>import()</code> statements ko dekhta aur us module (+ dependencies) ko ek alag chunk file mein split karta — main bundle se bahar. Runtime pe jab woh <code>import()</code> execute hota (route navigate), chunk network se fetch hota. Static imports main bundle mein rehte; dynamic imports split point banate. Isliye lazy routes <code>() =&gt; import(...)</code> (dynamic) use karte, direct import nahi.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> App ka initial bundle 3MB hai aur first load 8 second. Sab features ek jagah. Approach?</summary><div class="ans"><p>Route-level lazy loading. Bundle analyze karke (S-11) dekho kya bloat kar raha — usually saare feature modules eagerly bundled. Initial bundle ko shell + landing tak reduce karo; baaki routes ko <code>loadComponent</code>/<code>loadChildren</code> se lazy karo (har feature alag chunk, on-demand). Heavy in-page components (charts/editors) ko <code>@defer</code> se split karo. Heavy third-party libs lazy karo. Guards se protected chunks gate karo. Preloading (S-07) se navigation delays hide. Result: chhota initial bundle, fast first load.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Lazy loading = on-demand code via dynamic <code>import()</code> → separate chunk. Smaller initial bundle → faster startup.</li>
+<li><code>loadComponent</code> (single standalone) / <code>loadChildren</code> (sub-route tree). Build splits at dynamic import boundaries.</li>
+<li>Initial bundle = shell + landing only. <code>canMatch</code> gates chunk download. In-page heavy bits → <code>@defer</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.9 · Lazy-split an app</div><p>Ek app with 3 features (home eager, dashboard + admin lazy) banao. Network tab mein prove karo dashboard/admin chunks sirf visit pe download hote. Initial bundle size before/after compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.10 · Guard-gated chunk</div><p>Admin route pe <code>canMatch</code> guard lagao. Prove karo unauthorized user ke liye admin chunk download hi nahi hota (Network tab).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Deferrable Views (@defer)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>@defer blocks · triggers (on idle/viewport/interaction/hover/timer/immediate) · when condition · prefetch · @placeholder/@loading/@error · in-page code splitting</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>@defer</code> (Angular v17+) ek template-level primitive hai jo ek block ke components ko <strong>lazy-load</strong> karta — bina route ke. Tum template mein <code>@defer (on viewport) { &lt;heavy-chart /&gt; }</code> likhte ho, aur Angular us chart ke code ko alag chunk mein split karke tabhi load karta jab trigger (viewport mein aana, etc.) fire ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Route-level lazy loading (S-05) sirf routes ke liye. Par ek page pe bhi heavy components ho sakte (charts, maps, rich editors, comments) jo initial render ke liye zaroori nahi. Pehle inhe lazy karna manual + painful tha. <code>@defer</code> declarative, built-in way deta — in-page components ko trigger-based lazy-load karo, initial bundle + render se hata do.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Heavy in-page components ka upfront cost. Ek dashboard mein ek bhaari chart initial load slow kar sakta bhale woh below-the-fold ho. <code>@defer</code> use viewport-aane-tak (ya interaction-tak) tal deta — initial bundle chhota, initial render fast, aur heavy code sirf jab actually chahiye.</p>
+
+<h3 class="part">4. Internal Working — triggers &amp; sub-blocks</h3>
+<div class="panel why"><div class="ptitle">A trigger loads a separate chunk; sub-blocks fill the gap</div><p><code>@defer</code> apne andar ke components ko ek alag chunk mein code-split karta (route lazy-load jaisa, par in-page). Chunk tab load hota jab <strong>trigger</strong> fire ho: <code>on idle</code> (browser idle — default), <code>on viewport</code> (block viewport mein aaya), <code>on interaction</code> (user clicked/typed on it), <code>on hover</code>, <code>on immediate</code> (turant, after non-deferred content), <code>on timer(2s)</code>, ya <code>when &lt;condition&gt;</code> (boolean/signal). Jab tak defer content load nahi hota, <code>@placeholder</code> dikhta; loading ke dauraan <code>@loading</code>; fail pe <code>@error</code>. <code>prefetch on ...</code> se code ko trigger se <em>pehle</em> background mein fetch kar sakte (jaise <code>prefetch on idle</code> + <code>on interaction</code> — idle pe download, interaction pe render — instant feel). Ye SSR + incremental hydration (S-09) ka bhi foundation hai.</p></div>
+
+<div class="dg-title">Diagram — @defer flow</div>
+<pre class="diagram">
+ @defer (on viewport; prefetch on idle) {
+   &lt;heavy-chart /&gt;              ← own chunk, loaded on trigger
+ } @placeholder { &lt;skeleton /&gt; }   ← shown before trigger
+   @loading (minimum 200ms) { &lt;spinner /&gt; }  ← during fetch
+   @error { &lt;p&gt;Failed to load&lt;/p&gt; }          ← on failure
+
+ idle ─▶ prefetch chart chunk (background)
+ scroll into view ─▶ render chart (already fetched → instant)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ initial render ─▶ @placeholder shown, chart NOT loaded (not in bundle)
+ trigger fires (viewport/interaction/idle/...) ─▶ fetch chunk
+   ─▶ @loading shown during fetch ─▶ chart renders
+   (prefetch → chunk already downloaded → near-instant)
+</pre>
+
+<h3 class="part">6. Architecture — triggers &amp; blocks</h3>
+<table>
+<tr><td><code>on idle</code> (default)</td><td>When the browser is idle (<code>requestIdleCallback</code>).</td></tr>
+<tr><td><code>on viewport</code></td><td>When the block/placeholder enters the viewport.</td></tr>
+<tr><td><code>on interaction</code> / <code>on hover</code></td><td>On user click/type / hover-focus.</td></tr>
+<tr><td><code>on immediate</code> / <code>on timer(t)</code></td><td>Right after non-deferred render / after a timer.</td></tr>
+<tr><td><code>when &lt;expr&gt;</code></td><td>Custom boolean/signal condition.</td></tr>
+<tr><td><code>prefetch on ...</code></td><td>Fetch the chunk ahead of the render trigger.</td></tr>
+<tr><td><code>@placeholder</code>/<code>@loading</code>/<code>@error</code></td><td>Before / during / on-fail UI.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">deferring a below-the-fold chart</div>
+<pre><code>@Component({
+  template: `
+    &lt;app-hero /&gt;
+    &lt;app-summary /&gt;
+
+    @defer (on viewport; prefetch on idle) {
+      &lt;app-analytics-chart [data]="data()" /&gt;   &lt;!-- heavy, own chunk --&gt;
+    } @placeholder {
+      &lt;div class="skeleton" style="height:300px"&gt;&lt;/div&gt;
+    } @loading (minimum 300ms) {
+      &lt;app-spinner /&gt;
+    } @error {
+      &lt;p&gt;Couldn't load the chart.&lt;/p&gt;
+    }
+  `,
+})
+export class DashboardComponent { data = signal([]); }
+// hero + summary render instantly; chart loads when scrolled to (prefetched on idle).</code></pre>
+
+<h3 class="part">8. Beginner Example — the simplest defer</h3>
+<div class="code-label">defer on interaction</div>
+<pre><code>@defer (on interaction) {
+  &lt;app-comments /&gt;              &lt;!-- heavy comments widget --&gt;
+} @placeholder {
+  &lt;button&gt;Load comments&lt;/button&gt;
+}
+// comments code isn't in the bundle until the user clicks the placeholder.</code></pre>
+
+<h3 class="part">9. Advanced Example — prefetch strategy</h3>
+<div class="code-label">prefetch for instant feel</div>
+<pre><code>// download early (idle), render late (on interaction) → feels instant:
+@defer (on interaction; prefetch on idle) {
+  &lt;rich-editor /&gt;
+} @placeholder { &lt;button&gt;Edit&lt;/button&gt; }
+
+// or condition-based:
+@defer (when userScrolledPastIntro()) { &lt;app-details /&gt; }
+// combine triggers: @defer (on hover; on timer(5s)) { ... } → whichever first</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>@defer (trigger)</code> — block ke components alag chunk, trigger pe load.</li>
+<li><code>@placeholder</code> — trigger se pehle ka UI (lightweight).</li>
+<li><code>@loading (minimum ..)</code> — fetch ke dauraan (flicker avoid ke liye minimum).</li>
+<li><code>@error</code> — load fail pe.</li>
+<li><code>prefetch on idle</code> — render-trigger se pehle background download.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Above-the-fold critical content ko defer karna — user ko placeholder dikhta (bad). Defer non-critical/below-fold.</li>
+<li><code>@placeholder</code> na dena ya bina dimensions — layout shift (CLS).</li>
+<li>Bahut chhote components defer karna — chunk overhead &gt; benefit.</li>
+<li><code>prefetch</code> na use karke on-interaction defer — click pe visible fetch delay.</li>
+<li>Deferred block ka data eagerly load karke defer ka point kho dena.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Heavy, non-critical, below-the-fold components defer karo (charts, maps, comments).</li>
+<li><code>@placeholder</code> with correct dimensions (CLS avoid).</li>
+<li><code>prefetch on idle</code> + render-on-interaction/viewport (instant feel).</li>
+<li>Trigger ko content se match karo (viewport for below-fold, interaction for on-click).</li>
+<li>Foundation for incremental hydration (S-09) — SSR ke saath combine.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>@defer</code> initial bundle + initial render dono se heavy in-page code hata deta — LCP/TTI better. Below-fold charts, maps, editors sirf jab visible/needed. <code>prefetch</code> render-time fetch delay hide karta (idle pe download). Route lazy-loading (S-05) routes ke liye, <code>@defer</code> in-page granularity ke liye — dono milkar comprehensive code splitting. Placeholder dimensions CLS bhi bachate.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td><code>on idle</code> reliability</td><td><code>requestIdleCallback</code> CPU load pe kabhi na fire ho — critical content mat defer.</td></tr>
+<tr><td>Multiple triggers</td><td><code>@defer (on hover; on timer(5s))</code> — whichever first.</td></tr>
+<tr><td>SSR + defer</td><td>Default defer SSR pe placeholder render; incremental hydration (S-09) content SSR karta.</td></tr>
+<tr><td>Nested defer</td><td>Supported; careful with nested triggers/placeholders.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>@defer</code> kya karta hai?</summary><div class="ans"><p>Template block ke components ko lazy-load karta (bina route ke) — unhe alag chunk mein code-split karke tabhi load karta jab ek trigger fire ho (viewport/interaction/idle/etc.). Jab tak load nahi hota, <code>@placeholder</code> dikhta. Ye in-page heavy components (charts, maps, editors, comments) ko initial bundle + render se hata deta — faster startup. Angular v17+ ka native feature.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>@defer</code> ke triggers kaunse hain?</summary><div class="ans"><p><code>on idle</code> (browser idle, default), <code>on viewport</code> (block visible), <code>on interaction</code> (click/type), <code>on hover</code>, <code>on immediate</code> (non-deferred content ke baad turant), <code>on timer(t)</code>, aur <code>when &lt;expr&gt;</code> (custom boolean/signal). Plus <code>prefetch on ...</code> — code ko render-trigger se pehle background mein download (jaise <code>prefetch on idle; on interaction</code> = idle pe fetch, interaction pe instant render). Sub-blocks: <code>@placeholder</code>/<code>@loading</code>/<code>@error</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Route lazy-loading vs <code>@defer</code> — kab kaunsa?</summary><div class="ans"><p>Route lazy-loading (<code>loadComponent</code>/<code>loadChildren</code>) poore <strong>routes</strong> ko lazy-load karta — feature-level splitting. <code>@defer</code> ek page ke andar <strong>individual heavy components</strong> ko lazy-load karta — in-page granularity, trigger-based (viewport/interaction). Route → alag page/feature; <code>@defer</code> → same page pe below-fold/on-demand components (chart, comments). Dono complementary — routes se coarse splitting, @defer se fine.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek dashboard fast load karna hai par usmein ek heavy analytics chart (below the fold) initial render slow kar raha. Fix?</summary><div class="ans"><p><code>@defer (on viewport; prefetch on idle)</code> mein chart ko wrap karo. Ab chart ka code initial bundle mein nahi (alag chunk), aur initial render mein <code>@placeholder</code> (correct height ka skeleton — CLS avoid) dikhta. Browser idle hone pe chunk background mein prefetch ho jaata; jab user scroll karke chart tak pahunchta, woh instantly render hota (already fetched). Hero + above-fold content instant, chart on-demand — LCP/TTI dono better.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>@defer</code> = in-page lazy-load (own chunk) on a trigger. v17+.</li>
+<li>Triggers: <code>on idle</code>(default)/<code>viewport</code>/<code>interaction</code>/<code>hover</code>/<code>immediate</code>/<code>timer</code>/<code>when</code>. <code>prefetch on ..</code> for early download.</li>
+<li>Sub-blocks: <code>@placeholder</code> (before, needs dimensions for CLS) / <code>@loading</code> / <code>@error</code>. Defer non-critical/below-fold. Basis for incremental hydration.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.11 · Defer a heavy component</div><p>Ek heavy chart component ko <code>@defer (on viewport; prefetch on idle)</code> se wrap karo with placeholder/loading/error. Network tab mein prove karo chunk sirf scroll-into-view pe (ya idle prefetch) load hota.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.12 · Trigger comparison</div><p>Same component ko 4 triggers (idle, viewport, interaction, timer) se defer karke behavior compare karo. Prefetch add karke render-delay difference measure karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Preloading Strategies</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>PreloadAllModules · NoPreloading · custom PreloadingStrategy · network-aware · selective preload · anticipatory loading · withPreloading</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Preloading strategy decide karti hai ki lazy route chunks (S-05) ko background mein <em>kab</em> download kiya jaaye — user ke actually navigate karne se <strong>pehle</strong>. Lazy loading initial bundle chhota rakhta par navigation pe fetch-delay deta; preloading us delay ko hide karta by fetching chunks ahead of time (idle bandwidth mein).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Pure lazy loading ka downside: jab user pehli baar ek lazy route pe jaata, chunk download hone tak wait (spinner). Preloading initial load ke baad, background mein, likely-needed chunks pehle se fetch kar leta — toh navigation instant lagta. Best of both: chhota initial bundle + snappy navigation.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Lazy-loading navigation delay. Chhota initial bundle achha, par har first-visit pe chunk-fetch lag annoying. Preloading initial critical load complete hone ke baad idle time mein chunks fetch karke ye delay eliminate karta — user ko lazy-loading ka size benefit milta bina navigation penalty ke.</p>
+
+<h3 class="part">4. Internal Working — strategies</h3>
+<div class="panel why"><div class="ptitle">When to fetch lazy chunks in the background</div><p>Router ek <code>PreloadingStrategy</code> leta jo har lazy route ke liye decide karta preload karna hai ya nahi. Built-in: <strong><code>NoPreloading</code></strong> (default — kuch preload nahi, pure lazy); <strong><code>PreloadAllModules</code></strong> (initial load ke baad saare lazy chunks background mein fetch — simple, aggressive). Custom strategy se selective control: ek <code>PreloadingStrategy</code> implement karke sirf specific routes preload karo (jaise route <code>data: { preload: true }</code> flag se), ya <strong>network-aware</strong> (Network Information API se — slow connection pe skip, fast pe preload), ya priority-based. Preloading initial critical rendering ke <em>baad</em> chalti (taaki startup slow na ho) aur idle bandwidth use karti. Configure: <code>provideRouter(routes, withPreloading(PreloadAllModules))</code>.</p></div>
+
+<div class="dg-title">Diagram — preloading timeline</div>
+<pre class="diagram">
+ startup ─▶ load main bundle ─▶ app interactive
+              │
+              ▼ (idle, background)
+        preload strategy fetches lazy chunks:
+          NoPreloading      → none (fetch on navigate)
+          PreloadAllModules → all lazy chunks
+          Custom            → selected routes / network-aware
+              │
+ user navigates ─▶ chunk already cached ─▶ INSTANT (no fetch wait)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ provideRouter(routes, withPreloading(PreloadAllModules))
+ app loads (main only) ─▶ becomes interactive
+   ─▶ idle: preload lazy chunks in background
+ navigate to /admin ─▶ chunk already fetched ─▶ render instantly
+</pre>
+
+<h3 class="part">6. Architecture — the options</h3>
+<table>
+<tr><td><code>NoPreloading</code> (default)</td><td>No preload; fetch on navigation. Smallest network upfront.</td></tr>
+<tr><td><code>PreloadAllModules</code></td><td>Preload all lazy chunks after startup. Simple, snappy nav.</td></tr>
+<tr><td>Custom <code>PreloadingStrategy</code></td><td>Selective: preload flagged routes / by priority.</td></tr>
+<tr><td>Network-aware</td><td>Network Information API — skip on slow/save-data connections.</td></tr>
+<tr><td><code>withPreloading(...)</code></td><td>Register the strategy in <code>provideRouter</code>.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — custom selective strategy</h3>
+<div class="code-label">preload only flagged routes</div>
+<pre><code>import { PreloadingStrategy, Route } from '@angular/router';
+import { Observable, of } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class SelectivePreload implements PreloadingStrategy {
+  preload(route: Route, load: () =&gt; Observable&lt;any&gt;): Observable&lt;any&gt; {
+    return route.data?.['preload'] ? load() : of(null);  // only if flagged
+  }
+}
+// routes: { path:'admin', data:{ preload:true }, loadChildren:... }
+// app.config: provideRouter(routes, withPreloading(SelectivePreload))</code></pre>
+
+<h3 class="part">8. Beginner Example — preload everything</h3>
+<div class="code-label">the simple aggressive strategy</div>
+<pre><code>import { PreloadAllModules } from '@angular/router';
+provideRouter(routes, withPreloading(PreloadAllModules));
+// after the app loads, all lazy chunks download in the background →
+// every subsequent navigation feels instant. Good for small/medium apps.</code></pre>
+
+<h3 class="part">9. Advanced Example — network-aware preloading</h3>
+<div class="code-label">respect the user's connection</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class NetworkAwarePreload implements PreloadingStrategy {
+  preload(route: Route, load: () =&gt; Observable&lt;any&gt;): Observable&lt;any&gt; {
+    const conn = (navigator as any).connection;
+    const slow = conn &amp;&amp; (conn.saveData || /2g/.test(conn.effectiveType));
+    return slow ? of(null) : load();   // skip preload on slow / save-data
+  }
+}
+// don't burn a user's limited mobile data preloading chunks they may not need.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Strategy har lazy route ke liye <code>preload()</code> call hoti.</li>
+<li><code>load()</code> return karo → chunk fetch; <code>of(null)</code> → skip.</li>
+<li><code>PreloadAllModules</code> — sab preload; custom — selective.</li>
+<li>Network-aware — connection quality check karke decide.</li>
+<li>Preloading startup ke baad, background idle bandwidth mein.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Bade apps mein <code>PreloadAllModules</code> — sab chunks download (bandwidth waste, kuch kabhi na use).</li>
+<li>Preloading ko initial critical load se pehle chalana — startup slow (preload baad mein).</li>
+<li>Network/save-data ignore karna — mobile users ka data waste.</li>
+<li>No preloading rakhna jab navigation delays user ko hurt kar rahe.</li>
+<li>Preload aur route-guard interaction galat — gated routes ko blindly preload.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Small/medium apps → <code>PreloadAllModules</code> (snappy nav, simple).</li>
+<li>Large apps → custom selective (likely-next routes only) / network-aware.</li>
+<li>Preload high-probability next routes (dashboard after login).</li>
+<li>Respect save-data / slow connections (network-aware).</li>
+<li>Combine with <code>@defer prefetch</code> (S-06) for in-page anticipatory loading.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Preloading lazy-loading ka navigation-delay downside hide karta — user ko chhote initial bundle ka benefit + instant subsequent navigation. Key: preloading startup ke <em>baad</em> idle bandwidth use karti, initial load impact zero. Selective/network-aware strategies waste bachate (sirf likely + fast-connection). Ye <code>@defer prefetch</code> ka route-level cousin hai — dono anticipatory loading.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Guarded routes</td><td>Preload strategy + <code>canMatch</code> — preload karne se pehle authorization consider karo.</td></tr>
+<tr><td>Save-Data header</td><td>Respect user's data-saver preference (network-aware).</td></tr>
+<tr><td>Priority ordering</td><td>Custom strategy likely-next routes ko pehle preload kar sakta.</td></tr>
+<tr><td>Quicklink-style</td><td>Viewport-visible links ke chunks preload (community strategies).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Preloading strategy kya hai?</summary><div class="ans"><p>Decide karti hai ki lazy route chunks ko background mein kab (aur kaunse) download kiya jaaye, user ke navigate karne se pehle. Lazy loading initial bundle chhota rakhta par navigation pe fetch-delay deta; preloading us delay ko hide karta — initial load ke baad, idle bandwidth mein, likely-needed chunks pehle fetch. Result: chhota initial bundle + instant navigation.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>PreloadAllModules</code> vs custom strategy?</summary><div class="ans"><p><code>PreloadAllModules</code> initial load ke baad saare lazy chunks background mein fetch karta — simple, har navigation snappy, par bade apps mein bandwidth waste (chunks jo kabhi use na hon). Custom <code>PreloadingStrategy</code> selective control deta: sirf flagged/likely-next routes preload karo, ya network-aware (slow/save-data pe skip). Small/medium apps → PreloadAllModules; large apps → custom selective/network-aware.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Network-aware preloading kaise karte ho?</summary><div class="ans"><p>Custom <code>PreloadingStrategy</code> mein Network Information API (<code>navigator.connection</code>) check karo — agar <code>saveData</code> on hai ya <code>effectiveType</code> slow (2g), toh <code>of(null)</code> return karke preload skip; warna <code>load()</code>. Isse tum mobile/limited-data users ka bandwidth waste nahi karte chunks preload karke jo shayad use na hon, jabki fast connections pe snappy navigation dete. Respect the user's connection.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Lazy loading ke baad users complain karte ki har naye section pe 1-2s spinner. Par app bada hai, sab preload nahi karna. Approach?</summary><div class="ans"><p>Selective preloading. <code>PreloadAllModules</code> bade app mein bandwidth waste karega. Instead: custom <code>PreloadingStrategy</code> banao jo sirf high-probability next routes preload kare — jaise route <code>data: { preload: true }</code> flag se mark karo un sections ko jahan users usually jaate (post-login dashboard, common flows), aur strategy sirf flagged routes <code>load()</code> kare. Optionally network-aware banao (slow connection skip). Isse common navigations instant, par pura app blindly download nahi hota. In-page ke liye <code>@defer prefetch</code> bhi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Preloading = fetch lazy chunks in background AFTER startup → hide navigation fetch-delay.</li>
+<li><code>NoPreloading</code> (default), <code>PreloadAllModules</code> (all, simple), custom <code>PreloadingStrategy</code> (selective/network-aware).</li>
+<li><code>provideRouter(routes, withPreloading(...))</code>. Large apps → selective. Respect save-data. Route cousin of <code>@defer prefetch</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.13 · Selective preload</div><p>Ek custom <code>PreloadingStrategy</code> banao jo sirf <code>data:{preload:true}</code> routes preload kare. Network tab mein prove karo flagged chunks startup ke baad load hote, unflagged sirf navigate pe.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-18.14 · Network-aware</div><p>Ek network-aware strategy banao jo <code>navigator.connection</code> se slow/save-data pe preload skip kare. DevTools network throttling se dono cases test karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Image &amp; Asset Optimization</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>NgOptimizedImage · ngSrc · priority (LCP) · fill · placeholder · automatic srcset/lazy · width/height (CLS) · image loaders/CDN · fonts · static assets</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Images aksar page ke sabse bade assets hote — LCP (largest content) usually ek image hi hoti. Angular ka <code>NgOptimizedImage</code> directive image loading best practices ko automate karta: LCP image prioritize, baaki lazy-load, correct sizing (CLS avoid), responsive <code>srcset</code>, aur CDN loaders. Plus fonts/static assets ki hygiene.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Un-optimized images = slow LCP + layout shift (CLS) + wasted bandwidth. Manually har image pe priority hints, lazy loading, srcset, dimensions set karna tedious + error-prone. <code>NgOptimizedImage</code> in best practices ko ek simple <code>ngSrc</code> API mein bundle karta, aur dev-time warnings deta jab kuch galat (jaise LCP image bina priority).</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Image performance mistakes — the most common Core Web Vitals killer. Oversized images, lazy-loaded LCP image, missing dimensions (layout shift), no responsive sizing. <code>NgOptimizedImage</code> in sabko address karta with sensible defaults + guardrails, directly LCP + CLS improve karke.</p>
+
+<h3 class="part">4. Internal Working — what NgOptimizedImage does</h3>
+<div class="panel why"><div class="ptitle">ngSrc + automatic best practices</div><p><code>ngSrc</code> use karke (na ki <code>src</code>), directive image loading control karta. Key behaviors: (1) <strong><code>priority</code></strong> — LCP image pe lagao; ye <code>fetchpriority="high"</code> + <code>loading="eager"</code> set karta aur server-render pe ek <code>&lt;link rel=preload&gt;</code> generate karta — LCP image jaldi load. (2) Non-priority images ko automatically <code>loading="lazy"</code> (viewport aane par load). (3) <strong><code>width</code>+<code>height</code> required</strong> — aspect ratio se browser space reserve karta → <strong>no layout shift (CLS)</strong>. (4) Automatic <strong><code>srcset</code></strong> generation (width/height ya <code>ngSrcset</code>+<code>sizes</code> se) — device-appropriate image size download. (5) <strong><code>fill</code></strong> mode — <code>background-image</code> ka better alternative (parent <code>position:relative</code>). (6) <strong><code>placeholder</code></strong> — low-res blurred placeholder (CDN loader ke saath). (7) Image <strong>loaders</strong> (Imgix/Cloudinary/custom via <code>IMAGE_LOADER</code>) — CDN se optimized URLs. Plus dev warnings: LCP image bina priority, oversized files, missing dimensions.</p></div>
+
+<div class="dg-title">Diagram — image optimization</div>
+<pre class="diagram">
+ LCP image:   &lt;img ngSrc="hero.jpg" width="1200" height="600" priority&gt;
+   → fetchpriority=high, loading=eager, preload link → fast LCP
+
+ below-fold:  &lt;img ngSrc="thumb.jpg" width="200" height="200"&gt;
+   → loading=lazy (auto) → loads when scrolled to
+
+ width+height → reserved space → NO layout shift (CLS ✓)
+ srcset auto  → right size per device → less bandwidth
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ import NgOptimizedImage ─▶ replace src with ngSrc
+   priority image ─▶ eager + high priority + preload
+   others ─▶ auto lazy
+   width/height ─▶ reserve space (no CLS)
+   loader (CDN) ─▶ optimized, resized URLs + srcset
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>ngSrc</code></td><td>Replaces <code>src</code>; activates the directive (from <code>@angular/common</code>).</td></tr>
+<tr><td><code>priority</code></td><td>Mark the LCP image → eager + fetchpriority=high + preload.</td></tr>
+<tr><td><code>width</code> + <code>height</code></td><td>Required (unless <code>fill</code>) → prevents layout shift (CLS).</td></tr>
+<tr><td><code>fill</code></td><td>Fill the parent (like background-image); parent needs <code>position</code>.</td></tr>
+<tr><td><code>ngSrcset</code> + <code>sizes</code></td><td>Responsive srcset (auto from width/height too).</td></tr>
+<tr><td><code>placeholder</code></td><td>Low-res blurred placeholder (with a CDN loader).</td></tr>
+<tr><td><code>IMAGE_LOADER</code> / <code>provideImgixLoader</code></td><td>CDN loaders → optimized URLs.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">optimized hero + thumbnails</div>
+<pre><code>import { NgOptimizedImage, provideImgixLoader } from '@angular/common';
+
+@Component({
+  imports: [NgOptimizedImage],
+  template: `
+    &lt;!-- LCP hero: mark priority --&gt;
+    &lt;img ngSrc="hero.jpg" width="1200" height="600" priority alt="Hero" /&gt;
+
+    &lt;!-- thumbnails: auto lazy-loaded, responsive --&gt;
+    @for (p of products(); track p.id) {
+      &lt;img ngSrc="{{ p.image }}" width="300" height="200"
+           sizes="(max-width: 768px) 50vw, 300px" alt="{{ p.name }}" /&gt;
+    }
+
+    &lt;!-- fill mode (background-image replacement) --&gt;
+    &lt;div style="position: relative; height: 400px"&gt;
+      &lt;img ngSrc="banner.jpg" fill alt="Banner" /&gt;
+    &lt;/div&gt;
+  `,
+})
+export class GalleryComponent { products = signal([]); }
+// app.config: providers: [provideImgixLoader('https://my.imgix.net/')]</code></pre>
+
+<h3 class="part">8. Beginner Example — the minimal swap</h3>
+<div class="code-label">src → ngSrc</div>
+<pre><code>// before: &lt;img src="cat.jpg"&gt;
+// after:  &lt;img ngSrc="cat.jpg" width="400" height="300"&gt;   (auto lazy + no CLS)
+//         &lt;img ngSrc="hero.jpg" width="1200" height="600" priority&gt;  (LCP)
+// import NgOptimizedImage in the component.</code></pre>
+
+<h3 class="part">9. Advanced Example — fonts &amp; static assets</h3>
+<div class="code-label">beyond images</div>
+<pre><code>// FONTS: self-host + font-display: swap (avoid invisible text / FOIT);
+//   preload critical fonts:  &lt;link rel="preload" as="font" ... crossorigin&gt;
+//   subset fonts to used glyphs; limit weights/variants.
+// STATIC ASSETS: compress (Brotli/gzip, S-11), cache with far-future headers +
+//   content hashing; use SVG for icons; serve via CDN.
+// CSS: critical CSS inline; defer non-critical.
+// Rule: every KB on the critical path delays first paint.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>ngSrc</code> — directive activate (best practices apply).</li>
+<li><code>priority</code> LCP image pe — eager + high priority + preload.</li>
+<li><code>width</code>+<code>height</code> — space reserve (no CLS).</li>
+<li>Non-priority auto lazy; <code>sizes</code>/<code>ngSrcset</code> responsive.</li>
+<li><code>fill</code> for background-style; CDN loader for optimized URLs.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>LCP image ko lazy-load karna ya priority na dena — slow LCP (directive warns).</li>
+<li><code>width</code>/<code>height</code> na dena — layout shift (CLS); browser space reserve nahi karta.</li>
+<li>Har image ko <code>priority</code> dena — priority ka point khatam (sirf LCP ko).</li>
+<li>Oversized images serve karna (2000px display 200px) — bandwidth waste; srcset use karo.</li>
+<li>Fonts bina <code>font-display: swap</code> — invisible text (FOIT) during font load.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li><code>NgOptimizedImage</code> (<code>ngSrc</code>) sabhi images pe; LCP image ko <code>priority</code>.</li>
+<li>Always <code>width</code>+<code>height</code> (ya <code>fill</code>) — CLS avoid.</li>
+<li>Responsive <code>sizes</code>/<code>ngSrcset</code> + CDN loader — right-sized delivery.</li>
+<li>Fonts: self-host, <code>font-display: swap</code>, preload critical, subset.</li>
+<li>Static assets: compress, cache (content-hash), CDN, SVG icons.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>NgOptimizedImage</code> directly LCP (priority + preload for the hero) aur CLS (width/height reserve space) improve karta — do Core Web Vitals ek directive se. Auto lazy-loading below-fold images ka initial load bachata; srcset device-appropriate sizes se bandwidth. Fonts (swap + preload + subset) FCP/CLS improve karte. Images usually biggest bytes — yahan optimization ka ROI highest. Dev warnings mistakes pehle pakadte.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multiple LCP candidates</td><td>Responsive layouts → different LCP per screen; mark all likely priority.</td></tr>
+<tr><td>fill + sizing</td><td><code>fill</code> mode → no width/height; parent needs <code>position</code> + <code>object-fit</code>.</td></tr>
+<tr><td>Data-URL placeholder</td><td>Large inline placeholders bloat bundle — use CDN-generated.</td></tr>
+<tr><td>Preconnect</td><td>Directive auto-generates preconnect for CDN domains (mostly).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>NgOptimizedImage</code> kya karta hai?</summary><div class="ans"><p>Image loading best practices ko automate karta. <code>ngSrc</code> (src ki jagah) use karke: LCP image ko <code>priority</code> se prioritize (eager + fetchpriority=high + preload), baaki ko auto lazy-load, <code>width</code>+<code>height</code> se layout shift (CLS) avoid, automatic responsive <code>srcset</code>, aur CDN loaders se optimized URLs. Plus dev-time warnings (LCP image bina priority, oversized files). Directly LCP + CLS improve karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>priority</code> attribute kya karta aur kis image pe?</summary><div class="ans"><p>LCP (Largest Contentful Paint) image pe lagao — usually hero image/banner jo initial viewport ka sabse bada content. Ye <code>fetchpriority="high"</code> + <code>loading="eager"</code> set karta aur server-render pe ek <code>&lt;link rel=preload&gt;</code> generate karta — image jaldi download hoti, LCP fast. Sirf LCP image(s) pe — har image pe lagane se priority ka matlab hi khatam. Baaki images auto <code>loading="lazy"</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Images CLS kaise cause karte aur <code>NgOptimizedImage</code> kaise rokta?</summary><div class="ans"><p>Agar image ki dimensions defined nahi, browser ko aspect ratio nahi pata — woh image load hone tak space reserve nahi karta, phir image aane pe content "jump" karta (layout shift = CLS). <code>NgOptimizedImage</code> <code>width</code>+<code>height</code> ko <strong>required</strong> banata (ya <code>fill</code> mode) — inse browser aspect-ratio se space pehle reserve karta, toh image load pe koi shift nahi. CLS ~0. Ye ek core Web Vital ka direct fix hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Lighthouse LCP 4.5s dikha raha, aur page load pe content jump karta. Images-side fix?</summary><div class="ans"><p>Do issues: slow LCP + layout shift (CLS). Fix: (1) LCP image (hero) pe <code>NgOptimizedImage</code> <code>ngSrc</code> + <code>priority</code> lagao — eager load + preload se LCP tez. (2) Saari images pe <code>width</code>+<code>height</code> (ya <code>fill</code>) do — space reserve, jump khatam (CLS fix). (3) Responsive <code>sizes</code>/<code>srcset</code> + CDN loader se oversized images avoid (bandwidth + LCP). (4) Below-fold images auto lazy-load honge. Ek directive se LCP + CLS dono address.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>NgOptimizedImage</code>: <code>ngSrc</code> (not src). <code>priority</code> on LCP image → eager + preload. Others auto-lazy.</li>
+<li><code>width</code>+<code>height</code> required (or <code>fill</code>) → no CLS. Auto <code>srcset</code>; <code>sizes</code>/<code>ngSrcset</code> responsive; CDN loaders.</li>
+<li>Fonts: <code>font-display: swap</code> + preload + subset. Static: compress + cache + CDN. Images = biggest bytes → highest ROI.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.15 · Optimize a gallery</div><p>Ek image-heavy page ko <code>NgOptimizedImage</code> se optimize karo: LCP hero ko priority, thumbnails auto-lazy + responsive sizes, width/height sab pe. Lighthouse LCP + CLS before/after compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.16 · CLS hunt</div><p>Ek page banao jismein images bina dimensions ke layout shift karte. CLS measure karke, <code>width</code>/<code>height</code>/<code>fill</code> add karke CLS ~0 laao. Fonts pe <code>font-display: swap</code> bhi.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s9">
+<div class="sec-head">
+  <span class="sec-num">S-09</span>
+  <h2>SSR, Hydration &amp; Prerendering</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s9"> Done</label>
+</div>
+<p class="covers">Covers: <b>SSR (@angular/ssr) · full-app hydration · event replay · incremental hydration (@defer hydrate) · hybrid rendering / render modes · prerendering (SSG) · LCP/SEO/TTI</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><strong>SSR (Server-Side Rendering)</strong> app ko server pe render karke ready HTML browser ko bhejta — user turant content dekhta (fast first paint + SEO). Phir <strong>hydration</strong> us static HTML ko client-side "activate" karta (event listeners + interactivity). <strong>Incremental hydration</strong> (v19) isse selective banata — parts ko on-demand hydrate. <strong>Prerendering (SSG)</strong> build-time pe HTML generate karta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Pure client-side rendering (CSR) mein browser ko pehle blank page + poora JS download + execute karna padta phir content dikhta — slow LCP/FCP, poor SEO (crawlers ko blank/JS-dependent page). SSR ready HTML deta (fast visible content + crawlable), aur hydration usse interactive banata. Best of server-rendered speed + client-side interactivity.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Slow first paint + weak SEO of CSR. CSR "blank until JS runs"; SSR content pehle deta. Par naive SSR mein hydration poore app ko ek saath activate karta (JS-heavy, slow TTI). Incremental hydration ye solve karta — sirf zaroori parts hydrate, baaki on-trigger. Prerendering static pages ka SSR-server-cost bhi hata deta.</p>
+
+<h3 class="part">4. Internal Working — the SSR → hydration spectrum</h3>
+<div class="panel why"><div class="ptitle">Render on server, activate on client — progressively</div><p>SSR (<code>@angular/ssr</code>, <code>provideClientHydration()</code>): server app render karke HTML bhejta; browser use turant dikhata. Phir <strong>full-application hydration</strong> (v16) us HTML ko client pe reuse karta (DOM re-create nahi, existing markup se attach — non-destructive) aur poore app ko interactive banata. Problem: full hydration poore app ka JS ek saath bootstrap karta — bada app slow-to-interactive. <strong>Event Replay</strong> (<code>withEventReplay()</code>, v18, v19 SSR mein default): hydration complete hone se pehle user ke events (clicks) capture karta aur hydration ke baad replay karta — koi interaction lost nahi. <strong>Incremental Hydration</strong> (<code>withIncrementalHydration()</code>, v19): <code>@defer (hydrate on ...)</code> se app ko "hydration zones" mein todta — block SSR-render hota (placeholder nahi, actual content) par uski interactivity trigger (idle/viewport/interaction) tak defer hoti. Yani less JS upfront, on-demand hydrate. (Auto-includes event replay.) <strong>Hybrid Rendering</strong> (v19): per-route render mode set karo — <code>Server</code> (SSR), <code>Client</code> (CSR), ya <code>Prerender</code> (build-time SSG). Har page ki zaroorat ke hisab se.</p></div>
+
+<div class="dg-title">Diagram — CSR vs SSR vs incremental hydration</div>
+<pre class="diagram">
+ CSR:  [blank] ─▶ download JS ─▶ execute ─▶ content + interactive
+        (slow first paint, weak SEO)
+
+ SSR + full hydration:
+   server HTML ─▶ content VISIBLE fast ─▶ hydrate WHOLE app ─▶ interactive
+   (fast paint; but big hydration = delayed TTI)
+
+ SSR + incremental hydration:
+   server HTML ─▶ content visible ─▶ hydrate only what's needed, on trigger
+   (fast paint + minimal JS upfront + on-demand interactivity)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ provideClientHydration(withIncrementalHydration())
+ server renders HTML (incl. @defer hydrate blocks' content) ─▶ browser shows it
+ event replay captures early clicks
+ @defer (hydrate on interaction) block ─▶ hydrates when user interacts
+   ─▶ replays the captured event ─▶ seamless
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td><code>@angular/ssr</code> + <code>provideClientHydration()</code></td><td>SSR + full-app hydration (v16). Non-destructive.</td></tr>
+<tr><td><code>withEventReplay()</code></td><td>Capture + replay pre-hydration events (v18; default in v19 SSR).</td></tr>
+<tr><td><code>withIncrementalHydration()</code></td><td>Selective hydration via <code>@defer hydrate</code> (v19). Auto-includes event replay.</td></tr>
+<tr><td><code>@defer (hydrate on ...)</code></td><td>SSR-renders content; defers client interactivity to a trigger.</td></tr>
+<tr><td>Hybrid rendering</td><td>Per-route render mode: Server / Client / Prerender (v19).</td></tr>
+<tr><td>Prerendering (SSG)</td><td>Build-time static HTML for static pages (no server needed).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">incremental hydration setup</div>
+<pre><code>// app.config.ts
+import { provideClientHydration, withIncrementalHydration }
+  from '@angular/platform-browser';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideClientHydration(withIncrementalHydration()),  // event replay auto-included
+  ],
+};
+
+// template — SSR-render this block, hydrate only when it enters the viewport:
+@defer (hydrate on viewport) {
+  &lt;app-product-reviews /&gt;
+} @placeholder { &lt;div&gt;Loading reviews...&lt;/div&gt; }
+// content is server-rendered &amp; visible immediately; JS for interactivity
+// loads &amp; hydrates only when the user scrolls to it.</code></pre>
+
+<h3 class="part">8. Beginner Example — plain SSR + hydration</h3>
+<div class="code-label">the baseline</div>
+<pre><code>// app.config.ts
+providers: [ provideClientHydration(withEventReplay()) ]
+// (v19 CLI generates this by default for SSR apps.)
+// server renders HTML (fast content + SEO); client hydrates it
+// (reuses server DOM, non-destructive); event replay preserves early clicks.</code></pre>
+
+<h3 class="part">9. Advanced Example — hydrate triggers &amp; hydrate never</h3>
+<div class="code-label">fine-grained hydration control</div>
+<pre><code>// hydrate when the user interacts:
+@defer (hydrate on interaction) { &lt;search-bar /&gt; }
+
+// hydrate based on a condition:
+@defer (hydrate when isLoggedIn()) { &lt;user-menu /&gt; }
+
+// NEVER hydrate — static, SSR-only content (no JS, no listeners):
+@defer (hydrate never) { &lt;marketing-footer /&gt; }
+// → server-rendered, visible, but ships zero client JS for this block.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>provideClientHydration()</code> — SSR HTML reuse (non-destructive).</li>
+<li><code>withEventReplay()</code> — pre-hydration events replay (v19 default).</li>
+<li><code>withIncrementalHydration()</code> — selective; auto event-replay.</li>
+<li><code>@defer (hydrate on ..)</code> — content SSR, interactivity on trigger.</li>
+<li><code>hydrate never</code> — SSR-only, zero client JS.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Incremental hydration ko lazy loading samajhna — alag hai (neeche interview Q).</li>
+<li>SSR mein browser-only APIs (window/document) direct use — server pe crash; guard karo.</li>
+<li><code>withEventReplay()</code> + <code>withIncrementalHydration()</code> dono add karna — incremental auto-includes replay (redundant).</li>
+<li>Hydration mismatch — server aur client different markup render karein (bugs).</li>
+<li>Static pages ko SSR karna jab prerender (SSG) sasta + faster tha.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>SSR + hydration for content/SEO-heavy apps (LCP + crawlability).</li>
+<li>Incremental hydration (v19) for large apps — minimize upfront JS.</li>
+<li><code>hydrate never</code> for purely static blocks (footer, marketing) — zero JS.</li>
+<li>Prerender (SSG) static pages; hybrid render modes per route.</li>
+<li>Guard browser-only APIs (<code>isPlatformBrowser</code>); avoid hydration mismatches.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>SSR fast FCP/LCP (ready HTML, no wait-for-JS) + SEO deta. Full hydration us content ko interactive banata par bade apps mein JS-heavy (delayed TTI). Incremental hydration ye fix karta — sirf needed parts hydrate, baaki on-trigger; less upfront JS = better TTI + INP. <code>hydrate never</code> static blocks pe zero JS. Prerendering static pages ka server-cost hi hata deta (CDN-served HTML). Combined: fast paint + minimal JS + full interactivity.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Browser APIs on server</td><td><code>isPlatformBrowser</code>/<code>afterNextRender</code> guard; server mein window/document nahi.</td></tr>
+<tr><td>Hydration mismatch</td><td>Server vs client markup mismatch → errors; deterministic render rakho.</td></tr>
+<tr><td><code>hydrate on idle</code></td><td><code>requestIdleCallback</code> load pe kabhi na fire — critical mat rakho.</td></tr>
+<tr><td>Nested hydrate</td><td>Un-hydrated parent ke andar <code>hydrate when</code> child kaam nahi karega.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> SSR aur hydration kya hain?</summary><div class="ans"><p><strong>SSR (Server-Side Rendering):</strong> app server pe render karke ready HTML browser ko bhejta — user turant content dekhta (fast first paint) aur crawlers ko real content milta (SEO). <strong>Hydration:</strong> us server-rendered static HTML ko client-side "activate" karna — Angular existing DOM ko reuse karke (non-destructive) event listeners + interactivity add karta, taaki page interactive ban jaaye. SSR speed + CSR interactivity dono.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Incremental hydration full hydration se kaise alag hai?</summary><div class="ans"><p>Full-application hydration (v16) poore app ko ek saath hydrate karta — saara JS bootstrap, bade apps mein slow TTI. Incremental hydration (v19, <code>withIncrementalHydration()</code>) app ko "hydration zones" mein todta via <code>@defer (hydrate on ...)</code> — har block SSR-render hota (content visible) par uski interactivity trigger (idle/viewport/interaction) tak defer hoti. Yani upfront kam JS, on-demand hydration → better TTI/INP. Auto event-replay included.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Incremental hydration aur lazy loading — same cheez?</summary><div class="ans"><p>Nahi, bilkul alag. <strong>Lazy loading</strong> content ke <em>rendering</em> ko delay karta — component ka code + markup tabhi aata jab trigger fire ho (pehle placeholder). <strong>Incremental hydration</strong> content ko <em>SSR se render</em> karta (visible immediately, real content — placeholder nahi), sirf client-side <em>interactivity</em> (event listeners/JS bootstrap) ko defer karta. Yani lazy loading = "render later"; incremental hydration = "render now via SSR, become interactive later". Isliye incremental hydration SEO + LCP friendly hai (content pehle se hai), jabki plain <code>@defer</code> (bina hydrate) placeholder dikhata jab tak trigger na aaye.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek content-heavy e-commerce product page: fast load + SEO chahiye, par page mein bahut interactive widgets (reviews, cart, recommendations) hain jo TTI slow kar rahe. Approach?</summary><div class="ans"><p>SSR + incremental hydration. SSR se poora page (product info, reviews, recommendations) server-render hota — content turant visible (fast LCP) aur crawlable (SEO). Phir <code>withIncrementalHydration()</code> use karke interactive widgets ko <code>@defer (hydrate on ...)</code> mein wrap karo: reviews <code>hydrate on viewport</code> (scroll pe interactive), cart <code>hydrate on interaction</code>, static footer <code>hydrate never</code> (zero JS). Content sab SSR-rendered hai (visible + SEO), par JS sirf zaroori widgets ke liye on-demand load/hydrate hota — fast TTI + INP. Event replay early clicks preserve karta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>SSR = server-render HTML (fast paint + SEO). Hydration = activate that HTML client-side (non-destructive).</li>
+<li>Full hydration (v16, whole app) → event replay (v18, v19 default) → incremental (v19, <code>@defer hydrate on ..</code>, selective, less JS).</li>
+<li>Incremental hydration ≠ lazy loading: it SSR-renders content, defers only INTERACTIVITY. <code>hydrate never</code> = zero JS. Prerender (SSG) static pages; hybrid render modes per route.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.17 · SSR + incremental hydration</div><p>Ek SSR app banao (<code>ng add @angular/ssr</code>). <code>withIncrementalHydration()</code> enable karke ek widget ko <code>@defer (hydrate on interaction)</code> karo. Angular DevTools mein hydration status (hydrated/dehydrated) observe karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-18.18 · hydrate strategies</div><p>Ek page pe 3 blocks: <code>hydrate on viewport</code>, <code>hydrate on interaction</code>, <code>hydrate never</code>. Network/DevTools se prove karo har block ka JS kab (ya kabhi nahi) load hota.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s10">
+<div class="sec-head">
+  <span class="sec-num">S-10</span>
+  <h2>Network &amp; Data Optimization</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s10"> Done</label>
+</div>
+<p class="covers">Covers: <b>HTTP caching · shareReplay · debounceTime/distinctUntilChanged · request dedup · pagination · prefetch via resolvers · switchMap cancellation · httpResource</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Network &amp; data optimization ka matlab: kam, chhote, aur smarter HTTP requests bhejna. Techniques: results cache karo (repeat requests avoid), duplicate requests dedupe/share karo, user input pe debounce karo (har keystroke pe request na bhejo), stale requests cancel karo, aur data pagination/prefetch se manage karo. RxJS operators + HttpClient in sabko enable karte.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Network aksar app ka slowest part hai. Redundant requests (same data baar-baar), chatty requests (har keystroke pe search), aur huge payloads app ko slow + server ko overloaded karte. In sabko optimize karke tum fewer/faster requests bhejte — snappier UI, less bandwidth, less server load.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Redundant, chatty, aur heavy network traffic. Bina optimization: same data multiple components alag-alag fetch karte, search har keystroke pe fire karta, stale responses race karte, huge lists ek saath aate. Caching, dedup, debounce, cancellation, aur pagination ye sab address karke network ko efficient banate.</p>
+
+<h3 class="part">4. Internal Working — the techniques</h3>
+<div class="panel why"><div class="ptitle">Cache, share, debounce, cancel, paginate</div><p><strong>Caching:</strong> ek fetched result ko store karke repeat requests avoid — HTTP interceptor (Ch17 S-04) se, ya <code>shareReplay(1)</code> se ek Observable ka result cache+share (multiple subscribers ek hi request share karte, na ki har koi naya). <strong>Debounce:</strong> <code>debounceTime(300)</code> — user type karna ruke tab request (har keystroke nahi); <code>distinctUntilChanged()</code> — same value repeat pe skip. <strong>Cancellation:</strong> <code>switchMap</code> — naya request aaye toh purana (stale) cancel (Ch11 RxJS) — search-as-you-type mein race conditions rokta. <strong>Dedup:</strong> in-flight identical requests ko share karo (ek request, multiple consumers). <strong>Pagination:</strong> data page-by-page (poora dataset nahi). <strong>Prefetch:</strong> route <strong>resolvers</strong> se navigation se pehle data fetch (ya idle pe likely-next data). <strong>httpResource</strong> (v20 experimental): signal-based reactive HTTP — URL signal badle toh auto re-fetch, response ek signal.</p></div>
+
+<div class="dg-title">Diagram — search-as-you-type optimized</div>
+<pre class="diagram">
+ keystrokes: "a" "an" "ang" "angu" "angul" ...
+   │ debounceTime(300)  → wait for typing to pause
+   │ distinctUntilChanged() → skip if same as last
+   │ switchMap(q =&gt; http.get(q)) → cancel stale request on new input
+   ▼
+ ONE request for the final query, no races, latest result wins
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ input$ ─▶ debounceTime ─▶ distinctUntilChanged ─▶ switchMap(http)
+   ─▶ (stale requests cancelled) ─▶ latest result
+
+ shared data: source$ = http.get(url).pipe(shareReplay(1))
+   ─▶ first subscriber fetches; rest get the cached value
+</pre>
+
+<h3 class="part">6. Architecture — the toolkit</h3>
+<table>
+<tr><td><code>shareReplay(1)</code></td><td>Cache + share one HTTP result across subscribers.</td></tr>
+<tr><td><code>debounceTime</code> + <code>distinctUntilChanged</code></td><td>Reduce chatty input-driven requests.</td></tr>
+<tr><td><code>switchMap</code></td><td>Cancel stale requests (search-as-you-type).</td></tr>
+<tr><td>HTTP interceptor cache</td><td>Cache GET responses (Ch17 S-04) — cross-component.</td></tr>
+<tr><td>Resolvers / prefetch</td><td>Fetch data before navigation / ahead of need.</td></tr>
+<tr><td>Pagination</td><td>Load data in pages, not all at once.</td></tr>
+<tr><td><code>httpResource</code> (v20, exp)</td><td>Signal-based reactive HTTP with auto re-fetch.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — optimized search</h3>
+<div class="code-label">debounce + distinct + switchMap</div>
+<pre><code>results$ = this.searchControl.valueChanges.pipe(
+  debounceTime(300),              // wait for typing pause
+  distinctUntilChanged(),         // skip duplicate queries
+  switchMap(q =&gt;                  // cancel stale request on new input
+    q ? this.api.search(q) : of([])),
+);
+// one request per settled query, no race conditions, minimal server load.</code></pre>
+
+<h3 class="part">8. Beginner Example — cache with shareReplay</h3>
+<div class="code-label">share one request</div>
+<pre><code>// WITHOUT: every subscriber triggers a new HTTP call
+config$ = this.http.get('/api/config');   // 3 subscribers = 3 requests
+
+// WITH: one request, shared + cached
+config$ = this.http.get('/api/config').pipe(shareReplay(1));
+// 3 subscribers = 1 request; late subscribers get the cached result.</code></pre>
+
+<h3 class="part">9. Advanced Example — prefetch with a resolver + httpResource</h3>
+<div class="code-label">anticipatory data + reactive HTTP</div>
+<pre><code>// RESOLVER: fetch data BEFORE the route activates (no in-component spinner):
+export const userResolver: ResolveFn&lt;User&gt; =
+  (route) =&gt; inject(UserApi).getUser(route.params['id']);
+// route: { path:'user/:id', resolve:{ user: userResolver }, ... }
+
+// httpResource (v20 experimental) — signal-driven reactive fetch:
+userId = signal(1);
+user = httpResource(() =&gt; `/api/users/${this.userId()}`);
+// userId() changes → auto re-fetches; user.value() is a signal.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>debounceTime(300)</code> — typing-pause tak wait (chatty requests kam).</li>
+<li><code>distinctUntilChanged()</code> — same query repeat skip.</li>
+<li><code>switchMap</code> — naya input aaye toh stale request cancel.</li>
+<li><code>shareReplay(1)</code> — ek request cache+share (dedup).</li>
+<li>Resolver navigation se pehle data; httpResource signal-reactive.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Search har keystroke pe request bhejna — no debounce (server flooded, races).</li>
+<li><code>mergeMap</code> use karna search mein (stale results race) — <code>switchMap</code> chahiye.</li>
+<li>Same data multiple components alag fetch karte — no shareReplay/cache.</li>
+<li><code>shareReplay</code> without refCount config — connection leak (subscribers gone, source alive).</li>
+<li>Poora dataset ek saath fetch — pagination na karna.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Input-driven requests: <code>debounceTime</code> + <code>distinctUntilChanged</code> + <code>switchMap</code>.</li>
+<li>Shared/repeated data: <code>shareReplay(1)</code> ya interceptor cache (Ch17 S-04).</li>
+<li>Prefetch via resolvers (data before navigation); paginate large data.</li>
+<li>Cancel stale requests (<code>switchMap</code>) — no race conditions.</li>
+<li>Signal-first apps → explore <code>httpResource</code> (v20 experimental).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Network optimization aksar biggest perceived-perf win — requests slow hote. Debounce chatty search ko 10 requests se 1 mein badalta; switchMap stale responses cancel karke races rokta + bandwidth bachata; shareReplay/cache redundant fetches eliminate; pagination huge payloads todta; resolvers/prefetch navigation-time spinners hatate. Kam + smarter requests = snappier UI + less server load + less bandwidth.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Cache invalidation</td><td>Stale data risk — TTL/invalidation strategy chahiye.</td></tr>
+<tr><td><code>shareReplay</code> leak</td><td>Use <code>{ refCount: true }</code> ya proper teardown.</td></tr>
+<tr><td>Debounce + submit</td><td>Explicit submit ko debounce se bypass karo (instant).</td></tr>
+<tr><td>httpResource status</td><td>Experimental (v20) — API change ho sakta; loading/error states handle.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Search-as-you-type ko kaise optimize karoge?</summary><div class="ans"><p>Teen RxJS operators: <code>debounceTime(300)</code> (user type karna ruke tab request, har keystroke nahi), <code>distinctUntilChanged()</code> (same query repeat pe skip), aur <code>switchMap()</code> (naya input aaye toh purana in-flight request cancel — stale results ki race rokta). Isse 10 keystrokes ke liye 1 request (final settled query pe), no race conditions, minimal server load. <code>mergeMap</code> nahi (woh sab requests race karwata).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>shareReplay</code> HTTP optimization mein kaise help karta?</summary><div class="ans"><p><code>shareReplay(1)</code> ek Observable ka result cache karke multiple subscribers mein share karta — pehla subscriber HTTP request trigger karta, baaki (aur late subscribers) cached result paate, naya request nahi. Yani agar 3 components same config/data chahte, sirf 1 request jaata. Ye request dedup + caching deta. Caution: refCount/teardown na ho toh connection leak — <code>{ refCount: true }</code> use karo.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>switchMap</code> vs <code>mergeMap</code> search mein — kyun matter karta?</summary><div class="ans"><p>Search-as-you-type mein <code>switchMap</code> naya query aane pe purana (stale) request cancel karta — sirf latest query ka result aata, races nahi. <code>mergeMap</code> saare requests parallel chalata bina cancel — purane slow requests baad mein aake latest result ko overwrite kar sakte (wrong/stale results dikhte — race condition). Isliye "cancel previous" semantics wale cases (search, autocomplete) mein <code>switchMap</code> — network bhi bachata (stale cancelled).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek dashboard 5 components load hote jo sab same "current user" data alag-alag fetch karte — 5 identical API calls. Fix?</summary><div class="ans"><p>Request dedup + caching. Data ko ek shared service mein ek Observable banao with <code>shareReplay(1)</code> — <code>currentUser$ = this.http.get('/api/me').pipe(shareReplay(1))</code>. Ab 5 components isi ko subscribe karte, par sirf 1 HTTP request jaata (pehla subscriber trigger karta, baaki cached result paate). Ya HTTP interceptor-level GET cache (Ch17 S-04) — cross-component automatically. Ya state management (NgRx, Ch15) mein user ek baar load karke store se sab consume. 5 calls → 1.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Search: <code>debounceTime</code> + <code>distinctUntilChanged</code> + <code>switchMap</code> (debounce + dedup + cancel-stale).</li>
+<li>Shared/repeat data: <code>shareReplay(1)</code> or interceptor cache. Dedup identical requests.</li>
+<li><code>switchMap</code> (cancel stale) not <code>mergeMap</code> (races). Paginate large data; resolvers prefetch. <code>httpResource</code> (v20 exp) signal-reactive.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.19 · Optimized search</div><p>Search-as-you-type banao. Pehle naive (har keystroke request) — Network tab mein request flood + races dekho. Phir <code>debounceTime</code> + <code>distinctUntilChanged</code> + <code>switchMap</code> se optimize karke request count aur race behavior compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-18.20 · Dedup shared data</div><p>3 components jo same API se data fetch karte. Pehle 3 requests observe karo, phir <code>shareReplay(1)</code> wale shared service se 1 request mein badlo (Network tab se prove).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s11">
+<div class="sec-head">
+  <span class="sec-num">S-11</span>
+  <h2>Build, Bundle &amp; Memory Hygiene</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s11"> Done</label>
+</div>
+<p class="covers">Covers: <b>bundle analysis (source-map-explorer/esbuild) · budgets · tree-shaking · AOT/production build · Brotli/gzip · service workers (PWA) · web workers · memory leaks (takeUntilDestroyed)</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Ye final layer: app ko efficiently <em>build + ship</em> karna aur runtime mein <em>clean</em> rakhna. Isme aata: bundle ka size analyze + control (budgets, tree-shaking, AOT), assets compress (Brotli/gzip), repeat visits fast (service workers/caching), heavy compute off-main-thread (web workers), aur memory leaks avoid (subscriptions cleanup). Ye "ship less, ship compressed, cache smart, stay clean" hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bada/un-optimized bundle = slow download + parse (slow startup). Un-compressed assets = wasted bandwidth. No caching = har visit full download. Heavy compute on main thread = janky UI. Memory leaks = app degrade over time (slow, crash). Ye techniques in sabko address karke app ko fast-to-load aur stable-over-time rakhte.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Bloated shipping + runtime degradation. Bina in: bundle silently grow karta, dead code ship hota, assets bade jaate, repeat visits slow, main thread block hota, aur leaked subscriptions memory kha jaate. Build/bundle/memory hygiene ye rokta — lean bundle, compressed assets, cached repeat-visits, responsive main thread, no leaks.</p>
+
+<h3 class="part">4. Internal Working — the build &amp; runtime toolkit</h3>
+<div class="panel why"><div class="ptitle">Analyze → shrink → compress → cache → clean</div><p><strong>Bundle analysis:</strong> <code>source-map-explorer</code> / esbuild bundle stats se dekho kaun sa code bundle bloat kar raha (usually ek bada dependency). <strong>Budgets</strong> (S-01, angular.json) size limits enforce. <strong>Tree-shaking:</strong> production build unused exports drop karta (isliye standalone + ES modules + <code>providedIn:'root'</code> tree-shakable). <strong>AOT (Ahead-of-Time) compilation</strong> + minification production build (<code>ng build</code>) mein default — templates precompiled, code minified/mangled. <strong>Compression:</strong> server Brotli/gzip se assets compress kare (JS/CSS ka size ~70%+ girta) — build artifact nahi, server/CDN config. <strong>Service workers</strong> (<code>@angular/pwa</code>): assets cache karke repeat visits instant + offline support. <strong>Web workers:</strong> heavy computation (parsing, image processing) ko background thread pe bhejo — main thread free (no jank). <strong>Memory leaks:</strong> long-lived subscriptions component destroy pe unsubscribe karo — warna woh + unka closure memory mein reh jaate. <code>takeUntilDestroyed()</code> (v16, <code>@angular/core/rxjs-interop</code>) ya <code>async</code> pipe (auto-unsubscribe) ya manual <code>Subscription.unsubscribe()</code>.</p></div>
+
+<div class="dg-title">Diagram — the ship pipeline</div>
+<pre class="diagram">
+ SOURCE ─▶ AOT compile + tree-shake + minify ─▶ bundle (budgets enforced)
+        ─▶ analyze (source-map-explorer) ─▶ trim bloat
+        ─▶ server Brotli/gzip ─▶ ~70% smaller over the wire
+        ─▶ service worker caches ─▶ repeat visits instant
+ RUNTIME: web workers (off-main-thread) + no leaked subscriptions
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ ng build (prod) ─▶ AOT + tree-shake + minify + hash + budgets
+   ─▶ analyze bundle ─▶ lazy-load / trim heavy deps
+ deploy ─▶ Brotli/gzip + cache headers + CDN + service worker
+ runtime ─▶ takeUntilDestroyed / async pipe (no leaks) + web workers
+</pre>
+
+<h3 class="part">6. Architecture — the techniques</h3>
+<table>
+<tr><td>Bundle analysis</td><td><code>source-map-explorer</code> / esbuild stats — find what's bloating.</td></tr>
+<tr><td>Budgets + tree-shaking</td><td>angular.json limits; production drops dead code.</td></tr>
+<tr><td>AOT + minification</td><td>Production build default — precompiled + minified.</td></tr>
+<tr><td>Brotli/gzip</td><td>Server/CDN compression — ~70%+ smaller transfer.</td></tr>
+<tr><td>Service worker (PWA)</td><td><code>@angular/pwa</code> — cache assets, offline, instant repeat visits.</td></tr>
+<tr><td>Web workers</td><td>Off-main-thread heavy compute — no UI jank.</td></tr>
+<tr><td><code>takeUntilDestroyed</code> / async pipe</td><td>Auto-cleanup subscriptions — no memory leaks.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — leak-free subscriptions</h3>
+<div class="code-label">takeUntilDestroyed + async pipe</div>
+<pre><code>import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+export class LiveComponent {
+  constructor() {
+    this.ws.messages$
+      .pipe(takeUntilDestroyed())   // auto-unsubscribe on destroy — no leak
+      .subscribe(m =&gt; this.handle(m));
+  }
+}
+// EVEN BETTER — let the async pipe manage it (no manual subscribe):
+// template: @if (data$ | async; as data) { {{ data.value }} }
+// async pipe subscribes + unsubscribes automatically.</code></pre>
+
+<h3 class="part">8. Beginner Example — analyze &amp; budget</h3>
+<div class="code-label">see what you ship</div>
+<pre><code>ng build --stats-json
+npx source-map-explorer dist/**/*.js   // visual map of bundle contents
+// find the big blocks → lazy-load them (S-05) or replace heavy deps.
+
+// angular.json budget fails the build if the bundle bloats (S-01):
+"budgets": [{ "type":"initial", "maximumError":"1mb" }]</code></pre>
+
+<h3 class="part">9. Advanced Example — web worker for heavy compute</h3>
+<div class="code-label">off-main-thread</div>
+<pre><code>// ng generate web-worker heavy   → creates heavy.worker.ts
+const worker = new Worker(new URL('./heavy.worker', import.meta.url));
+worker.postMessage(bigDataset);          // offload to background thread
+worker.onmessage = ({ data }) =&gt; this.result.set(data);  // main thread free
+// heavy parsing/processing runs off the main thread → UI stays responsive (INP).
+
+// service worker (PWA) for caching:
+// ng add @angular/pwa → caches app shell + assets → instant repeat visits + offline</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>source-map-explorer</code> — bundle contents visualize (find bloat).</li>
+<li>Budgets — size limits build-time enforce (S-01).</li>
+<li>Production build — AOT + tree-shake + minify default.</li>
+<li><code>takeUntilDestroyed()</code>/async pipe — subscriptions auto-cleanup (no leak).</li>
+<li>Web worker — heavy compute off main thread; service worker — cache/offline.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Long-lived subscriptions (intervals, WebSockets, router events) unsubscribe na karna — memory leak.</li>
+<li>Dev build ship karna (no AOT/minify) — huge, slow. Always production build.</li>
+<li>Bundle kabhi analyze na karna — ek bada dependency silently bloat karta.</li>
+<li>Server compression (Brotli/gzip) enable na karna — 3-4x larger transfer.</li>
+<li>Heavy compute main thread pe — UI freeze (web worker chahiye tha).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Regularly analyze bundle (source-map-explorer); set budgets (CI enforce).</li>
+<li>Production build (AOT + tree-shake + minify); standalone for tree-shaking.</li>
+<li>Server Brotli/gzip + cache headers + CDN + content hashing.</li>
+<li>Subscriptions: <code>async</code> pipe / <code>takeUntilDestroyed</code> / signals (fewer subs).</li>
+<li>Heavy compute → web workers; repeat-visit/offline → service worker (PWA).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ye layer end-to-end shipping efficiency deta. Bundle analysis + tree-shaking + AOT lean bundle (fast download+parse); budgets regressions rokte; Brotli/gzip transfer ~70% chhota; service workers repeat visits instant + offline; web workers heavy compute off-main-thread (responsive INP); leak-free subscriptions app ko time ke saath stable (no slow-degrade/crash) rakhte. Combined: fast first load, fast repeat load, responsive runtime, stable over time.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Service worker staleness</td><td>Aggressive caching → users purana version dekhte; update strategy chahiye.</td></tr>
+<tr><td>Web worker limits</td><td>No DOM access; structured-clone data cost for huge payloads.</td></tr>
+<tr><td>takeUntilDestroyed context</td><td>Injection context (constructor/field) chahiye, ya <code>DestroyRef</code> pass karo.</td></tr>
+<tr><td>Tree-shaking blockers</td><td>Side-effectful imports / non-ESM deps shake nahi hote.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular mein memory leaks kaise avoid karte ho?</summary><div class="ans"><p>Long-lived subscriptions (intervals, WebSockets, valueChanges, router events) ko component destroy pe unsubscribe karo — warna woh + unke closures memory mein reh jaate (leak). Best options: <code>async</code> pipe (template mein — auto subscribe+unsubscribe), <code>takeUntilDestroyed()</code> (v16, <code>@angular/core/rxjs-interop</code> — destroy pe auto-complete), ya signals use karo (subscriptions hi kam). Manual <code>Subscription.unsubscribe()</code> in <code>ngOnDestroy</code> bhi kaam karta par verbose.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Bundle size kaise reduce karte ho?</summary><div class="ans"><p>(1) <strong>Analyze</strong> — <code>source-map-explorer</code> se dekho kya bloat kar raha (usually ek bada dep). (2) <strong>Lazy loading</strong> (S-05) — features alag chunks mein. (3) <strong>Tree-shaking</strong> — production build unused code drop karta (standalone + ESM + <code>providedIn:'root'</code> tree-shakable rakho). (4) <strong>AOT + minification</strong> — production build default. (5) Heavy deps replace/lazy karo. (6) <strong>Budgets</strong> set karo (CI regressions rokta). (7) Server <strong>Brotli/gzip</strong> — transfer size ~70% kam.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Web worker aur service worker mein kya farq?</summary><div class="ans"><p><strong>Web worker:</strong> heavy computation (parsing, processing) ko ek background thread pe chalata — main thread free, UI responsive (no jank). No DOM access. <strong>Service worker:</strong> ek network proxy hai jo assets/requests cache karta — repeat visits instant, offline support, PWA (<code>@angular/pwa</code>). Yani web worker = off-main-thread compute (performance/responsiveness); service worker = caching/offline (load speed/reliability). Dono alag purposes.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> App time ke saath slow hota jaata — jitna zyada use karo utna laggy, kabhi tab crash. Diagnosis + fix?</summary><div class="ans"><p>Classic memory leak. Long-lived subscriptions (intervals, WebSockets, valueChanges, event listeners) components destroy hone pe unsubscribe nahi ho rahe — har navigation naya subscription add karta, purane memory mein pade rehte, accumulate hote → app slow, eventually crash. Diagnosis: Chrome DevTools Memory tab → heap snapshots leke navigate karo, detached DOM nodes / growing listener counts dekho. Fix: sabhi subscriptions ko <code>takeUntilDestroyed()</code> ya <code>async</code> pipe se auto-cleanup karo; event listeners <code>ngOnDestroy</code> mein remove; signals se subscriptions hi kam karo. Leak plug hone pe memory stable.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Bundle: analyze (source-map-explorer) + budgets + tree-shaking + AOT/prod build. Server Brotli/gzip (~70% smaller).</li>
+<li>Service worker (PWA) = cache/offline/instant repeat. Web worker = heavy compute off-main-thread (responsive).</li>
+<li>Memory leaks: unsubscribe long-lived subs via <code>async</code> pipe / <code>takeUntilDestroyed()</code> / signals. App stays stable over time.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-18.21 · Bundle diet</div><p>Ek app ka bundle <code>source-map-explorer</code> se analyze karo. Biggest offender identify karke lazy-load ya replace karo. Budget set karke, prod build ka before/after initial-bundle size compare karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-18.22 · Plug a leak</div><p>Ek component banao with a leaking <code>interval</code>/WebSocket subscription (no unsubscribe). Chrome Memory tab se leak observe karo (repeated navigate → growing heap). <code>takeUntilDestroyed()</code>/async pipe se fix karke stable memory prove karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <p><b>Chapter 18 complete! 🎉</b> Tumne enterprise Angular ki <b>poori performance toolkit</b> cover kar li — measure se lekar ship tak: <b>Mindset &amp; Measurement</b> (Core Web Vitals, profiler, budgets), <b>Change Detection</b> (OnPush/signals/zoneless), <b>List Rendering</b> (track), <b>Virtual Scrolling</b>, <b>Lazy Loading</b>, <b>@defer</b>, <b>Preloading</b>, <b>Image/Asset</b> (NgOptimizedImage), <b>SSR + Incremental Hydration</b>, <b>Network/Data</b> (debounce/switchMap/shareReplay), aur <b>Build/Bundle/Memory</b>. Ye SDE-2/SDE-3 interviews ka high-signal senior topic hai — ab tum "measure-first, right-technique-for-the-bottleneck" story confidently bol sakte ho.</p>
+  <p style="margin-bottom:0"><b>Aage kya? (Next chapter options):</b><br>
+  <b>Option A — Angular Testing (Vitest / Jest / Testing Library):</b> unit + component + integration testing, TestBed, mocking, harnesses, signal/zoneless testing, coverage — production Angular ka must-have.<br>
+  <b>Option B — Angular Accessibility (a11y) &amp; i18n:</b> ARIA, CDK a11y (FocusMonitor/LiveAnnouncer), keyboard navigation, <code>@angular/localize</code>, RTL — enterprise + inclusive apps ka essential layer.<br>
+  Bolo kaunsa banaayein! 🚀</p>
+</div>
+
+</div>
+
+<script>
+(function () {
+  var KEY = 'ng_ch18_progress_v1';
+  var total = 11;
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+  var boxes = document.querySelectorAll('.done-toggle input[type=checkbox]');
+  function refresh() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    var fill = document.getElementById('pfill');
+    var label = document.getElementById('plabel');
+    if (fill) fill.style.width = pct + '%';
+    if (label) label.textContent = done + ' / ' + total + ' sections done';
+  }
+  boxes.forEach(function (b) {
+    var sec = b.getAttribute('data-sec');
+    if (saved[sec]) b.checked = true;
+    b.addEventListener('change', function () {
+      saved[sec] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      refresh();
+    });
+  });
+  refresh();
+})();
+</script>
+
+<script>
+(function () {
+  var KW = /\b(abstract|any|as|async|await|boolean|break|case|catch|class|const|constructor|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|instanceof|interface|is|keyof|let|namespace|new|null|number|of|private|protected|public|readonly|return|set|static|string|super|switch|this|throw|true|try|type|typeof|undefined|void|while|yield)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(code){
+    var out = code;
+    out = out.replace(/(\/\/[^\n]*)/g, function(m){ return '\u0001cm\u0002' + m + '\u0003'; });
+    out = out.replace(/('[^'\n]*'|"[^"\n]*"|`[^`]*`)/g, function(m){ return '\u0001st\u0002' + m + '\u0003'; });
+    out = out.replace(KW, function(m){ return '\u0001kw\u0002' + m + '\u0003'; });
+    out = out.replace(/\b(\d+(?:\.\d+)?)\b/g, function(m){ return '\u0001nm\u0002' + m + '\u0003'; });
+    out = out.replace(/([a-zA-Z_$][\w$]*)(\s*\()/g, function(m,p1,p2){ return '\u0001fn\u0002' + p1 + '\u0003' + p2; });
+    out = esc(out);
+    out = out.replace(/\u0001(kw|st|cm|nm|fn)\u0002/g, function(m,c){ return '<span class="'+c+'">'; })
+             .replace(/\u0003/g, '</span>');
+    return out;
+  }
+  document.querySelectorAll('pre code').forEach(function(block){
+    block.innerHTML = hl(block.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

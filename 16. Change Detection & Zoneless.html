@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 16 — Change Detection &amp; Zoneless | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 8 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 16 — <span>Change Detection</span> &amp; Zoneless</h1>
+  <p class="subtitle">Ye woh engine hai jo tumhare data ko screen se sync rakhta hai — jab <code>count</code> badla, DOM mein <code>{{ count }}</code> kaise update hua? Ye "magic" nahi, ek precise mechanism hai. Is chapter mein <em>WHY + internals first</em>: pehle change detection ka andar ka kaam aur rendering cycle, phir Zone.js (jo trigger karta tha), phir dono strategies (<strong>Default</strong> vs <strong>OnPush</strong>), phir manual control (<code>markForCheck</code> / <code>detectChanges</code>), aur aakhir mein <strong>Zoneless Angular</strong> — v20.2 se stable, v21+ mein default. Ye 2025-26 ke Angular interviews ka <em>hottest</em> topic hai.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">CD: <b>Zone.js → Zoneless</b> · Angular <b>v17→v21+</b></span>
+    <span class="chip">Sections: <b>8</b> · Parts: <b>136</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Change Detection — Internal Working</a><div class="sub">what CD is · component/view tree · dirty checking · LView · how bindings are compared</div></li>
+    <li><a href="#s2">The Rendering Cycle</a><div class="sub">the tick · top-down traversal · binding eval · DOM update · mark→refresh · hooks order</div></li>
+    <li><a href="#s3">Zone.js</a><div class="sub">monkey-patching async · NgZone · onMicrotaskEmpty → tick · runOutsideAngular · coalescing</div></li>
+    <li><a href="#s4">Default Strategy (CheckAlways)</a><div class="sub">checks every component every tick · pros/cons · when it's fine · the cost</div></li>
+    <li><a href="#s5">OnPush Strategy</a><div class="sub">reference-based · the 4 triggers · immutability · skipping subtrees · mixed trees</div></li>
+    <li><a href="#s6">markForCheck()</a><div class="sub">mark path-to-root dirty for NEXT tick · async pipe · does NOT run CD itself</div></li>
+    <li><a href="#s7">detectChanges() &amp; ChangeDetectorRef</a><div class="sub">sync local CD now · detach/reattach · checkNoChanges · vs markForCheck</div></li>
+    <li><a href="#s8">Zoneless Angular</a><div class="sub">provideZonelessChangeDetection · signals as trigger · migration · v20.2 stable · v21 default</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>Change Detection — Internal Working</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>what CD is · component/view tree · dirty checking · LView &amp; TView · how bindings are compared · the CD tree · no "re-render" myth</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Change Detection (CD) woh mechanism hai jisse Angular tumhare component ki state (properties) ko template (DOM) ke saath <strong>sync</strong> rakhta hai. Jab <code>this.count</code> badla, CD hi decide karta hai ki template ka <code>{{ count }}</code> update ho. Simple shabdon mein: CD "model → view" sync engine hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Angular declarative hai — tum template mein <code>{{ count }}</code> likhte ho, manually DOM update nahi karte. Toh kisi ko toh check karna padta "count badla kya? Agar haan, DOM patch karo". Yahi CD karta. Bina iske tumhe har change pe manually <code>element.textContent = ...</code> likhna padta (imperative, error-prone).</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Manual DOM synchronization. CD automate karta: tum sirf component state badlo, CD binding-by-binding compare karke sirf badle DOM nodes update karta. Declarative UI ka foundation — "state describe karo, sync framework kare".</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Component tree = view tree; dirty checking</div><p>Har Angular app ek <strong>component tree</strong> hai (root se neeche). Internally har component ka ek <strong>view</strong> (runtime data structure <code>LView</code> — Logical View — + static <code>TView</code> shared blueprint) hota. Jab CD chalti, Angular is tree ko <strong>top-to-bottom</strong> (root se leaves) traverse karta. Har view mein template ke har binding (jaise <code>{{ count }}</code>, <code>[value]</code>) ka <strong>pichla value</strong> stored hota. CD current value ko pichle se <code>===</code> (identity) se compare karta — <strong>dirty checking</strong>. Agar badla, DOM update + naya value store. Ye per-binding comparison compiler ne generate ki template instructions se hota (super fast, monomorphic). Important: Angular kabhi poora component "re-render" nahi karta — sirf <em>changed bindings ke DOM nodes</em> patch karta.</p></div>
+
+<div class="dg-title">Diagram — the component/view tree</div>
+<pre class="diagram">
+        AppRoot (view)
+        /          \
+   Header        UsersPage (view)
+                 /        \
+          UserList      Sidebar
+          (view)        (view)
+   CD traverses TOP → BOTTOM, checking each view's bindings
+   each binding: current === previous ?  no → update that DOM node
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ something triggers CD (event/async/signal)
+   ─▶ CD starts at root view
+   ─▶ for each view (top-down): run its template's update instructions
+       ─▶ each binding: compare current vs stored previous (===)
+           changed  → patch that DOM node + store new value
+           same     → skip
+   ─▶ recurse into child views
+   ─▶ done: DOM in sync with state
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td>Component tree</td><td>Root → children; mirrors your template nesting.</td></tr>
+<tr><td><code>LView</code></td><td>Per-instance runtime array: bindings' current + previous values, DOM refs, state flags.</td></tr>
+<tr><td><code>TView</code></td><td>Static template blueprint shared by all instances of a component.</td></tr>
+<tr><td>Dirty checking</td><td>Per-binding <code>===</code> compare vs stored previous value.</td></tr>
+<tr><td>Update instructions</td><td>Compiler-generated per-template functions (fast, no reflection).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">what the compiler roughly generates (conceptual)</div>
+<pre><code>// template: &lt;h1&gt;{{ title }}&lt;/h1&gt; &lt;p&gt;{{ user.name }}&lt;/p&gt;
+// compiler → update function (runs each CD for this view):
+function updateView(lView) {
+  // ɵɵtextInterpolate compares &amp; patches ONLY if changed
+  if (bindingUpdated(lView, 0, ctx.title))      setText(node0, ctx.title);
+  if (bindingUpdated(lView, 1, ctx.user.name))  setText(node1, ctx.user.name);
+  // bindingUpdated = current !== previous ? (store new, return true) : false
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">the mental model</div>
+<pre><code>// You write (declarative):
+@Component({ template: `{{ count }}` })
+class C { count = 0; increment() { this.count++; } }
+
+// CD does (automatic): after increment(), a tick runs →
+//   compares count(1) !== previous(0) → true → updates DOM text to "1"
+// You NEVER touch the DOM yourself.</code></pre>
+
+<h3 class="part">9. Advanced Example — why immutability &amp; identity matter</h3>
+<div class="code-label">=== comparison consequences</div>
+<pre><code>// CD compares by reference (===) for objects/arrays:
+this.user.name = 'New';        // SAME object reference → OnPush may MISS it
+this.user = { ...this.user, name: 'New' };  // NEW reference → detected
+
+// primitives compare by value:
+this.count = this.count + 1;   // 1 !== 0 → detected fine
+// This is WHY OnPush + immutability go together (S-05).</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Component tree = view tree; har view ka ek <code>LView</code> (runtime state).</li>
+<li>CD root se start, top-to-bottom har view visit.</li>
+<li>Har binding ka current value stored previous se <code>===</code> compare.</li>
+<li>Changed → us specific DOM node ko patch + naya value store.</li>
+<li>Objects reference se compare — isliye immutability matters (OnPush).</li>
+<li>No full re-render — sirf changed bindings ke nodes touch hote.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sochna Angular poora component "re-render" karta har change pe — nahi, sirf changed bindings patch hote.</li>
+<li>Objects ko mutate karke expect karna CD detect karega (OnPush mein miss) — reference badlo.</li>
+<li>Template mein heavy function calls (<code>{{ compute() }}</code>) — har CD pe chalti (S-04 perf).</li>
+<li>CD ko "slow magic" samajhna — actually per-binding <code>===</code>, bahut fast; problem tab jab bahut baar/bahut components.</li>
+<li>Template expressions mein side-effects — CD unhe bar-bar chala sakti (pure rakho).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Template expressions PURE + cheap rakho (no heavy compute / side-effects).</li>
+<li>Objects/arrays immutably update karo (naya reference) — CD-friendly.</li>
+<li>Signals prefer karo (fine-grained, CD ko exact batate kya badla).</li>
+<li>Samjho CD per-binding hai — design accordingly (OnPush, trackBy).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>CD ki cost = (views checked) × (bindings per view) × (CD frequency). Per-binding <code>===</code> individually tez hai; problem scale pe — hazaaron bindings × frequent ticks. Optimizations: <code>OnPush</code> (views skip), signals (targeted), <code>trackBy</code>/<code>track</code> (list diffing), pure template expressions. No-full-re-render design already efficient; goal hai unnecessary checks minimize karna.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td><code>ExpressionChangedAfterItHasBeenChecked</code></td><td>Dev-mode double-check: value CD ke baad badla → error (binding must be stable within a tick).</td></tr>
+<tr><td>Detached views</td><td><code>detach()</code> se ek view CD tree se hat sakta (S-07).</td></tr>
+<tr><td>Dynamic components</td><td><code>ViewContainerRef.createComponent</code> se banaye views bhi tree mein attach.</td></tr>
+<tr><td>Embedded views</td><td><code>@for</code>/<code>@if</code> ke views container ke andar create/destroy hote.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Change detection kya hai?</summary><div class="ans"><p>Woh mechanism jo component ki state (properties) ko template (DOM) ke saath sync rakhta hai. Jab data badalta, CD binding-by-binding compare (dirty checking) karke sirf badle DOM nodes update karta. Ye Angular ke declarative UI ka foundation — tum state describe karte ho, CD DOM sync karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Angular internally CD kaise karta hai (dirty checking)?</summary><div class="ans"><p>Har component ka ek view (<code>LView</code> runtime + <code>TView</code> blueprint) hota. CD component tree ko top-to-bottom traverse karti; har view mein compiler-generated update instructions har binding ka current value stored previous se <code>===</code> compare karti. Changed → us DOM node ko patch + naya value store. Ye per-binding comparison hi "dirty checking" hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> "Angular re-renders the component" — sahi hai?</summary><div class="ans"><p>Nahi, ye common misconception hai. Angular poora component/template dobara render nahi karta. CD sirf bindings check karti aur agar koi badla toh <strong>sirf us affected DOM node</strong> ko update karti — baaki DOM untouched. Isliye CD efficient hai; "re-render" React-style virtual-DOM reconciliation nahi, targeted binding patching hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Tumne <code>this.user.name = 'X'</code> kiya par UI update nahi hua (OnPush component). Internally kyun?</summary><div class="ans"><p>CD objects ko reference (<code>===</code>) se compare karti. <code>user.name</code> mutate karne se <code>user</code> ka reference same rehta — OnPush strategy ko lagta "kuch nahi badla" (input reference unchanged), toh view skip. Fix: naya reference do — <code>this.user = {...this.user, name: 'X'}</code> — ab reference badla, CD detect karti. Yehi immutability + OnPush ka connection hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>CD = model→view sync engine. Component tree = view tree (<code>LView</code>+<code>TView</code>), traversed TOP-DOWN.</li>
+<li>Dirty checking = per-binding <code>===</code> vs stored previous → patch only changed DOM nodes (no full re-render).</li>
+<li>Objects compared by reference → immutability matters. Primitives by value.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.1 · Prove no re-render</div><p>Ek component banao 2 bindings ke saath. Ek ko badlo. DevTools mein prove karo sirf ek DOM node update hua (dusra untouched) — Angular poora template re-render nahi karta.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-16.2 · Mutation vs new reference</div><p>Ek OnPush component ko object <code>@Input</code> do. Mutation (<code>obj.x=1</code>) vs new reference (<code>{...obj,x:1}</code>) — dono try karke observe karo kaunsa UI update karta aur kyun.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>The Rendering Cycle</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>the tick · top-down traversal · binding evaluation · DOM update · mark→refresh phases · lifecycle hooks order · synchronous cycle · dev double-check</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Rendering cycle (ek "<strong>tick</strong>") woh ek complete pass hai jo CD component tree pe chalati — root se leaves tak, har view ke bindings evaluate karke DOM sync karti, aur beech mein lifecycle hooks fire karti. Ek tick = ek synchronous run.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>State kabhi bhi badal sakti (click, HTTP, timer, signal). Rendering cycle ek organized, predictable pass deta jahan Angular saari pending changes ko ek baar mein DOM mein flush karta — na ki har micro-change pe alag-alag. Ye batching + ordering (hooks) deta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Chaotic, uncoordinated DOM updates. Ek structured tick ensure karta: sab bindings ek consistent snapshot se evaluate hon, hooks sahi order mein chalein, aur DOM ek coordinated pass mein update ho — predictable + debuggable rendering.</p>
+
+<h3 class="part">4. Internal Working — the two phases of a tick</h3>
+<div class="panel why"><div class="ptitle">Mark dirty → refresh (synchronize)</div><p>Ek tick conceptually do phases mein: (1) <strong>Mark phase</strong> — trigger (event/signal/markForCheck) affected views ko "dirty" mark karta (aur ancestors ko root tak, taaki traversal un tak pahunche). (2) <strong>Refresh/synchronize phase</strong> — Angular tree ko top-down traverse karta; har view jo checkable hai (dirty ya CheckAlways), uske bindings evaluate karta, <strong>lifecycle hooks</strong> fire karta (<code>ngOnInit</code> once, phir har tick <code>ngDoCheck</code> → <code>ngOnChanges</code> if inputs changed → content/view hooks), aur DOM patch karta. Poora tick <strong>synchronous</strong> hai. Dev mode mein ek extra "checkNoChanges" pass hota jo verify karta ki bindings tick ke dauraan stable rahe — na rahe toh <code>ExpressionChangedAfterItHasBeenCheckedError</code>.</p></div>
+
+<div class="dg-title">Diagram — one tick</div>
+<pre class="diagram">
+ TRIGGER (event / signal / markForCheck / async)
+   │
+   ▼  PHASE 1: mark dirty (view + ancestors to root)
+ root ──dirty──▶ page ──dirty──▶ list  (path marked)
+   │
+   ▼  PHASE 2: refresh (top-down traversal)
+ for each checkable view:
+    ngDoCheck / ngOnChanges → evaluate bindings → update DOM → child hooks
+   │
+   ▼  (dev only) checkNoChanges pass → ExpressionChanged...Error if unstable
+ DOM now in sync
+</pre>
+
+<h3 class="part">5. Execution Flow — hooks order within a cycle</h3>
+<pre class="diagram">
+ tick ─▶ (per component, top-down)
+   ngOnChanges (if @Input changed)
+   ngOnInit    (first tick only)
+   ngDoCheck
+   ngAfterContentInit / ngAfterContentChecked
+   ngAfterViewInit / ngAfterViewChecked
+   → bindings evaluated, DOM updated
+ (ngOnDestroy fires when a view is removed, not part of normal refresh)
+</pre>
+
+<h3 class="part">6. Architecture — what triggers a tick</h3>
+<table>
+<tr><td>DOM events</td><td><code>(click)</code>, <code>(input)</code> — handler runs, then a tick.</td></tr>
+<tr><td>Async (Zone mode)</td><td><code>setTimeout</code>, <code>Promise</code>, XHR — Zone.js schedules a tick (S-03).</td></tr>
+<tr><td>Signals</td><td>A read signal changes → schedules a targeted tick (S-08).</td></tr>
+<tr><td><code>markForCheck()</code></td><td>Marks dirty for the NEXT tick (S-06).</td></tr>
+<tr><td><code>ApplicationRef.tick()</code></td><td>Manually run a full CD pass.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">observing the cycle</div>
+<pre><code>@Component({
+  selector: 'app-demo',
+  template: `{{ logCheck() }} {{ value }}`,   // demo only — DON'T call fns in real templates
+})
+export class DemoComponent implements DoCheck {
+  value = 0;
+  ngDoCheck() { console.log('tick: CD running on this view'); }
+  logCheck() { return ''; }   // runs EVERY tick — shows CD frequency
+}
+// click / setTimeout / http → observe how many ticks fire</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">event → tick</div>
+<pre><code>@Component({ template: `&lt;button (click)="inc()"&gt;{{ n }}&lt;/button&gt;` })
+class C {
+  n = 0;
+  inc() { this.n++; }   // handler runs → then ONE tick → DOM shows new n
+}
+// the (click) handler completing triggers the rendering cycle</code></pre>
+
+<h3 class="part">9. Advanced Example — ExpressionChangedAfterItHasBeenChecked</h3>
+<div class="code-label">the classic dev error</div>
+<pre><code>@Component({ template: `{{ time }}` })
+class C implements AfterViewChecked {
+  time = Date.now();
+  ngAfterViewChecked() { this.time = Date.now(); }  // ❌ changes binding AFTER it was checked
+}
+// dev double-check pass sees time changed within the same tick → throws
+// FIX: don't mutate bound state in post-check hooks; use a stable value / setTimeout / signal</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Trigger view + ancestors ko dirty mark karta (Phase 1).</li>
+<li>Refresh pass top-down: har checkable view visit.</li>
+<li>Hooks order: <code>ngOnChanges</code> → <code>ngOnInit</code>(once) → <code>ngDoCheck</code> → content → view hooks.</li>
+<li>Bindings evaluate, changed DOM nodes patch.</li>
+<li>Dev-only checkNoChanges pass: binding stability verify → error if not.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Post-check hooks (<code>ngAfterViewChecked</code>) mein bound state badalna → <code>ExpressionChangedAfterItHasBeenChecked</code>.</li>
+<li>Template mein function calls — har tick pe chalti (unpredictable frequency + perf).</li>
+<li>Sochna hooks har baar sabhi fire karte — <code>ngOnInit</code> once, baaki har checkable tick.</li>
+<li><code>ngDoCheck</code> mein heavy work — har tick pe chalta.</li>
+<li>Tick ko async samajhna — ek tick synchronous hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Bound values ko within-a-tick stable rakho (post-check hooks mein mutate mat karo).</li>
+<li>Template expressions cheap + pure; function calls avoid (precompute / signals / pipes).</li>
+<li>Lifecycle hooks light rakho (especially per-tick <code>ngDoCheck</code>/<code>AfterViewChecked</code>).</li>
+<li>Signals se targeted ticks — poore tree ke bajaye.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ek tick ki cost = checkable views × bindings + hooks work. Frequent ticks (Zone.js har async pe) sabse bada perf drain. Reduce: OnPush (fewer checkable views), signals (targeted ticks), zoneless (no blanket async ticks), light hooks, pure expressions. Har tick synchronous hai — heavy work main thread block karta (jank).</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>checkNoChanges (prod)</td><td>Dev-only double-check; production mein nahi chalta (perf).</td></tr>
+<tr><td>Nested ticks</td><td>Ek tick ke andar state badalna re-entrancy issues de sakta — avoid.</td></tr>
+<tr><td>Detached views</td><td>Traversal un tak nahi pahunchti (S-07).</td></tr>
+<tr><td>First render</td><td>Initial CD sab views create + first hooks fire karti.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Ek CD "tick" kya hai?</summary><div class="ans"><p>Ek complete rendering cycle — ek synchronous pass jahan CD component tree ko top-down traverse karti, har checkable view ke bindings evaluate karke DOM sync karti, aur lifecycle hooks fire karti. Ek trigger (event/async/signal) ke baad usually ek tick chalta jo saari pending changes DOM mein flush karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Ek tick mein lifecycle hooks kis order mein?</summary><div class="ans"><p>Per component, top-down: <code>ngOnChanges</code> (agar inputs badle) → <code>ngOnInit</code> (sirf pehle tick) → <code>ngDoCheck</code> → <code>ngAfterContentInit</code>/<code>ngAfterContentChecked</code> → <code>ngAfterViewInit</code>/<code>ngAfterViewChecked</code>. <code>Init</code> hooks once, <code>Check</code>/<code>DoCheck</code> har checkable tick. <code>ngOnDestroy</code> view removal pe.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> <code>ExpressionChangedAfterItHasBeenCheckedError</code> kyun aata hai?</summary><div class="ans"><p>Dev mode mein har tick ke baad Angular ek extra "checkNoChanges" pass chalata jo verify karta ki koi bound value tick ke <em>dauraan</em> (checking ke baad) badla toh nahi. Agar badla (jaise <code>ngAfterViewChecked</code> mein bound property mutate ki), Angular throw karta — kyunki iska matlab view aur model ek hi tick mein inconsistent ho gaye. Fix: post-check hooks mein bound state mat badlo; stable value / <code>setTimeout</code> / signal use karo. Production mein ye check off hota.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek component har second slow lagta, aur DevTools mein CD bar-bar chal rahi. Rendering cycle ke lens se debug kaise?</summary><div class="ans"><p>Probably bahut-frequent ticks + heavy per-tick work. Check: (1) Template mein function calls (<code>{{ compute() }}</code>) — har tick pe chalti. (2) <code>ngDoCheck</code>/<code>ngAfterViewChecked</code> mein heavy logic. (3) Zone.js koi frequent async (timer/polling) har baar tick trigger kar raha. Fixes: OnPush se checkable views kam, signals se targeted ticks, heavy async <code>runOutsideAngular</code> (S-03), template expressions precompute, ya zoneless (S-08).</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Tick = one synchronous CD pass. Phase 1: mark dirty (view + ancestors). Phase 2: top-down refresh (hooks + bindings + DOM).</li>
+<li>Hooks order: onChanges → onInit(once) → doCheck → content → view hooks.</li>
+<li>Dev checkNoChanges pass → <code>ExpressionChangedAfterItHasBeenChecked</code> if a bound value changes mid-tick.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.3 · Count the ticks</div><p>Template mein ek function <code>{{ tick() }}</code> daalkar (jo <code>console.count</code> kare) observe karo kitni baar CD chalti hai on: click, setTimeout, http, mousemove. Zone.js ka blanket-trigger dekho.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-16.4 · Reproduce the error</div><p><code>ExpressionChangedAfterItHasBeenCheckedError</code> ko deliberately trigger karo (post-check hook mein bound value badalkar), phir 2 alag tareekon se fix karo. Samjhao kyun.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Zone.js</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>what Zone.js is · monkey-patching async APIs · NgZone · onMicrotaskEmpty → tick · runOutsideAngular · run · eventCoalescing · downsides</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Zone.js ek library hai jo browser ke async APIs (<code>setTimeout</code>, <code>Promise</code>, <code>addEventListener</code>, XHR/fetch, etc.) ko <strong>monkey-patch</strong> karti hai — unhe wrap karke Angular ko notify karti jab koi async kaam khatam hota. Angular is signal ko use karke CD trigger karta. Simple: Zone.js Angular ki "aankh-kaan" thi jo batati "kuch async hua, shayad state badli, CD chalao".</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun thi?)</h3>
+<p>Angular ko kaise pata chale ki state badli aur CD chalani chahiye? State to kisi bhi async callback (timer, HTTP response, click) mein badal sakti. Manually har jagah CD trigger karna painful. Zone.js ne ye <strong>automatic</strong> kar diya — har async operation ke baad Angular ko implicitly bata deti, toh developer ko CD ke baare mein sochna hi nahi padta tha.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel good-p"><div class="ptitle">Zone.js ka fayda (historically)</div><p>"Automatic change detection" — developer ko kabhi manually CD trigger nahi karna padta. Koi bhi async (click/timer/HTTP) ke baad UI apne aap update. Zero-config reactivity — yahi Angular ka "it just works" tha.</p></div>
+<div class="panel bad-p"><div class="ptitle">Par iska cost</div><p>Har async op → poore app pe CD (over-checking). Bade bundle (~zone.js size). Confusing stack traces (patched async). Yahi cheezein zoneless (S-08) ki wajah bani.</p></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Monkey-patch → NgZone → onMicrotaskEmpty → tick</div><p>App start pe (zone.js polyfill) browser ke async APIs ko replace kar diya jaata patched versions se. Angular ek special zone banata: <strong>NgZone</strong> ("Angular zone"). Jab bhi patched async operation Angular zone ke andar complete hoti, NgZone track karta ki koi pending microtask/macrotask baaki hai ya nahi. Jab saare pending async khatam ho jaate (zone "stable"), NgZone ka <code>onMicrotaskEmpty</code> event fire hota, jise Angular subscribe karke <code>ApplicationRef.tick()</code> (full CD pass) chalata. Yani: Zone.js state-change detect nahi karta — bas "async activity hui" detect karta aur uske baad CD trigger karta (isliye over-triggering). <code>eventCoalescing: true</code> multiple rapid events ko ek tick mein batch karta.</p></div>
+
+<div class="dg-title">Diagram — how Zone.js triggers CD</div>
+<pre class="diagram">
+ app bootstrap: zone.js patches setTimeout, Promise, addEventListener, XHR...
+   │
+ async op runs inside NgZone (e.g. button click handler / http response)
+   │
+ NgZone tracks pending tasks ─▶ all done? ─▶ onMicrotaskEmpty fires
+   │
+ Angular subscribes ─▶ ApplicationRef.tick() ─▶ FULL top-down CD pass
+   (triggers even if NO real state changed — just async happened)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ (click) ─▶ patched addEventListener ─▶ handler runs (in NgZone)
+   ─▶ handler done, no pending tasks ─▶ onMicrotaskEmpty ─▶ tick() ─▶ CD
+ setTimeout(fn) ─▶ patched ─▶ fn runs in NgZone ─▶ onMicrotaskEmpty ─▶ tick()
+</pre>
+
+<h3 class="part">6. Architecture — NgZone API</h3>
+<table>
+<tr><td><code>NgZone</code></td><td>Angular's zone wrapper; emits <code>onMicrotaskEmpty</code>, <code>onStable</code>, etc.</td></tr>
+<tr><td><code>ngZone.run(fn)</code></td><td>Run code INSIDE Angular zone (will trigger CD).</td></tr>
+<tr><td><code>ngZone.runOutsideAngular(fn)</code></td><td>Run code OUTSIDE zone (NO CD triggered) — perf escape hatch.</td></tr>
+<tr><td><code>provideZoneChangeDetection({eventCoalescing:true})</code></td><td>Batch rapid events into fewer ticks.</td></tr>
+<tr><td>polyfills (angular.json)</td><td>Where <code>zone.js</code> is loaded; removed for zoneless.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — runOutsideAngular</h3>
+<div class="code-label">escaping CD for a hot loop</div>
+<pre><code>export class CanvasComponent {
+  private zone = inject(NgZone);
+
+  startAnimation() {
+    // requestAnimationFrame fires ~60x/sec — DON'T trigger CD each frame
+    this.zone.runOutsideAngular(() =&gt; {
+      const loop = () =&gt; { this.draw(); requestAnimationFrame(loop); };
+      loop();
+    });
+  }
+
+  onDone(result: string) {
+    // when you DO need the UI to update, re-enter the zone:
+    this.zone.run(() =&gt; { this.status = result; });   // triggers CD
+  }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">the invisible trigger</div>
+<pre><code>@Component({ template: `{{ n }}` })
+class C {
+  n = 0;
+  constructor() {
+    setTimeout(() =&gt; { this.n = 5; }, 1000);
+    // you never call CD — yet UI shows 5 after 1s.
+    // WHY? zone.js patched setTimeout → after it runs → tick() → CD.
+  }
+}</code></pre>
+
+<h3 class="part">9. Advanced Example — the over-triggering problem</h3>
+<div class="code-label">why zone.js over-checks</div>
+<pre><code>// mousemove fires HUNDREDS of times/sec
+@HostListener('mousemove') onMove() { /* does nothing to state */ }
+// yet EACH mousemove → zone → tick() → FULL CD pass over the whole app!
+// zone.js can't know state didn't change — it only knows "async happened".
+// result: massive wasted CD. Fixes: runOutsideAngular, OnPush, or zoneless.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Bootstrap pe zone.js async APIs ko patch karta.</li>
+<li>Async ops NgZone ke andar chalti, pending tasks track hote.</li>
+<li>Saare tasks done → <code>onMicrotaskEmpty</code> → Angular <code>tick()</code>.</li>
+<li>Tick full CD pass — chahe state badla ho ya na (over-trigger).</li>
+<li><code>runOutsideAngular</code> — zone ke bahar, no CD (perf).</li>
+<li><code>run</code> — wapas zone mein, CD trigger.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sochna Zone.js state-changes detect karta — nahi, sirf "async activity" detect karta, phir blanket CD.</li>
+<li>High-frequency async (mousemove, rAF, WebSocket flood) ko zone ke andar chalana — har baar full CD.</li>
+<li><code>runOutsideAngular</code> mein state badalke UI update expect karna — CD trigger nahi hoga; <code>run</code> se re-enter karo.</li>
+<li>3rd-party lib (jo apna async karti) zone ke bahar chale → UI update na ho (manual <code>run</code>/<code>markForCheck</code>).</li>
+<li>Zone.js ko "the change detector" samajhna — ye sirf trigger hai; CD alag mechanism (S-01).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this (Zone.js apps)</div>
+<ul style="margin-bottom:0">
+<li>High-frequency async (animations, rAF, heavy timers) → <code>runOutsideAngular</code>.</li>
+<li>UI-affecting update ke waqt <code>ngZone.run(...)</code> se re-enter.</li>
+<li><code>provideZoneChangeDetection({eventCoalescing:true})</code> — rapid events batch.</li>
+<li>Better: OnPush + signals; best (modern): zoneless (S-08) — zone.js hi hata do.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Zone.js ka core perf issue: <strong>over-triggering</strong> — har async op (even irrelevant) full CD pass karwati. Plus bundle size (~zone.js payload) aur patched-async stack traces (debug harder). <code>runOutsideAngular</code> + coalescing help karte, par fundamental fix zoneless hai (signals precisely batate kab CD chahiye). Isliye Angular zone.js se door ja raha.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Unpatched APIs</td><td>Kuch APIs zone.js patch nahi karti → CD trigger nahi → manual <code>markForCheck</code>/<code>run</code>.</td></tr>
+<tr><td>eventCoalescing</td><td>Rapid same-target events ek tick mein — default off (opt-in).</td></tr>
+<tr><td>NG0914</td><td>Zoneless config but zone.js still loaded → error (remove polyfill).</td></tr>
+<tr><td>Third-party zones</td><td>Doosri library zone.js use kare toh coexistence handle karna padta.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Zone.js kya karti hai Angular mein?</summary><div class="ans"><p>Zone.js browser ke async APIs (setTimeout, Promise, events, XHR) ko monkey-patch karti hai, taaki jab koi async operation complete ho, Angular ko implicitly pata chale aur woh change detection trigger kar sake. Isse "automatic CD" milta — developer ko kabhi manually CD chalani nahi padti. Ye Angular ka classic "it just works" reactivity tha.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Zone.js exactly CD kaise trigger karti hai?</summary><div class="ans"><p>Patched async ops NgZone ke andar chalti hain. NgZone pending microtasks/macrotasks track karta; jab saare khatam (zone stable), <code>onMicrotaskEmpty</code> event fire hota, jise Angular subscribe karke <code>ApplicationRef.tick()</code> (full top-down CD) chalata. Note: Zone.js state-change detect nahi karta — sirf "async activity hui" — isliye woh blanket/over-trigger karta (even jab state na badli ho).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>runOutsideAngular</code> kab aur kyun?</summary><div class="ans"><p>Jab high-frequency async ho jo UI ko affect nahi karti — animations, <code>requestAnimationFrame</code>, frequent timers, heavy polling. Zone ke andar ye har baar full CD trigger karti (waste). <code>ngZone.runOutsideAngular(fn)</code> mein ye code zone ke bahar chalta — koi CD nahi. Jab actually UI update karni ho, <code>ngZone.run(...)</code> se zone mein re-enter karke CD trigger karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek <code>mousemove</code> listener add karte hi app slow ho gaya, bhale handler kuch state nahi badalta. Kyun aur fix?</summary><div class="ans"><p><code>mousemove</code> per-second sainkdon baar fire hota; zone.js har event ke baad full CD pass trigger karti (state badla ya na) — massive wasted CD → jank. Fixes: (1) listener ko <code>runOutsideAngular</code> mein rakho (zone bypass), aur zaroorat pe <code>ngZone.run</code> se update; (2) OnPush se checkable views kam; (3) best — zoneless mode, jahan sirf real triggers (signals/events) CD karte, blanket-async nahi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Zone.js = monkey-patches async APIs → NgZone tracks tasks → <code>onMicrotaskEmpty</code> → <code>tick()</code> (full CD).</li>
+<li>Detects "async happened", NOT "state changed" → over-triggers. Cost: over-checking + bundle + noisy traces.</li>
+<li><code>runOutsideAngular</code> (no CD) / <code>run</code> (re-enter, CD). Zoneless (S-08) removes it entirely.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.5 · runOutsideAngular</div><p>Ek rAF animation loop banao jo har frame draw kare. Pehle zone ke andar (observe CD har frame), phir <code>runOutsideAngular</code> mein (observe CD rukti). Ek button se <code>run</code> se UI status update karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-16.6 · Trace the trigger</div><p><code>setTimeout</code> mein state badalkar prove karo UI bina manual CD ke update hua. Phir samjhao (comment) exactly kaunse zone.js step ne tick trigger kiya.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Default Strategy (CheckAlways)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>ChangeDetectionStrategy.Default · CheckAlways · checks every component every tick · pros/cons · when it's fine · the cost · function-call trap</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>ChangeDetectionStrategy.Default</code> (internally "CheckAlways") Angular ka default behavior hai — jab bhi CD tick chalti, Angular <strong>har</strong> component ke bindings check karta, chahe us component ka data badla ho ya na. "Sab kuch, har baar" approach.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Ye safest, zero-config default hai. Angular ko nahi pata kis component ka data badla, toh safe option: sab check karo. Isse tum bina kuch soche kaam kar sakte ho — koi bhi state badle, next tick pe woh UI mein reflect ho jaayega (kyunki sab check hote).</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Correctness by default. Developer ko change detection ke baare mein sochna hi nahi padta — Angular har component check karke guarantee deta ki koi bhi visible change miss na ho. Simplicity + safety, perf ki keemat pe.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Every view checkable, every tick</div><p>Default strategy mein har component ki view "CheckAlways" mark hoti — matlab har CD tick mein woh view <em>hamesha</em> checkable hai. Jab tick chalti (S-02), Angular root se leaves tak har Default view ko visit karta aur uske saare bindings ka dirty-check (<code>===</code>) karta. Even agar us component ka koi input/state nahi badla, uske bindings phir bhi compare hote (comparison sasta hai par zero nahi). Yani <code>N</code> components = har tick <code>N</code> views ke saare bindings checked. Yeh zone.js ke frequent ticks ke saath milkar over-checking deta.</p></div>
+
+<div class="dg-title">Diagram — Default checks everything</div>
+<pre class="diagram">
+ tick ─▶ root ✓checked
+          ├─ A ✓checked   (even if A didn't change)
+          │   └─ A1 ✓checked
+          ├─ B ✓checked
+          │   └─ B1 ✓checked
+          └─ C ✓checked
+ EVERY view's bindings compared, EVERY tick. Safe, but wasteful at scale.
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ any trigger ─▶ tick ─▶ traverse ALL views top-down
+   ─▶ each view: compare every binding (=== vs previous)
+   ─▶ changed → patch DOM ; unchanged → skip DOM but STILL compared
+</pre>
+
+<h3 class="part">6. Architecture — Default vs the alternative</h3>
+<table>
+<tr><td><code>ChangeDetectionStrategy.Default</code></td><td>CheckAlways — every view checked every tick. (implicit default)</td></tr>
+<tr><td><code>ChangeDetectionStrategy.OnPush</code></td><td>Checked only when marked dirty (S-05).</td></tr>
+<tr><td>Trigger source</td><td>Zone.js (blanket) or zoneless (signals/events).</td></tr>
+<tr><td>Cost driver</td><td>(#views) × (#bindings) × (tick frequency).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">the implicit default</div>
+<pre><code>@Component({
+  selector: 'app-widget',
+  template: `{{ title }} — {{ items.length }}`,
+  // no changeDetection specified → ChangeDetectionStrategy.Default
+})
+export class WidgetComponent {
+  title = 'Dashboard';
+  items: Item[] = [];
+}
+// this view is checked on EVERY tick anywhere in the app</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">explicit form</div>
+<pre><code>import { ChangeDetectionStrategy, Component } from '@angular/core';
+
+@Component({
+  selector: 'app-c',
+  changeDetection: ChangeDetectionStrategy.Default,   // same as omitting it
+  template: `{{ value }}`,
+})
+class C { value = 0; }</code></pre>
+
+<h3 class="part">9. Advanced Example — the function-call trap</h3>
+<div class="code-label">why Default + function bindings = pain</div>
+<pre><code>@Component({
+  template: `{{ getExpensiveTotal() }}`,   // ❌ called EVERY tick
+})
+class C {
+  items = [/* 10000 items */];
+  getExpensiveTotal() {                     // O(n) work
+    return this.items.reduce((s, i) =&gt; s + i.price, 0);
+  }
+}
+// with Default + zone.js, every mousemove/timer → tick → getExpensiveTotal() runs again.
+// FIX: precompute on change, use a pure pipe, computed signal, or OnPush.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>No <code>changeDetection</code> specified = Default (CheckAlways).</li>
+<li>Har tick pe is view ke saare bindings compared.</li>
+<li>Function bindings (<code>{{ fn() }}</code>) har tick pe re-execute.</li>
+<li>Unchanged bindings DOM patch nahi karte, par compare phir bhi hota.</li>
+<li>Cost scale karta with views × bindings × tick frequency.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Template mein function/getter calls — Default mein har tick chalti (heavy = jank).</li>
+<li>Bade apps poore Default pe chhodना — sab kuch har tick check (perf ceiling).</li>
+<li>Sochna "data nahi badla toh check nahi hua" — Default har view compare karta regardless.</li>
+<li>Default + zone.js + high-frequency async = worst-case over-checking.</li>
+<li>Perf issue ko premature-optimize karna jab app chhoti hai (Default often fine).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Chhoti/simple apps mein Default theek hai — over-engineer mat karo.</li>
+<li>Template expressions cheap + pure; function calls avoid (precompute/pipe/computed).</li>
+<li>Perf-sensitive / large trees → OnPush (S-05) + signals.</li>
+<li><code>track</code>/<code>trackBy</code> lists mein — DOM diffing efficient.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Default ka cost = har tick, har view, har binding. Chhoti app mein negligible (bindings kam, ticks kam). Bade tree + frequent ticks (zone.js) mein ye ceiling ban jaata — hazaaron comparisons per tick. Biggest wins: OnPush (views skip), signals/zoneless (fewer + targeted ticks), pure cheap expressions. Function-call bindings sabse common Default perf-killer.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Mixed trees</td><td>Default child under OnPush parent — child still Default-checked when reached (S-05).</td></tr>
+<tr><td>Zoneless + Default</td><td>Valid: Default views checked when a tick is scheduled by signals/events (S-08).</td></tr>
+<tr><td>Getters in template</td><td>Same trap as functions — run every tick.</td></tr>
+<tr><td>Pure pipes</td><td>Cached by input — cheaper than function calls for derived values.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Default change detection strategy kya karti hai?</summary><div class="ans"><p>Ye Angular ka default (CheckAlways) — jab bhi CD tick chalti, har component ke saare bindings check hote, chahe us component ka data badla ho ya nahi. Safe + zero-config: koi visible change miss nahi hoti. Trade-off: scale pe over-checking (har view har tick).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Default strategy ka main downside?</summary><div class="ans"><p>Over-checking — har tick pe poore component tree ke saare bindings compare hote, chahe kisi ka data na badla ho. Zone.js ke frequent ticks (har async) ke saath ye bahut wasted work ban jaata bade apps mein. Plus template function-calls har tick re-execute hote. Solution: OnPush (views skip), signals, ya zoneless.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Template mein function call kyun problematic hai (Default)?</summary><div class="ans"><p>Kyunki har CD tick pe woh function re-execute hota (Angular nahi jaanta result cache karna). Default + zone.js mein har mousemove/timer/click → tick → function phir chalti. Agar function heavy (O(n) compute) hai, ye massive repeated waste. Fix: value ko change pe precompute karo, pure pipe use karo, ya computed signal (jo memoize karta).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Chhoti app perfectly theek chal rahi Default pe. Team OnPush + signals everywhere lagane bol rahi "best practice" ke liye. Advice?</summary><div class="ans"><p>Context matters — agar app chhoti hai aur koi measurable perf issue nahi, poore codebase mein OnPush thopna premature optimization + added complexity (immutability discipline, markForCheck edge cases) hai. Default chhoti apps mein bilkul fine. Better: measure first; perf-sensitive areas (large lists, frequent updates, heavy trees) mein targeted OnPush/signals lagao. Naye code mein signals default achhi aadat, par retrofit blanket-OnPush without need justify nahi hota.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Default = CheckAlways: every view's bindings checked EVERY tick (safe, zero-config, wasteful at scale).</li>
+<li>Cost = views × bindings × tick-frequency. Function-call bindings re-run every tick.</li>
+<li>Fine for small apps; large/perf-sensitive → OnPush + signals + zoneless.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.7 · Measure the waste</div><p>10 nested Default components banao, har ek <code>ngDoCheck</code> mein <code>console.count</code>. Ek unrelated <code>setInterval</code> chalao. Observe har component har tick check ho raha (even unchanged).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-16.8 · Kill the function binding</div><p>Ek heavy <code>{{ compute() }}</code> template binding banao, ticks pe re-run prove karo. Phir 3 alternatives se fix karo: precompute-on-change, pure pipe, computed signal. Perf compare.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>OnPush Strategy</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>ChangeDetectionStrategy.OnPush · reference-based checks · the 4 triggers · immutability · skipping subtrees · async pipe · signals · mixed trees</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>ChangeDetectionStrategy.OnPush</code> ek optimization hai — is strategy wale component ko Angular <strong>har tick pe check nahi</strong> karta. Woh view tab tak "skip" hoti hai jab tak koi specific trigger use "dirty" na kar de. Matlab: "sirf tab check karo jab kuch relevant push (badla) ho".</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Default har view har tick check karta (S-04) — waste. OnPush Angular ko batata "is component ki output sirf iske inputs (aur kuch triggers) pe depend karti; agar woh nahi badle, mujhe skip kar do". Isse bade tree ke poore subtrees skip ho jaate — bada perf win.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Default ka over-checking. OnPush CD ko selective banata: sirf woh views check hoti jinke inputs/state actually badle. Bade apps mein ye "har baar sab check" se "sirf zaroorat pe kuch check" ka shift deta — measurable performance.</p>
+
+<h3 class="part">4. Internal Working — the 4 triggers</h3>
+<div class="panel why"><div class="ptitle">OnPush view checkable hoti hai sirf jab...</div><p>Ek OnPush view normally skip hoti, par ye <strong>4 cheezein</strong> use dirty (checkable) bana deti:</p>
+<ol style="margin-bottom:0">
+<li><strong>Input reference change</strong> — ek <code>@Input</code> ko naya reference (<code>===</code> se alag) mile. (Mutation, same ref → NO trigger.)</li>
+<li><strong>Event from the view (or its children)</strong> — component ke template mein koi <code>(click)</code>/DOM event fire ho.</li>
+<li><strong>Async pipe emit</strong> — template mein <code>| async</code> ne naya value emit kiya (internally ye <code>markForCheck</code> call karta).</li>
+<li><strong>Explicit <code>markForCheck()</code></strong> (ya signal read in template jo badla — signal-based components).</li>
+</ol></div>
+<p>Jab in mein se koi hota, Angular us view (aur ancestors ko root tak) ko dirty mark karta; next tick pe woh dirty path check hoti. Warna OnPush subtree poora skip.</p>
+
+<div class="dg-title">Diagram — OnPush skips unless triggered</div>
+<pre class="diagram">
+ tick ─▶ root ✓
+          ├─ A (OnPush)  ⏭ SKIPPED  (no new input / event / async / markForCheck)
+          │   └─ A1      ⏭ skipped (parent skipped → subtree skipped)
+          └─ B (OnPush)  ✓ CHECKED  (got a new @Input reference)
+              └─ B1      ✓ checked
+ skip an OnPush parent → its whole subtree is skipped that tick
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ trigger (new input ref / event / async emit / markForCheck / signal)
+   ─▶ mark view + ancestors dirty (to root)
+   ─▶ next tick: traverse — dirty path checked, non-dirty OnPush subtrees SKIPPED
+   ─▶ after check, dirty flag cleared (until next trigger)
+</pre>
+
+<h3 class="part">6. Architecture — triggers &amp; requirements</h3>
+<table>
+<tr><td>New <code>@Input</code> reference</td><td>Primary trigger — needs immutable updates (new ref).</td></tr>
+<tr><td>Template event</td><td><code>(click)</code> etc. in the view marks it dirty.</td></tr>
+<tr><td><code>async</code> pipe</td><td>Emits → internally <code>markForCheck()</code>.</td></tr>
+<tr><td>Signals</td><td>A signal read in the template changing marks the view (works great with OnPush).</td></tr>
+<tr><td><code>markForCheck()</code></td><td>Manual trigger (S-06) — for non-immutable/imperative updates.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">OnPush + immutable inputs + async pipe</div>
+<pre><code>@Component({
+  selector: 'app-user-card',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `&lt;h3&gt;{{ user().name }}&lt;/h3&gt;`,   // signal input → OnPush-friendly
+})
+export class UserCardComponent {
+  user = input.required&lt;User&gt;();   // new reference → triggers check
+}
+
+// parent — MUST pass new references for OnPush to update:
+updateName(u: User) {
+  this.user = { ...u, name: 'New' };   // ✅ new ref → child re-checks
+  // this.user.name = 'New';           // ❌ same ref → child skipped
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">the async pipe pattern (OnPush-friendly)</div>
+<pre><code>@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `@if (data$ | async; as data) { {{ data.value }} }`,
+})
+class C {
+  data$ = inject(Api).getData();   // async pipe emits → view marked → checked
+}
+// no manual markForCheck needed — async pipe handles it</code></pre>
+
+<h3 class="part">9. Advanced Example — mixed tree gotcha</h3>
+<div class="code-label">why a Default child can get "stuck"</div>
+<pre><code>// Parent OnPush, child Default:
+// &lt;parent (OnPush)&gt; &lt;child (Default)&gt; &lt;/parent&gt;
+// If parent is SKIPPED (no trigger), Angular never traverses INTO it,
+// so the Default child is ALSO skipped that tick — even though it's "CheckAlways".
+// A view is only checked if the CD traversal actually REACHES it.
+// Lesson: OnPush parent gates its whole subtree, regardless of children's strategy.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>changeDetection: OnPush</code> — view normally skipped.</li>
+<li>New <code>@Input</code> reference → view dirty → checked.</li>
+<li>Mutation (same ref) → NOT detected → stale UI (immutability required).</li>
+<li><code>async</code> pipe / signals → auto-mark on emit/change.</li>
+<li>Skipped OnPush parent → whole subtree skipped (traversal never reaches it).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>OnPush ke saath objects mutate karna (same ref) → UI stale. Immutable updates zaroori.</li>
+<li>Manual imperative state update (from a service callback) bhoolke <code>markForCheck</code> na karna → view update nahi.</li>
+<li>Sochna Default child OnPush parent ke skip hone pe bhi check hoga — nahi, subtree skip.</li>
+<li>OnPush laga diya par phir bhi mutable patterns — benefit nahi, sirf bugs.</li>
+<li><code>async</code> pipe manually <code>.subscribe()</code> se replace karke <code>markForCheck</code> bhoolna.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>OnPush + <strong>immutable</strong> inputs (naya reference har change pe).</li>
+<li>Async data → <code>async</code> pipe (auto-marks) ya signals (best with OnPush).</li>
+<li>Imperative updates → explicit <code>markForCheck()</code> (S-06).</li>
+<li>OnPush ko default aadat banao naye components mein — zoneless-ready + perf.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>OnPush ka win: poore subtrees har tick skip — bade tree mein checked-views drastically kam. Zone.js ke frequent ticks ke saath bhi OnPush subtrees mostly skip. Signals + OnPush = fine-grained + skippable = ideal. OnPush zoneless-readiness ka bhi step hai (component ko explicit notify karna sikhata). Trade-off: immutability discipline + occasional <code>markForCheck</code>.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Signals in OnPush</td><td>Signal change in template auto-marks the view — no manual markForCheck.</td></tr>
+<tr><td>Default under OnPush</td><td>Skipped if OnPush ancestor skipped (traversal gated).</td></tr>
+<tr><td>Host bindings</td><td>Host listener events also mark the OnPush view.</td></tr>
+<tr><td>Zoneless</td><td>OnPush recommended (not required) stepping-stone for zoneless (S-08).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> OnPush strategy kya karti hai?</summary><div class="ans"><p>OnPush component ko Angular har tick pe check nahi karta — woh view skip hoti hai jab tak koi specific trigger use dirty na kare. Isse poore subtrees har tick skip ho sakte, bada perf win. Trade-off: tumhe Angular ko batana padta kab check karna hai (immutable inputs, async pipe, markForCheck, signals).</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> OnPush view kaunse triggers pe check hoti hai?</summary><div class="ans"><p>Chaar: (1) ek <code>@Input</code> ko <strong>naya reference</strong> (<code>===</code> se alag) mile; (2) view (ya uske children) mein koi <strong>template event</strong> fire ho <code>(click)</code>; (3) template ka <strong><code>async</code> pipe</strong> naya value emit kare (internally markForCheck); (4) explicit <strong><code>markForCheck()</code></strong> (ya signal read jo badla, signal-based views mein). In mein se koi hone pe view + ancestors dirty mark hote aur check hote.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> OnPush aur immutability ka kya connection?</summary><div class="ans"><p>OnPush inputs ko reference (<code>===</code>) se check karta. Agar tum object mutate karo (<code>user.name='X'</code>), reference same rehta → OnPush ko lagta "input nahi badla" → view skip → stale UI. Isliye naya reference dena zaroori (<code>{...user, name:'X'}</code>). Yani OnPush effectively immutable data patterns ki demand karta — tabhi reference-check reliable hota.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Parent OnPush hai, uska child Default hai. Child ka internal state badla par UI update nahi hua. Kyun?</summary><div class="ans"><p>Kyunki parent OnPush skip ho gaya (usko koi trigger nahi mila), aur Angular ki CD traversal skip hue OnPush parent ke <em>andar jaati hi nahi</em> — toh Default child, "CheckAlways" hone ke bawajood, us tick pe reach hi nahi hua, skip. Ek view tabhi check hoti jab traversal use reach kare. Fix: child mein event/signal/markForCheck se ya parent ko dirty karke path open karo. Lesson: OnPush parent apne poore subtree ko gate karta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>OnPush = skip the view every tick UNLESS triggered. 4 triggers: new @Input ref, template event, async-pipe emit, markForCheck/signal.</li>
+<li>Needs IMMUTABILITY (reference check) — mutation with same ref → stale UI.</li>
+<li>Skipped OnPush parent → whole subtree skipped. Signals + OnPush = ideal. Stepping-stone to zoneless.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.9 · The 4 triggers</div><p>Ek OnPush component banao aur teeno non-signal triggers demonstrate karo: new input reference, template event, async pipe. Har ek ke liye prove karo view check hui (aur mutation-with-same-ref pe NAHI hui).</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-16.10 · Mixed tree gate</div><p>OnPush parent + Default child banao. Parent ko skip karwake prove karo child bhi skip hua. Phir child mein ek signal/event add karke path "unlock" karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>markForCheck()</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>ChangeDetectorRef.markForCheck · mark path-to-root dirty · for the NEXT tick · does NOT run CD itself · async pipe uses it · OnPush + imperative updates</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>markForCheck()</code> <code>ChangeDetectorRef</code> ka method hai jo current view aur uske <strong>saare ancestors ko root tak "dirty" mark</strong> kar deta — taaki agli CD tick mein woh path check ho. Ye OnPush components ke liye hai: "mere paas kuch badla, next tick pe mujhe check karna".</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>OnPush view normally skip hoti. Par kabhi state imperatively badalti hai — jaise ek service ka callback, WebSocket message, ya manual subscription — jahan koi automatic trigger (new input ref / async pipe) nahi. Aise mein tum khud Angular ko batao "check karna hai" via <code>markForCheck()</code>.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>OnPush ka blind-spot: imperative/non-reference state changes. <code>markForCheck</code> ek manual "mujhe next tick check karo" signal deta, taaki OnPush component reliably update ho jab automatic triggers na hon (manual subscriptions, timers, external callbacks).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Marks a path, does NOT run CD</div><p>Yaad rakhne wali sabse important baat: <code>markForCheck()</code> CD ko <strong>turant chalata nahi</strong>. Ye sirf ek <em>flag</em> set karta — current view ko dirty, aur upar chalte hue har ancestor ko bhi dirty, root tak. Iska matlab: agli baar jab koi CD tick chalti (jaise zone.js se, ya zoneless scheduler se), traversal is dirty path ko check karega (kyunki dirty views + unke ancestors checkable ho jaate). Agar koi tick hi na chale, <code>markForCheck</code> akela kuch visible nahi karta — woh sirf "next tick ke liye" mark karta. <code>async</code> pipe internally har emit pe yahi call karta — isliye async pipe OnPush mein bina manual kaam ke chalti.</p></div>
+
+<div class="dg-title">Diagram — markForCheck marks the path</div>
+<pre class="diagram">
+ markForCheck() on view C:
+   root ★dirty
+     └─ B ★dirty
+         └─ C ★dirty   ← called here; marks C + ancestors to root
+ (no CD runs NOW — just flags set)
+ NEXT tick ─▶ traversal follows dirty path ─▶ C checked
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ imperative state change (service callback / manual subscribe / timer)
+   ─▶ cdr.markForCheck()   (sets dirty flags: view + ancestors to root)
+   ─▶ ... eventually a tick runs (zone / scheduler) ...
+   ─▶ dirty path traversed &amp; checked ─▶ DOM updates ─▶ flags cleared
+</pre>
+
+<h3 class="part">6. Architecture — markForCheck vs detectChanges</h3>
+<table>
+<tr><td><code>markForCheck()</code></td><td>Marks view + ancestors dirty; CD runs on the NEXT tick (async, deferred). Marks UP to root.</td></tr>
+<tr><td><code>detectChanges()</code></td><td>Runs CD NOW, synchronously, on THIS view + its descendants (S-07). Goes DOWN.</td></tr>
+<tr><td>Direction</td><td>markForCheck: up (to root). detectChanges: down (to children).</td></tr>
+<tr><td>Timing</td><td>markForCheck: deferred. detectChanges: immediate.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">OnPush + manual subscription</div>
+<pre><code>@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `{{ message }}`,
+})
+export class NotificationsComponent implements OnInit {
+  private cdr = inject(ChangeDetectorRef);
+  private ws = inject(SocketService);
+  message = '';
+
+  ngOnInit() {
+    this.ws.messages$.subscribe((msg) =&gt; {
+      this.message = msg;      // imperative change — no input ref, no async pipe
+      this.cdr.markForCheck(); // ✅ tell Angular to check this view next tick
+    });
+  }
+}
+// without markForCheck, OnPush would keep showing the old message</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">the async pipe alternative (usually better)</div>
+<pre><code>// Instead of manual subscribe + markForCheck, prefer async pipe:
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `{{ message$ | async }}`,   // async pipe calls markForCheck internally
+})
+class C { message$ = inject(SocketService).messages$; }
+// less code, no leak, auto-marks — modern default</code></pre>
+
+<h3 class="part">9. Advanced Example — markForCheck alone does nothing without a tick</h3>
+<div class="code-label">the subtle truth</div>
+<pre><code>this.value = 42;
+this.cdr.markForCheck();
+// If NO tick ever runs after this, the UI won't update — markForCheck only
+// FLAGS the path. In zone.js apps a tick usually follows soon (from the async
+// that led here). In zoneless, a signal set / event / the scheduler drives ticks.
+// markForCheck = "check me next time CD runs", NOT "run CD now".</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Imperative change (subscription/timer/callback) — no auto trigger.</li>
+<li><code>cdr.markForCheck()</code> — view + ancestors dirty flag set.</li>
+<li>CD turant nahi chalti — sirf mark hua.</li>
+<li>Agla tick dirty path traverse karke view check karta.</li>
+<li><code>async</code> pipe ye internally karta — manual markForCheck se bachaता.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sochna <code>markForCheck</code> CD ko turant chalata — nahi, sirf mark karta (next tick).</li>
+<li>OnPush + manual subscribe mein <code>markForCheck</code> bhoolna → stale UI.</li>
+<li><code>markForCheck</code> ki jagah <code>detectChanges</code> use karna jab bas next-tick check chahiye (over-forcing sync CD).</li>
+<li>Async pipe available hone par bhi manual subscribe + markForCheck (extra code + leak risk).</li>
+<li>Bahut baar markForCheck spam karna (harmless par pointless — ek call kaafi till next tick).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Async data → <code>async</code> pipe ya signals (auto-mark) — manual markForCheck se pehle inhe try karo.</li>
+<li>Manual/imperative updates (3rd-party callbacks, sockets) → <code>markForCheck()</code> ke saath.</li>
+<li>Signals prefer karo — woh OnPush views ko auto-mark karte (no manual call).</li>
+<li>Samjho markForCheck deferred hai (next tick); sync chahiye toh detectChanges (S-07).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>markForCheck</code> khud sasta — sirf flags set karta (path-to-root, O(depth)). CD tab chalti jab tick aati (batched with other work) — isliye ye <code>detectChanges</code> (forced sync CD) se aksar behtar hai perf-wise, kyunki multiple markForCheck ek hi tick mein resolve ho jaate. Async pipe ka internal markForCheck efficient + leak-safe. Signals aur bhi fine-grained.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>No tick follows</td><td>markForCheck alone won't update UI if nothing schedules a tick (rare in zone apps).</td></tr>
+<tr><td>Signals</td><td>Reading a changed signal in template auto-marks — no explicit markForCheck.</td></tr>
+<tr><td>Detached view</td><td>markForCheck on a detached view still marks; checked only when reattached/ticked.</td></tr>
+<tr><td>Zoneless</td><td>markForCheck notifies the scheduler → schedules a CD (works in zoneless too).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>markForCheck()</code> kya karta hai?</summary><div class="ans"><p>Current view aur uske saare ancestors ko root tak "dirty" mark karta, taaki agli CD tick mein woh path check ho. Ye OnPush components ke liye hai jab state imperatively badalti (manual subscribe, socket, timer) aur koi automatic trigger nahi. Important: ye CD turant nahi chalata — sirf next-tick ke liye mark karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>markForCheck</code> CD ko turant chalata hai ya nahi?</summary><div class="ans"><p>Nahi. Ye sirf dirty flags set karta (view + ancestors to root). CD tab chalti hai jab agla tick aata (zone.js se ya zoneless scheduler se). Agar koi tick na aaye toh markForCheck akela UI update nahi karega. Contrast: <code>detectChanges()</code> CD ko turant, synchronously chalata hai. markForCheck = "next tick pe check", detectChanges = "abhi check".</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Async pipe OnPush mein bina manual kaam ke kaise update karti?</summary><div class="ans"><p>Async pipe internally har naye emit pe <code>ChangeDetectorRef.markForCheck()</code> call karti hai — jo OnPush view ko dirty mark karta taaki next tick pe check ho. Isliye <code>{{ data$ | async }}</code> OnPush ke saath seamlessly kaam karti bina tumhare manual markForCheck ke. Isliye manual subscribe + markForCheck ke bajaye async pipe prefer ki jaati.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> OnPush component ek WebSocket se messages dikhata hai (manual subscribe). Messages aate hain par UI update nahi hota. Fix?</summary><div class="ans"><p>Manual subscription mein property set karna OnPush ka koi auto-trigger nahi (na new input ref, na async pipe) — view skip. Fix: subscription callback mein state set karne ke baad <code>this.cdr.markForCheck()</code> call karo. Ya behtar — manual subscribe ko <code>async</code> pipe se replace karo (<code>{{ messages$ | async }}</code>), jo internally markForCheck karti aur leak-safe hai. Signals bhi ek clean option.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>markForCheck()</code> = mark view + ancestors (UP to root) dirty for the NEXT tick. Does NOT run CD now.</li>
+<li>For OnPush + imperative updates (manual subscribe, socket, timer) with no auto-trigger.</li>
+<li>Async pipe calls it internally. Signals auto-mark. Prefer those over manual markForCheck.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.11 · Fix the stale OnPush</div><p>Ek OnPush component banao jo <code>setInterval</code> se ek counter property badalta (manual). UI stale rahega. <code>markForCheck</code> se fix karo. Phir signals se re-implement karke compare karo (no manual mark).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-16.12 · markForCheck vs detectChanges</div><p>Same imperative update ke liye dono try karo. Prove karo markForCheck deferred (next tick) hai aur detectChanges immediate + synchronous. Kab kaunsa — likho.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>detectChanges() &amp; ChangeDetectorRef</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>ChangeDetectorRef.detectChanges · synchronous local CD · detach · reattach · checkNoChanges · detached views pattern · vs markForCheck · ApplicationRef.tick</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>detectChanges()</code> <code>ChangeDetectorRef</code> ka method hai jo CD ko <strong>abhi, synchronously</strong> chalata — is component par aur uske <strong>descendants</strong> (children) par. <code>markForCheck</code> ke ulta: woh mark karta (next tick), ye turant run karta (this view down).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Kabhi tumhe CD ko turant chalana hota — jaise ek <strong>detached</strong> view (jo tune CD tree se hataya perf ke liye) ko manually update karna, ya kisi precise moment pe DOM sync karna. <code>detectChanges</code> ye local, on-demand control deta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>On-demand, localized synchronous CD. Especially "detached view" pattern ke liye — jahan tum ek high-frequency component ko CD tree se detach karte ho aur controlled intervals pe khud <code>detectChanges</code> karte ho (jaise har 10th frame), poore-app CD ke bina.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Runs CD now, this view + descendants (not ancestors)</div><p><code>detectChanges()</code> turant ek local CD pass chalata: <em>is</em> view ke bindings check karta aur phir <em>neeche</em> (descendants) traverse karta — par <strong>upar (ancestors) nahi</strong>. Ye synchronous hai (call return hone tak DOM updated). Iska bhai <code>ChangeDetectorRef</code> ka poora family deta fine control: <code>detach()</code> ek view ko CD tree se hata deta (normal ticks use skip karengे), <code>reattach()</code> wapas jodta, <code>markForCheck()</code> (S-06) next-tick ke liye up-mark karta, aur <code>checkNoChanges()</code> (dev) verify karta bindings stable. Detached view pattern: <code>detach()</code> + apni marzi se <code>detectChanges()</code> = surgical control over kab ek subtree update hota.</p></div>
+
+<div class="dg-title">Diagram — detectChanges goes DOWN, now</div>
+<pre class="diagram">
+ detectChanges() on view B (SYNCHRONOUS, immediate):
+   root      (ancestors NOT touched)
+     └─ B ✓  ← starts here
+         ├─ B1 ✓
+         └─ B2 ✓   (descendants checked, top-down from B)
+ vs markForCheck(): marks UP to root, runs on NEXT tick.
+</pre>
+
+<h3 class="part">5. Execution Flow — detached view pattern</h3>
+<pre class="diagram">
+ constructor: cdr.detach()          ← view removed from normal CD ticks
+ high-frequency update (e.g. per frame):
+   this.data = ...; 
+   if (frame % 10 === 0) cdr.detectChanges();   ← manual, throttled CD
+ → app-wide ticks never check this view; you control exactly when it updates
+</pre>
+
+<h3 class="part">6. Architecture — the ChangeDetectorRef family</h3>
+<table>
+<tr><td><code>detectChanges()</code></td><td>Run CD NOW on this view + descendants (sync, downward).</td></tr>
+<tr><td><code>markForCheck()</code></td><td>Mark dirty up to root for the NEXT tick (S-06).</td></tr>
+<tr><td><code>detach()</code></td><td>Remove this view from the CD tree (skipped by ticks).</td></tr>
+<tr><td><code>reattach()</code></td><td>Re-add a detached view to the CD tree.</td></tr>
+<tr><td><code>checkNoChanges()</code></td><td>Dev assert: throws if bindings changed (stability check).</td></tr>
+<tr><td><code>ApplicationRef.tick()</code></td><td>Run a full app-wide CD pass (from root).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — detached high-frequency view</h3>
+<div class="code-label">throttled manual CD</div>
+<pre><code>@Component({ selector: 'app-ticker', template: `{{ price }}` })
+export class TickerComponent implements OnInit, OnDestroy {
+  private cdr = inject(ChangeDetectorRef);
+  private feed = inject(PriceFeed);
+  price = 0;
+  private sub?: Subscription;
+
+  ngOnInit() {
+    this.cdr.detach();                 // opt out of app-wide CD
+    this.sub = this.feed.prices$.subscribe((p) =&gt; {
+      this.price = p;                  // updates arrive ~100x/sec
+      this.cdr.detectChanges();        // we decide when to render (locally)
+    });
+  }
+  ngOnDestroy() { this.sub?.unsubscribe(); }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">force an immediate local update</div>
+<pre><code>this.value = computeSomething();
+this.cdr.detectChanges();   // DOM reflects new value immediately (sync)
+// vs markForCheck() which would wait for the next tick</code></pre>
+
+<h3 class="part">9. Advanced Example — detach/reattach toggle</h3>
+<div class="code-label">pause &amp; resume a subtree's CD</div>
+<pre><code>pauseUpdates()  { this.cdr.detach(); }    // freeze this view (ticks skip it)
+resumeUpdates() { this.cdr.reattach(); this.cdr.markForCheck(); }
+// useful for expensive off-screen widgets: detach when hidden, reattach when shown
+// ⚠️ while detached, even markForCheck won't render it until reattached/detectChanges</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>detach()</code> — view normal CD ticks se bahar.</li>
+<li>High-frequency data set hoti par app-wide CD nahi chalti (view detached).</li>
+<li><code>detectChanges()</code> — manually, synchronously, is view + descendants CD.</li>
+<li>Throttle (<code>% 10</code>) — sirf har 10th update render (perf control).</li>
+<li><code>reattach()</code> — wapas normal CD tree mein.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>detectChanges</code> ko markForCheck ki jagah routinely use karna — forced sync CD zyada costly + can cause re-entrancy.</li>
+<li><code>detach()</code> ke baad <code>markForCheck</code> se update expect karna — detached view ticks pe check nahi hoti; <code>detectChanges</code>/<code>reattach</code> chahiye.</li>
+<li><code>detectChanges</code> ko CD ke andar (ek hook mein) call karke nested-CD / <code>ExpressionChanged</code> errors trigger.</li>
+<li><code>detach</code> karke <code>ngOnDestroy</code> mein cleanup (unsubscribe) bhoolna — leaks.</li>
+<li>Sochna <code>detectChanges</code> ancestors bhi check karta — sirf this view + descendants.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Default choice <code>markForCheck</code> (deferred, batched); <code>detectChanges</code> sirf jab turant/local sync chahiye.</li>
+<li><code>detach</code> + <code>detectChanges</code> ka use high-frequency isolated views ke liye (tickers, canvases).</li>
+<li>Detached views ka lifecycle carefully manage (reattach/cleanup).</li>
+<li>Modern apps: pehle signals/OnPush try karo — ye low-level CDR calls ki zaroorat kam karte.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>detectChanges</code> synchronous + immediate — agar bar-bar call ho toh costly (har call ek CD pass). <code>markForCheck</code> aksar behtar kyunki multiple marks ek tick mein batch. Par detached-view + throttled <code>detectChanges</code> pattern high-frequency data (real-time feeds, animations) ke liye poore-app CD se bacha kar bada win de sakta — surgical control. Signals modern alternative jo zyaadaatar cases mein ye manual work hata dete.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Detached + markForCheck</td><td>Won't render until reattached or detectChanges called.</td></tr>
+<tr><td>Nested detectChanges</td><td>Calling inside a running CD → re-entrancy / errors; avoid.</td></tr>
+<tr><td>checkNoChanges</td><td>Dev tool to assert stability; not for prod flow control.</td></tr>
+<tr><td>Zoneless</td><td>detectChanges still works; but signals usually remove the need.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>detectChanges()</code> kya karta hai?</summary><div class="ans"><p>CD ko turant, synchronously chalata — is view par aur uske descendants (children) par, ancestors par nahi. Call return hone tak DOM updated. Ye <code>markForCheck</code> se alag hai jo sirf next-tick ke liye mark karta (up to root). detectChanges = "abhi, yahan se neeche check karo".</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> <code>markForCheck</code> vs <code>detectChanges</code> — poora farak?</summary><div class="ans"><p><strong>Direction:</strong> markForCheck UP mark karta (view→ancestors→root); detectChanges DOWN check karta (view→descendants). <strong>Timing:</strong> markForCheck deferred (next tick); detectChanges immediate/synchronous (abhi). <strong>Scope:</strong> markForCheck path ko checkable banata taaki tick check kare; detectChanges khud ek CD pass chalata. <strong>Use:</strong> markForCheck OnPush + imperative updates ke liye (batched); detectChanges detached views / precise immediate sync ke liye.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>detach()</code>/<code>reattach()</code> kab use karoge?</summary><div class="ans"><p>Jab ek view high-frequency updates receive karti (real-time price ticker, canvas animation) jise poore-app CD mein include karna wasteful hai. <code>detach()</code> use CD tree se hata deta (ticks skip), phir tum <code>detectChanges()</code> se controlled intervals pe (jaise har 10th frame) manually render karte ho. <code>reattach()</code> wapas normal CD mein jodta — jaise off-screen widget ko hide pe detach, show pe reattach.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek real-time chart 100 updates/sec receive kar raha aur app janky ho gaya. ChangeDetectorRef se kaise optimize?</summary><div class="ans"><p>Chart view ko <code>detach()</code> karo (app-wide CD se nikaalo — 100 ticks/sec se bacho). Data updates internally store karo, aur throttle karke (jaise <code>requestAnimationFrame</code> ya har Nth update pe) <code>detectChanges()</code> se sirf chart view ko manually render karo. Isse poore-app CD nahi chalti har feed update pe — sirf chart, controlled rate pe. Alternatively signals + OnPush se bhi fine-grained control (modern approach).</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>detectChanges()</code> = run CD NOW, synchronously, this view + DESCENDANTS (down). markForCheck = mark UP, next tick.</li>
+<li>CDR family: <code>detach</code>/<code>reattach</code> (remove/add from CD tree), <code>checkNoChanges</code> (dev stability assert).</li>
+<li>Detached-view + throttled detectChanges = surgical CD for high-frequency views. Signals often replace this.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.13 · Detached ticker</div><p>Ek component banao jo <code>setInterval</code> se 100x/sec value badalta. <code>detach()</code> + throttled <code>detectChanges()</code> (har 10th) se render karo. Prove karo app-wide CD is view pe nahi chalti.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-16.14 · CDR family map</div><p>Ek demo banao jo <code>detach</code>, <code>reattach</code>, <code>markForCheck</code>, <code>detectChanges</code> chaaron ka behavior visually dikhaye (buttons se). Har ek ka effect + direction (up/down) + timing (now/next-tick) note karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Zoneless Angular</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>provideZonelessChangeDetection · signals as trigger · what schedules CD · removing zone.js · migration · v20.2 stable · v21 default · OnPush stepping-stone · testing</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Zoneless Angular matlab <strong>Zone.js ke bina</strong> change detection. Zone.js ki jagah (jo har async pe blanket CD trigger karti thi), Angular ab <strong>explicit signals</strong> pe CD schedule karta — signals, template events, <code>async</code> pipe, <code>markForCheck</code>, aur input changes. Enable: <code>provideZonelessChangeDetection()</code>. v20.2 se <strong>stable</strong>, v21+ mein naye apps ka <strong>default</strong>.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Zone.js ke teen bade dard (S-03): (1) over-triggering — har async pe full CD, chahe state na badli ho; (2) bundle size (~zone.js payload); (3) confusing patched-async stack traces. Zoneless in teeno ko fix karta — CD sirf tab jab actually kuch relevant badla, chhota bundle, saaf debugging.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel good-p"><div class="ptitle">Zoneless ke faayde</div>
+<ul style="margin-bottom:0">
+<li><strong>Predictable CD</strong> — chalti sirf inputs/signals/events pe, "jab kahin kuch async hua" pe nahi.</li>
+<li><strong>Performance</strong> — no blanket over-checking; less wasted CD.</li>
+<li><strong>Smaller bundle</strong> — zone.js hata do (~KBs saved).</li>
+<li><strong>Cleaner stack traces</strong> — no monkey-patched async noise.</li>
+</ul></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">A scheduler notified by explicit triggers</div><p>Zoneless mode mein Zone.js hata diya jaata — koi async monkey-patching nahi. Iski jagah Angular ke paas ek internal <strong>ChangeDetectionScheduler</strong> hota jise <em>explicit</em> notifications milti hain jab CD zaroori: ek <strong>signal</strong> (jo template ya component mein use ho) badla, ek <strong>template event</strong> <code>(click)</code> fire hua, <strong><code>markForCheck()</code></strong> call hua (async pipe isko karti), ek <strong><code>@Input</code></strong> badla, ya host binding update hua. In notifications pe scheduler ek CD pass schedule karta (microtask timing pe coalesced). <strong>Key insight:</strong> CD ka <em>mechanism</em> same hai (Default/OnPush strategies, top-down traversal, dirty checking) — sirf <em>trigger</em> badla: Zone.js ke "kuch bhi async" se "explicitly notified changes" pe. Isliye signals zoneless ke saath ideal — woh scheduler ko precisely batate kya badla.</p></div>
+
+<div class="dg-title">Diagram — zone vs zoneless trigger</div>
+<pre class="diagram">
+ ZONE.JS:    any async (timer/http/event/mousemove) ─▶ tick() ─▶ full CD
+                (over-triggers: fires even when nothing changed)
+
+ ZONELESS:   signal change ─┐
+             template event ─┼─▶ scheduler ─▶ CD pass (coalesced)
+             async pipe emit ─┤     (fires only on EXPLICIT change signals)
+             markForCheck    ─┘
+ CD mechanism identical; only WHAT starts it differs.
+</pre>
+
+<h3 class="part">5. Execution Flow — enabling zoneless</h3>
+<pre class="diagram">
+ app.config: provideZonelessChangeDetection()
+ remove zone.js from angular.json polyfills + package.json
+   ─▶ signal.set(x) / (click) / (data$ | async) ─▶ scheduler notified
+   ─▶ CD pass scheduled (microtask) ─▶ dirty views checked ─▶ DOM synced
+</pre>
+
+<h3 class="part">6. Architecture — the API &amp; timeline</h3>
+<table>
+<tr><td><code>provideZonelessChangeDetection()</code></td><td>Enable zoneless (bootstrap providers). Stable name (was <code>provideExperimental...</code>).</td></tr>
+<tr><td>Triggers</td><td>signals · template events · <code>async</code> pipe · <code>markForCheck</code> · input changes.</td></tr>
+<tr><td>Remove zone.js</td><td>From <code>angular.json</code> polyfills (build + test) &amp; <code>package.json</code>.</td></tr>
+<tr><td><code>provideCheckNoChangesConfig({exhaustive,interval})</code></td><td>Debug net: catch un-notified binding changes.</td></tr>
+<tr><td>Timeline</td><td>v18 experimental → v20 renamed + preview → <b>v20.2 stable</b> → <b>v21+ default</b> for new apps.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">main.ts / app.config.ts</div>
+<pre><code>import { provideZonelessChangeDetection, provideBrowserGlobalErrorListeners } from '@angular/core';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideZonelessChangeDetection(),     // ← no more Zone.js
+    provideBrowserGlobalErrorListeners(), // recommended with zoneless
+    provideRouter(routes),
+    provideHttpClient(),
+  ],
+});
+// then: remove "zone.js" from angular.json polyfills (build &amp; test) and package.json</code></pre>
+<div class="code-label">a zoneless component — signals drive CD</div>
+<pre><code>@Component({
+  selector: 'app-counter',
+  changeDetection: ChangeDetectionStrategy.OnPush,   // recommended
+  template: `{{ count() }} — double: {{ double() }}
+             &lt;button (click)="inc()"&gt;+&lt;/button&gt;`,
+})
+export class CounterComponent {
+  count = signal(0);
+  double = computed(() =&gt; this.count() * 2);
+  inc() { this.count.update(n =&gt; n + 1); }  // signal change → scheduler → CD
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">what triggers an update in zoneless</div>
+<pre><code>// ✅ these trigger CD in zoneless:
+this.count.set(5);            // signal
+(click)="..."                // template event
+{{ data$ | async }}          // async pipe
+this.cdr.markForCheck();     // explicit
+
+// ⚠️ this alone may NOT (no zone to catch it):
+setTimeout(() =&gt; { this.plainProp = 5; }, 1000);
+// fix: use a signal, or markForCheck, or async pipe</code></pre>
+
+<h3 class="part">9. Advanced Example — migration steps</h3>
+<div class="code-label">zone → zoneless</div>
+<pre><code>// 1. swap the provider:
+//    provideZoneChangeDetection({ eventCoalescing: true })
+// →  provideZonelessChangeDetection()
+
+// 2. remove zone.js from angular.json (build + test polyfills) and package.json
+
+// 3. make components notify Angular properly:
+//    - migrate mutable state → signals
+//    - ensure async data uses async pipe or signals
+//    - add markForCheck where you did manual imperative updates
+
+// 4. safety net (dev): provideCheckNoChangesConfig({ exhaustive: true, interval: 1000 })
+//    → throws ExpressionChangedAfterItHasBeenChecked if a change wasn't notified
+// NG0914 = zoneless configured but zone.js still loaded (remove the polyfill)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>provideZonelessChangeDetection()</code> — Zone.js scheduling off, Angular scheduler on.</li>
+<li>zone.js ko polyfills + package se hatao (bundle chhota).</li>
+<li>Signals / events / async pipe / markForCheck CD trigger karte.</li>
+<li>Plain mutable props (bina notify) ab auto-update nahi — signals/markForCheck use karo.</li>
+<li><code>provideCheckNoChangesConfig</code> — dev safety net for missed notifications.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Zoneless enable karke zone.js polyfill na hatana → <code>NG0914</code> error (aur bundle bada).</li>
+<li>Plain mutable properties ko async callbacks mein badalna without notify → UI update nahi (no zone to catch). Signals/markForCheck use karo.</li>
+<li>Sochna zoneless CD ka mechanism badalta — nahi, sirf trigger badalta (Default/OnPush same).</li>
+<li>3rd-party libs jo zone.js pe implicitly depend karti — verify compatibility before migrating.</li>
+<li>Tests mein <code>fixture.detectChanges()</code> pe over-rely — zoneless mein <code>await fixture.whenStable()</code> prefer.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Signals-first likho — zoneless ke saath perfect (precise CD triggers).</li>
+<li>OnPush use karo (recommended stepping-stone; not strictly required).</li>
+<li>Async data → <code>async</code> pipe ya signals; imperative → <code>markForCheck</code>.</li>
+<li>Migrate karte waqt <code>provideCheckNoChangesConfig</code> (dev) se missed-notify pakdo.</li>
+<li>zone.js poori tarah hatao (polyfills + package) — bundle + traces ka fayda.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Zoneless ka core win: CD sirf explicit changes pe (no blanket over-triggering). Real-time / data-heavy apps (dashboards, tickers) mein sirf badla widget update hota, poora tree nahi — bada CPU saving. Plus zone.js hatne se bundle chhota aur cleaner stack traces (debug fast). Signals + OnPush + zoneless combo = Angular ka modern high-performance model. v21+ mein ye default hai — direction clear hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Un-notified change</td><td>State badli bina signal/markForCheck/event → UI stale (dev config catches it).</td></tr>
+<tr><td><code>NG0914</code></td><td>Zoneless + zone.js loaded → error; remove polyfill.</td></tr>
+<tr><td>Testing</td><td><code>await fixture.whenStable()</code> over <code>detectChanges()</code>; TestBed zoneless if zone.js absent.</td></tr>
+<tr><td>Hybrid</td><td>Zoneless works even if zone.js present for another app/lib (uses Angular APIs to schedule).</td></tr>
+<tr><td>v21+</td><td>Zoneless default for new apps; opt out via <code>provideZoneChangeDetection</code> if needed.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Zoneless Angular kya hai?</summary><div class="ans"><p>Zone.js ke bina change detection. Zone.js (jo har async pe blanket CD trigger karti thi) ki jagah, Angular ab explicit triggers — signals, template events, async pipe, markForCheck, input changes — pe CD schedule karta. Enable: <code>provideZonelessChangeDetection()</code>. v20.2 se stable, v21+ mein naye apps ka default. Fayde: predictable CD, chhota bundle, saaf stack traces, better perf.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Zoneless mode mein CD kaun trigger karta hai?</summary><div class="ans"><p>Explicit triggers: (1) <strong>signals</strong> — jo template/component mein use ho aur badle; (2) <strong>template events</strong> jaise <code>(click)</code>; (3) <strong>async pipe</strong> emit (internally markForCheck); (4) explicit <strong><code>markForCheck()</code></strong>; (5) <strong>@Input</strong> changes / host bindings. Ek internal scheduler in notifications pe CD schedule karta. Zone.js ka "kuch bhi async hua toh CD" ab nahi — sirf explicitly notified changes.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Zoneless CD ka mechanism zone-based se alag hai?</summary><div class="ans"><p>Nahi — CD ka <em>mechanism</em> same hai: wahi Default/OnPush strategies, wahi top-down traversal, wahi dirty checking (S-01/S-02). Sirf <em>trigger</em> badla — Zone.js ke "any async op → tick" se "explicit notifications (signals/events/markForCheck) → scheduled CD". Isliye migration mostly ye ensure karna hai ki har state change Angular ko properly notify kare (signals/async pipe/markForCheck) — kyunki ab koi zone blanket-catch nahi kar rahi.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Zoneless enable karne ke baad ek <code>setTimeout</code> mein set ki gayi property UI mein update nahi ho rahi. Kyun aur fix?</summary><div class="ans"><p>Zoneless mein Zone.js nahi hai jo <code>setTimeout</code> ko patch karke uske baad CD trigger kare. Plain property set karne se Angular ko koi notification nahi jaati → view stale. Fixes: (1) property ko <strong>signal</strong> banao aur <code>.set()</code> karo (signal change → scheduler → CD); (2) ya update ke baad <code>markForCheck()</code> call karo; (3) ya async data ho toh <code>async</code> pipe use karo. Dev mein <code>provideCheckNoChangesConfig</code> aise missed-notify cases pakadne mein madad karta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Zoneless = no Zone.js. <code>provideZonelessChangeDetection()</code>. Stable v20.2, default v21+.</li>
+<li>CD triggered by EXPLICIT signals: signals, template events, async pipe, markForCheck, input changes. Mechanism unchanged (Default/OnPush same).</li>
+<li>Remove zone.js polyfill (<code>NG0914</code> if not). Signals + OnPush = ideal. Un-notified changes → stale (dev: checkNoChangesConfig).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-16.15 · Go zoneless</div><p>Ek small app ko zoneless banao: <code>provideZonelessChangeDetection()</code>, zone.js polyfill hatao. Ek signal-based counter + async-pipe data se prove karo CD kaam karti. Phir ek plain-property <code>setTimeout</code> se stale-UI reproduce karke signal se fix karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-16.16 · Trigger audit</div><p>Zoneless app mein 5 alag state changes (signal set, click, async pipe, markForCheck, plain setTimeout prop) try karke document karo kaunse CD trigger karte hain aur kaunse nahi — aur kyun.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 16 complete.</b><br>
+  Internal Working → Rendering Cycle → Zone.js → Default Strategy → OnPush → markForCheck → detectChanges → Zoneless.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. Angular v17→v21+ (zoneless stable v20.2, default v21+). Ab tum CD ke andar ka poora mechanism jaante ho — trigger se lekar DOM patch tak, aur classic Zone.js se modern signals-driven zoneless tak. Ye 2025-26 Angular interviews ka core hai. Agla chapter: <b>Angular Testing (Vitest / Jest / Testing Library)</b> ya <b>Performance &amp; Optimization (lazy loading, deferrable views, hydration)</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch16_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

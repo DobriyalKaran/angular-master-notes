@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 19 — Angular Internals | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 12 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 19 — <span>Angular Internals</span></h1>
+  <p class="subtitle">Ab tak humne Angular <em>use</em> karna seekha. Is chapter mein hum <strong>engine kholenge</strong> — dekhenge Angular <em>andar se</em> kaise kaam karta hai. Ye ek end-to-end story hai: tumhare keystroke se lekar screen pe pixel tak. Build-time toolchain (<strong>CLI → Build → Compiler → Template Compiler → Ivy</strong>) se shuru karke, phir runtime (<strong>Bootstrapping → Dependency Injection → Rendering Pipeline → Renderer → Change Detection → Signals → Hydration</strong>) tak. Har topic deeply, diagrams ke saath — <code>LView</code>/<code>TView</code>, <code>ɵɵ</code> instructions, producer/consumer reactive graph, bloom filters, <code>ngh</code> hydration markers, sab. Ye woh knowledge hai jo tumhe "Angular developer" se "<strong>Angular jaanne wala engineer</strong>" banati hai — SDE-3 interviews ka deepest signal.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>Senior / SDE-3</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Internals: <b>Ivy</b> · Angular <b>v17→v21+</b></span>
+    <span class="chip">Sections: <b>12</b> · Parts: <b>204</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">CLI Internals</a><div class="sub">@angular/cli · schematics · builders · angular.json · ng commands · devkit architecture</div></li>
+    <li><a href="#s2">Build Process</a><div class="sub">esbuild + Vite · application builder · AOT · tree-shaking · chunks · ESM output</div></li>
+    <li><a href="#s3">The Angular Compiler</a><div class="sub">ngtsc · AOT vs JIT · decorators → static definitions · ɵcmp/ɵfac/ɵinj · TS transformer</div></li>
+    <li><a href="#s4">Ivy Architecture</a><div class="sub">locality · tree-shakability · instruction set · LView / TView · ɵɵ instructions · why Ivy</div></li>
+    <li><a href="#s5">Template Compiler</a><div class="sub">template → instruction function · create/update passes · bindings · ɵɵadvance · embedded views</div></li>
+    <li><a href="#s6">Bootstrapping</a><div class="sub">PlatformRef · bootstrapApplication · ApplicationRef · root injector · root LView · first CD</div></li>
+    <li><a href="#s7">Dependency Injection Engine</a><div class="sub">injector tree · environment vs element injectors · resolution · bloom filters · R3Injector</div></li>
+    <li><a href="#s8">Rendering Pipeline</a><div class="sub">createLView · renderView (create) · refreshView (update) · lifecycle hooks · the full flow</div></li>
+    <li><a href="#s9">The Renderer</a><div class="sub">Renderer2 · RendererFactory2 · DOM abstraction · platform independence · SSR renderer</div></li>
+    <li><a href="#s10">Change Detection Internals</a><div class="sub">refreshView · LView flags (Dirty/CheckAlways) · bindingUpdated · NO_CHANGE · tree traversal</div></li>
+    <li><a href="#s11">Signals Internals</a><div class="sub">ReactiveNode · producer/consumer graph · valueVersion · push/pull · glitch-free · live consumers</div></li>
+    <li><a href="#s12">Hydration Internals</a><div class="sub">ngh markers · DOM claiming · non-destructive · incremental hydration · event replay mechanism</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>CLI Internals</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>@angular/cli · @angular-devkit · schematics · builders · angular.json · ng commands · code generation · the architect API</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Angular CLI (<code>ng</code> command) ek command-line tool hai jo Angular projects ko scaffold, generate, build, serve, aur test karta. Andar se ye do core pieces pe khada hai: <strong>Schematics</strong> (code generation/transformation engine) aur <strong>Architect / Builders</strong> (tasks jaise build/serve/test run karne ka engine). <code>angular.json</code> in sabko configure karta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bina CLI, tumhe manually TypeScript config, bundler config, test setup, folder structure, aur boilerplate likhna padega — har project mein, error-prone. CLI ye sab standardize + automate karta: ek command se consistent project, ek command se component generate, ek command se optimized build. Ye "convention over configuration" deta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Tooling complexity + inconsistency. Modern frontend build setup (TS + bundler + AOT + optimization + SSR) bahut moving parts. CLI in sabko ek zero-config, versioned, upgradable abstraction ke peeche chhupa deta — tum <code>ng build</code> likhte ho, woh poora toolchain orchestrate karta. Plus <code>ng update</code> se framework migrations automate.</p>
+
+<h3 class="part">4. Internal Working — schematics + architect</h3>
+<div class="panel why"><div class="ptitle">Two engines: code-gen (schematics) &amp; task-runner (architect)</div><p>CLI internally <code>@angular-devkit</code> packages use karta. Do main engines: (1) <strong>Schematics</strong> (<code>@angular-devkit/schematics</code>) — ek code generation + transformation engine. Jab tum <code>ng generate component</code> chalate, ek "schematic" run hoti jo files ko ek <strong>virtual file system (Tree)</strong> mein describe karti — files add/modify karti (component TS/HTML/spec, plus module/routing updates) — phir Tree ko disk pe commit karti. Schematics idempotent + composable hoti; <code>ng update</code> ki migrations bhi schematics hain (code ko transform karti). (2) <strong>Architect</strong> (<code>@angular-devkit/architect</code>) — ek task orchestration API. Har command (<code>build</code>, <code>serve</code>, <code>test</code>) ek <strong>builder</strong> ko map karti (jaise <code>@angular-devkit/build-angular:application</code>). Builder ek function hai jo options leta aur task run karta (build → esbuild invoke karta). <strong><code>angular.json</code></strong> project structure, targets (build/serve/test), aur unke builders + options define karta. So: <code>ng generate</code> → schematics; <code>ng build/serve/test</code> → architect + builders; <code>angular.json</code> = the config that wires it all.</p></div>
+
+<div class="dg-title">Diagram — CLI architecture</div>
+<pre class="diagram">
+              ng &lt;command&gt;
+                  │
+      ┌───────────┴────────────┐
+      ▼                        ▼
+  SCHEMATICS               ARCHITECT
+ (@devkit/schematics)     (@devkit/architect)
+   ng generate ...          ng build / serve / test
+   ng new / ng update         │
+      │                       ▼
+   Tree (virtual FS)       BUILDER (e.g. :application)
+   add/modify files          → runs the task (esbuild, karma...)
+      │                       │
+   commit to disk        angular.json ← configures targets + options
+</pre>
+
+<h3 class="part">5. Execution Flow — ng generate component</h3>
+<pre class="diagram">
+ ng generate component user-card
+   → resolve the "component" schematic
+   → schematic runs: creates a Tree (virtual FS)
+     - adds user-card.component.ts / .html / .css / .spec.ts
+     - (updates a module if not standalone)
+   → applies naming, selector prefix, style ext (from angular.json)
+   → commits the Tree to disk
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td><code>@angular/cli</code></td><td>The <code>ng</code> command shell — parses commands, dispatches to devkit.</td></tr>
+<tr><td>Schematics</td><td>Code generation/transformation engine (generate, new, update migrations).</td></tr>
+<tr><td>Architect + Builders</td><td>Task runner; each builder runs build/serve/test etc.</td></tr>
+<tr><td><code>angular.json</code></td><td>Workspace config: projects, targets, builders, options.</td></tr>
+<tr><td>Tree (virtual FS)</td><td>Schematics stage changes here before committing to disk.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — angular.json targets</h3>
+<div class="code-label">angular.json — a build target maps to a builder</div>
+<pre><code>{
+  "projects": {
+    "my-app": {
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",  // the builder
+          "options": { "browser": "src/main.ts", "index": "src/index.html" },
+          "configurations": { "production": { "optimization": true } }
+        },
+        "serve": { "builder": "@angular-devkit/build-angular:dev-server" }
+      }
+    }
+  }
+}
+// ng build my-app → architect runs the "build" target's builder with its options.</code></pre>
+
+<h3 class="part">8. Beginner Example — the common commands</h3>
+<div class="code-label">what each command triggers</div>
+<pre><code>ng new my-app          // schematic: scaffolds a workspace
+ng generate component x // schematic: generates files (+ updates config)
+ng build               // architect: runs the build builder (esbuild)
+ng serve               // architect: runs the dev-server builder (Vite)
+ng test                // architect: runs the test builder
+ng update @angular/core // schematics: runs migration schematics</code></pre>
+
+<h3 class="part">9. Advanced Example — a custom schematic</h3>
+<div class="code-label">generate code programmatically</div>
+<pre><code>import { Rule, Tree } from '@angular-devkit/schematics';
+
+export function myFeature(options: { name: string }): Rule {
+  return (tree: Tree) =&gt; {
+    tree.create(
+      `src/app/${options.name}.service.ts`,
+      `export class ${options.name}Service {}`,
+    );
+    return tree;   // the engine commits this Tree to disk
+  };
+}
+// registered in collection.json → run via: ng generate my-collection:my-feature</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>ng &lt;cmd&gt;</code> — CLI parses, dispatches to schematics or architect.</li>
+<li>Generate/new/update → schematics (Tree-based code-gen).</li>
+<li>Build/serve/test → architect runs the mapped builder.</li>
+<li><code>angular.json</code> targets ko builders + options se wire karta.</li>
+<li>Schematic Tree pe changes stage karke disk pe commit karti.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>CLI ko "just a wrapper" samajhna — actually schematics + architect ka powerful engine.</li>
+<li>angular.json manually galat edit karke build target todna.</li>
+<li><code>ng update</code> skip karke manual migration — schematics automate karti thi.</li>
+<li>Custom builder/schematic ki jagah post-build scripts hack karna.</li>
+<li>Builder aur schematic gadbad karna — builder = task; schematic = code-gen.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li><code>ng update</code> use karo migrations ke liye (manual mat karo).</li>
+<li>angular.json changes CLI/schematics se karo jahan possible.</li>
+<li>Repeated codegen → custom schematic banao (consistency).</li>
+<li>Build customization → custom builder / builder options, not hacks.</li>
+<li>Samjho: generate=schematics, build/serve=architect+builder.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>CLI khud perf-critical nahi par uske builders hain (S-02). Schematics fast codegen deti; architect incremental builds orchestrate karta. <code>ng update</code> schematics migrations automate karke upgrade friction hatati. Sabse bada perf lever CLI ke through: sahi builder (application/esbuild) choose karna — jo S-02 detail karta. CLI ka value: consistent, optimized, zero-config toolchain jo tumhe manual bundler tuning se bachata.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Custom builders</td><td><code>@angular-builders/custom-webpack</code> / custom-esbuild for extra config.</td></tr>
+<tr><td>Nx workspaces</td><td>Use <code>project.json</code> + Nx executors instead of pure angular.json.</td></tr>
+<tr><td>Migration failures</td><td><code>ng update</code> schematics kabhi manual follow-up maangti.</td></tr>
+<tr><td>Monorepos</td><td>Multiple projects in one angular.json workspace.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular CLI andar se kaise kaam karta hai?</summary><div class="ans"><p>Do core engines pe: <strong>Schematics</strong> (<code>@angular-devkit/schematics</code>) — code generation/transformation engine, jo <code>ng generate</code>/<code>ng new</code>/<code>ng update</code> ko power karta (files ko ek virtual Tree mein describe karke disk pe commit). Aur <strong>Architect</strong> (<code>@angular-devkit/architect</code>) — task runner jo <code>ng build</code>/<code>serve</code>/<code>test</code> ko run karta via <strong>builders</strong>. <code>angular.json</code> in sabko wire karta (targets → builders → options). Yani CLI = schematics (codegen) + architect (tasks) + config.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Schematic aur builder mein kya farq?</summary><div class="ans"><p><strong>Schematic:</strong> ek code generation/transformation unit — files create/modify karti (component generate, migration transform). Ek virtual <code>Tree</code> (FS abstraction) pe changes stage karke commit karti; idempotent + composable. <strong>Builder:</strong> ek task runner — ek operation (build/serve/test) execute karta given options ke saath (jaise application builder esbuild invoke karta). Yani schematic = "code likho/badlo"; builder = "task chalao". <code>ng generate</code> schematics use karta, <code>ng build</code> builders.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>angular.json</code> ka role kya hai?</summary><div class="ans"><p>Workspace ka central config. Ye projects, aur har project ke "targets" (build/serve/test/etc.) define karta — har target ek <strong>builder</strong> ko map karta (jaise <code>build</code> → <code>@angular-devkit/build-angular:application</code>) plus uske options aur configurations (production/development). Schematics bhi angular.json se defaults padhti (style ext, prefix). Yani jab tum <code>ng build --configuration production</code> chalate, architect angular.json se build target ka builder + production options utha kar run karta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Team har feature ke liye same 5-file boilerplate (service + facade + models + spec) manually banati hai — inconsistent + slow. Better approach?</summary><div class="ans"><p>Ek custom <strong>schematic</strong> banao. Ek <code>Rule</code> function likho jo <code>Tree</code> pe woh 5 files (naming/structure standardized) generate kare, template files se. Collection.json mein register karke, team <code>ng generate our-collection:feature --name=x</code> chala kar consistent boilerplate ek command mein paati. Isse consistency + speed dono milte, aur schematics naturally angular.json conventions (prefix, style) respect karti. Post-build hacks ya copy-paste ke bajaye ye "CLI-native" solution hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>CLI = <strong>Schematics</strong> (codegen/transform: generate/new/update, via virtual Tree) + <strong>Architect</strong> (task runner: build/serve/test, via builders).</li>
+<li><code>angular.json</code> wires targets → builders + options. Schematic = code; builder = task.</li>
+<li><code>ng update</code> migrations = schematics. Custom schematics for repeated codegen; custom builders for build tweaks.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.1 · Inspect angular.json</div><p>Ek app ke <code>angular.json</code> mein build/serve/test targets, unke builders, aur production configuration identify karo. Ek build option (jaise <code>outputHashing</code>) change karke effect observe karo.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-19.2 · Write a custom schematic</div><p>Ek custom schematic banao jo ek "feature" (service + model + spec) generate kare. Collection register karke <code>ng generate</code> se run karo aur Tree-based file creation samjho.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Build Process</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>esbuild + Vite · application builder · AOT compilation · tree-shaking · minification · code splitting · ESM output · dev server / HMR</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Build process woh pipeline hai jo tumhare TypeScript + templates + styles ko browser-ready optimized JavaScript/CSS bundles mein convert karta. Modern Angular (v17+) mein ye <strong>esbuild</strong> (actual bundler) + <strong>Vite</strong> (dev server) pe based hai, <strong>application builder</strong> ke through. Ye compile (AOT), bundle, tree-shake, minify, aur split karta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Browser TypeScript, Angular templates, ya bahut saari alag files directly efficiently nahi chala sakta. Build process source ko: compile (TS→JS, templates→Ivy instructions), optimize (dead code hatao, minify), aur package (chunks jo lazy-load ho) karta. Bina achhe build system ke, bundles bade + builds slow hote.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Slow builds + bloated output. Purana Webpack-based system enterprise apps pe slow tha (single-threaded JS bundler). esbuild (Go, multi-threaded) drastically fast hai. Application builder AOT + tree-shaking + minification + code splitting + SSR ko ek integrated, fast pipeline mein deta — chhote bundles, tez builds.</p>
+
+<h3 class="part">4. Internal Working — esbuild + Vite</h3>
+<div class="panel why"><div class="ptitle">esbuild bundles; Vite serves. AOT + tree-shake + split.</div><p>Angular v17+ ka default <strong>application builder</strong> (<code>@angular-devkit/build-angular:application</code>) do tools use karta: <strong>esbuild</strong> (Go mein likha, multi-core parallel bundler/minifier — actual "building" ye karta) aur <strong>Vite</strong> (dev server — native ESM + near-instant HMR deta; Vite bundle nahi karta, woh sirf dev-time "messenger" hai). Pipeline: (1) <strong>AOT compilation</strong> — Angular compiler (ngtsc, S-03) TS + templates ko Ivy instructions wale JS mein compile karta (build-time pe, browser mein nahi). (2) <strong>Bundling</strong> — esbuild modules ko bundles mein combine karta. (3) <strong>Tree-shaking</strong> — unused exports/code drop (ESM + Ivy locality se possible). (4) <strong>Code splitting</strong> — dynamic <code>import()</code> (lazy routes, <code>@defer</code>) par alag chunks. (5) <strong>Minification</strong> — whitespace/names shrink. (6) <strong>Output</strong> — modern ESM with content-hashed filenames. Production build (<code>ng build</code>) sab optimizations on; dev (<code>ng serve</code>) Vite se fast HMR, minimal optimization. Old Webpack <code>browser</code> builder ab deprecated hai. Application builder client bundle + optional SSR server + prerendering ek saath handle karta.</p></div>
+
+<div class="dg-title">Diagram — the build pipeline</div>
+<pre class="diagram">
+ SOURCE (TS + templates + styles)
+        │
+        ▼  AOT compile (ngtsc) → templates become Ivy instructions
+   esbuild:  bundle → tree-shake → code-split → minify
+        │
+        ▼
+ OUTPUT: modern ESM chunks (content-hashed)
+   main-[hash].js  polyfills.js  lazy-chunk-[hash].js  styles-[hash].css
+
+ dev:  Vite dev server → native ESM + instant HMR (no full bundle)
+ prod: esbuild full optimization → smallest bundles
+</pre>
+
+<h3 class="part">5. Execution Flow — ng build (production)</h3>
+<pre class="diagram">
+ ng build --configuration production
+   → ngtsc AOT-compiles (templates → Ivy)
+   → esbuild bundles + tree-shakes + splits (lazy/@defer chunks)
+   → minifies + content-hashes filenames
+   → (application builder) optional SSR server + prerender
+   → dist/ output (ESM, browser-ready)
+</pre>
+
+<h3 class="part">6. Architecture — the tools</h3>
+<table>
+<tr><td>esbuild</td><td>Go-based, multi-core bundler + minifier. The actual builder. Very fast.</td></tr>
+<tr><td>Vite</td><td>Dev server: native ESM, near-instant HMR. Not the production bundler.</td></tr>
+<tr><td>application builder</td><td><code>:application</code> — client + SSR + prerender in one. Default v17+.</td></tr>
+<tr><td>ngtsc (AOT)</td><td>Compiles templates → Ivy instructions at build time (S-03).</td></tr>
+<tr><td>Output</td><td>Modern ESM, dynamic-import chunks, content-hashed, minified.</td></tr>
+<tr><td>Webpack <code>browser</code></td><td>Legacy, deprecated. Migrate via <code>ng update ... use-application-builder</code>.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — production optimizations</h3>
+<div class="code-label">angular.json production config</div>
+<pre><code>"configurations": {
+  "production": {
+    "optimization": true,      // esbuild minify + tree-shake
+    "outputHashing": "all",    // content-hashed filenames (cache-busting)
+    "sourceMap": false,
+    "budgets": [{ "type": "initial", "maximumError": "1mb" }]  // (Ch18 S-01)
+  }
+}
+// ng build → AOT + esbuild → optimized ESM chunks in dist/</code></pre>
+
+<h3 class="part">8. Beginner Example — dev vs prod</h3>
+<div class="code-label">two modes</div>
+<pre><code>ng serve   // DEV: Vite dev server, native ESM, instant HMR, minimal optimization
+ng build   // PROD: esbuild full pipeline — AOT + tree-shake + minify + hash
+// dev prioritizes speed/feedback; prod prioritizes smallest optimized output.</code></pre>
+
+<h3 class="part">9. Advanced Example — analyzing the output</h3>
+<div class="code-label">see what esbuild produced</div>
+<pre><code>ng build --stats-json
+npx source-map-explorer dist/**/*.js   // visualize bundle contents (Ch18 S-11)
+
+// esbuild metafile shows chunk composition; lazy routes / @defer become
+// separate chunks (dynamic import boundaries). Tree-shaking drops unused
+// exports; Ivy's locality means unused components/instructions are removed.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>ngtsc AOT-compiles templates → Ivy instructions (build-time).</li>
+<li>esbuild bundles modules (parallel, Go — fast).</li>
+<li>Tree-shaking unused code drop (ESM + Ivy locality).</li>
+<li>Dynamic imports → separate chunks (lazy/@defer).</li>
+<li>Minify + content-hash → optimized ESM output.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Dev build ship karna (no optimization) — huge + slow. Always production build for deploy.</li>
+<li>Old <code>browser</code> (Webpack) builder pe atke rehna — deprecated; migrate to application builder.</li>
+<li>"Vite bundles the app" samajhna — nahi, esbuild bundles; Vite is the dev server.</li>
+<li>Side-effectful imports jo tree-shaking rok dete.</li>
+<li>SSR ke liye alag manual setup jab application builder built-in deta hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Application builder (esbuild + Vite) use karo — default v17+, migrate if on Webpack.</li>
+<li>Production builds for deploy (AOT + optimization + hashing).</li>
+<li>Budgets set karo (Ch18 S-01); output analyze karo (source-map-explorer).</li>
+<li>Lazy loading + <code>@defer</code> (Ch18) se code splitting leverage.</li>
+<li>Tree-shakable code likho (ESM, no side-effect imports, standalone).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Build process directly do cheezein affect karta: build speed (developer experience) aur output size (user LCP/TTI). esbuild Webpack se 60%+ faster builds deta (Go, parallel). AOT + tree-shaking + minification chhote bundles; code splitting lazy chunks; content hashing long-term caching. Vite dev HMR feedback instant. Yani build system choice enterprise mein huge — application builder modern default.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Custom bundler config</td><td><code>@angular-builders/custom-esbuild</code> for esbuild plugins.</td></tr>
+<tr><td>CommonJS deps</td><td>esbuild ESM-first; some CJS deps warn (esModuleInterop).</td></tr>
+<tr><td>WASM / special loaders</td><td>May need custom builder extensions.</td></tr>
+<tr><td>SSR build</td><td>Application builder outputs server bundle too (integrated).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular ka modern build system kya hai?</summary><div class="ans"><p>v17+ mein <strong>application builder</strong> (<code>@angular-devkit/build-angular:application</code>) jo <strong>esbuild</strong> + <strong>Vite</strong> pe based hai. <strong>esbuild</strong> (Go, multi-core) actual bundler/minifier hai — bundle, tree-shake, minify karta. <strong>Vite</strong> dev server hai — native ESM + instant HMR deta (production bundle nahi karta). Pipeline: AOT compile (ngtsc) → bundle → tree-shake → code-split → minify → ESM output. Purana Webpack <code>browser</code> builder ab deprecated. Builds ~60%+ faster.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> esbuild aur Vite build mein kaun kya karta hai?</summary><div class="ans"><p>Common galatfehmi: "Vite bundles". Actually <strong>esbuild</strong> bundler hai — woh actual building (bundle, tree-shake, minify) karta, aur Go mein multi-core parallel hone se bahut fast hai. <strong>Vite</strong> sirf <strong>dev server</strong> hai — native ES modules serve karta aur near-instant HMR deta development ke dauraan (full re-bundle nahi). Production build (<code>ng build</code>) puri tarah esbuild se hoti; Vite dev-time "messenger" hai. Dono milkar fast DX + fast prod builds.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Build ke dauraan kya optimizations hoti hain?</summary><div class="ans"><p>(1) <strong>AOT compilation</strong> — templates build-time pe Ivy instructions mein (browser mein compiler nahi). (2) <strong>Tree-shaking</strong> — unused code drop (ESM + Ivy locality se). (3) <strong>Minification</strong> — whitespace/names shrink. (4) <strong>Code splitting</strong> — dynamic imports (lazy routes, <code>@defer</code>) alag chunks. (5) <strong>Content hashing</strong> — cache-busting filenames. (6) <strong>Bundling</strong> — modules combine. Production build sab on; dev minimal (speed ke liye).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek bada enterprise app abhi Webpack <code>browser</code> builder pe hai, builds 4-5 min lete. Kya karoge?</summary><div class="ans"><p>Application builder (esbuild + Vite) pe migrate karo. Webpack single-threaded JS bundler hai jo bade apps pe slow padta; esbuild Go-based multi-core hai — 60%+ faster builds common. Migration: <code>ng update @angular/cli --name use-application-builder</code> — automated schematic angular.json ko update karta (browser → application builder, main → browser field, SSR builders consolidate). Build ke baad kuch manual adjustments ho sakte (CJS deps, custom webpack config). Result: dramatically faster cold + incremental builds, plus integrated SSR/prerender + component HMR.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Modern build (v17+) = <strong>application builder</strong> on <strong>esbuild</strong> (actual bundler, Go, fast) + <strong>Vite</strong> (dev server, HMR).</li>
+<li>Pipeline: AOT (ngtsc) → bundle → tree-shake → code-split (dynamic imports) → minify → hashed ESM.</li>
+<li>Webpack <code>browser</code> builder deprecated. esbuild ~60%+ faster. Vite serves, esbuild builds.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.3 · Dev vs prod output</div><p>Same app ka <code>ng build</code> (prod) aur <code>ng build --configuration development</code> output size + file structure compare karo. Content hashing, chunks, minification observe karo.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-19.4 · Trace code splitting</div><p>Ek lazy route + ek <code>@defer</code> block wali app build karo. esbuild metafile / dist output mein alag chunks identify karo. Prove karo dynamic imports chunk boundaries banate hain.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>The Angular Compiler</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>ngtsc · AOT vs JIT · decorators → static definitions · ɵcmp/ɵfac/ɵprov/ɵinj · TypeScript transformer · compilation model · @angular/compiler</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Angular compiler woh cheez hai jo tumhare declarative Angular code (<code>@Component</code>, templates, decorators) ko plain, runnable JavaScript mein badalti hai. Modern compiler ka naam <strong>ngtsc</strong> (the Ivy compiler) hai — ye ek <strong>TypeScript transformer</strong> hai jo <code>tsc</code> ke saath chalti aur decorators ko static class definitions (<code>ɵcmp</code>, <code>ɵfac</code>, etc.) mein compile karti.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Angular ka syntax (decorators, HTML templates, bindings) browser directly nahi samajhta. Compiler in high-level constructs ko efficient JS instructions mein translate karta — templates ko rendering code mein, decorators ko runtime metadata mein. Bina compiler, Angular ka declarative model chal hi nahi sakta. Aur AOT compilation isse build-time pe karke browser ko compiler bhejne se bachata.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>High-level Angular code ko runnable code mein badalna, efficiently. Compiler declarative templates + metadata ko optimized Ivy instructions + static definitions mein translate karta. AOT mode isse build-time pe karke: (a) browser mein compiler ki zaroorat khatam (chhota bundle, fast startup), (b) template errors build-time pe pakde jaate, (c) rendering code pehle se ready.</p>
+
+<h3 class="part">4. Internal Working — ngtsc &amp; the definitions</h3>
+<div class="panel why"><div class="ptitle">Decorators → static ɵ definitions, as a TS transformer</div><p><strong>ngtsc</strong> Angular ka Ivy-era compiler hai, jo ek <strong>TypeScript compiler plugin/transformer</strong> ke roop mein implement hai — yani ye normal <code>tsc</code> compilation ke andar hook karke chalti. Har Angular decorator ke liye, compiler ek <strong>static field</strong> generate karti class pe (decorator ko erase karke): <code>@Component</code> → <code>ɵcmp</code> (component definition — template function, selectors, inputs/outputs, directiveDefs) + <code>ɵfac</code> (factory — instance kaise banega). <code>@Injectable</code> → <code>ɵprov</code> (provider def) + <code>ɵfac</code>. <code>@Directive</code> → <code>ɵdir</code>. <code>@Pipe</code> → <code>ɵpipe</code>. <code>@NgModule</code> → <code>ɵmod</code> + <code>ɵinj</code> (injector def). Ye <code>ɵ</code> (theta) prefix "framework-private" denote karta. Template ka compilation (S-05) <code>ɵcmp</code> ke andar template instruction function banata. <strong>AOT (Ahead-of-Time):</strong> ye sab build-time pe hota — production default. Browser ko ready JS milta, compiler nahi. <strong>JIT (Just-in-Time):</strong> compilation browser mein runtime pe (needs <code>@angular/compiler</code> in bundle) — historically dev/testing. AOT v9+ (Ivy) se default hai. Locality (S-04) ki wajah se ngtsc har file ko independently compile kar sakti — incremental + fast.</p></div>
+
+<div class="dg-title">Diagram — decorator to definition</div>
+<pre class="diagram">
+ @Component({ selector:'app-x', template:'...' })
+ export class XComponent { }
+        │  ngtsc (TS transformer, at build time = AOT)
+        ▼
+ export class XComponent {
+   static ɵcmp = ɵɵdefineComponent({    ← component definition
+     type: XComponent, selectors:[['app-x']],
+     template: function XComponent_Template(rf, ctx){ ...ɵɵ instructions... },
+     ...
+   });
+   static ɵfac = function(){ return new XComponent(); };  ← factory
+ }
+ // decorator erased; metadata is now static, tree-shakable JS.
+</pre>
+
+<h3 class="part">5. Execution Flow — AOT compilation</h3>
+<pre class="diagram">
+ tsc + ngtsc (build time):
+   parse @Component/@Injectable/@NgModule metadata
+   compile template → Ivy instruction function
+   emit static defs: ɵcmp / ɵfac / ɵprov / ɵmod / ɵinj
+   erase decorators
+   → plain JS, no compiler needed at runtime (AOT)
+</pre>
+
+<h3 class="part">6. Architecture — the outputs</h3>
+<table>
+<tr><td><code>ɵcmp</code> (defineComponent)</td><td>Component def: template fn, selectors, inputs/outputs, deps.</td></tr>
+<tr><td><code>ɵfac</code></td><td>Factory: how to construct the instance (DI-aware).</td></tr>
+<tr><td><code>ɵdir</code> / <code>ɵpipe</code></td><td>Directive / pipe definitions.</td></tr>
+<tr><td><code>ɵprov</code></td><td>Injectable provider def (tree-shakable, <code>providedIn</code>).</td></tr>
+<tr><td><code>ɵmod</code> / <code>ɵinj</code></td><td>NgModule def + injector def.</td></tr>
+<tr><td>AOT vs JIT</td><td>Build-time (default, no runtime compiler) vs runtime browser compile.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — what the compiler emits</h3>
+<div class="code-label">before &amp; after (conceptual)</div>
+<pre><code>// YOU WRITE:
+@Component({ selector: 'app-greet', template: '&lt;h1&gt;{{ name }}&lt;/h1&gt;' })
+export class GreetComponent { name = 'Karan'; }
+
+// COMPILER EMITS (simplified):
+export class GreetComponent {
+  name = 'Karan';
+  static ɵfac = () =&gt; new GreetComponent();
+  static ɵcmp = ɵɵdefineComponent({
+    type: GreetComponent, selectors: [['app-greet']],
+    decls: 2, vars: 1,
+    template: (rf, ctx) =&gt; {
+      if (rf &amp; 1) { ɵɵelementStart(0,'h1'); ɵɵtext(1); ɵɵelementEnd(); }
+      if (rf &amp; 2) { ɵɵadvance(1); ɵɵtextInterpolate(ctx.name); }
+    },
+  });
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — AOT vs JIT</h3>
+<div class="code-label">when compilation happens</div>
+<pre><code>// AOT (default, production): templates compiled at BUILD time
+//   → browser gets ready instructions, no @angular/compiler shipped
+//   → smaller bundle, faster startup, build-time template errors
+
+// JIT (legacy dev/testing): templates compiled at RUNTIME in the browser
+//   → needs @angular/compiler in the bundle (bigger, slower startup)
+// Ivy made AOT the default since v9.</code></pre>
+
+<h3 class="part">9. Advanced Example — inspecting compiled output</h3>
+<div class="code-label">see the ɵ definitions</div>
+<pre><code>// build with source maps off + open dist/main.js → search "ɵcmp" / "defineComponent"
+// you'll see each component's static definition + template instruction function.
+// @Injectable({ providedIn: 'root' }) emits:
+//   static ɵprov = ɵɵdefineInjectable({ token: X, factory: ..., providedIn: 'root' });
+// → this ɵprov is what makes providedIn services tree-shakable (S-07).</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>ngtsc = TS transformer; runs inside <code>tsc</code> at build time.</li>
+<li><code>@Component</code> → <code>ɵcmp</code> (def + template fn) + <code>ɵfac</code>.</li>
+<li>Template → Ivy instruction function inside <code>ɵcmp</code> (S-05).</li>
+<li>Decorators erased; metadata becomes static <code>ɵ</code> fields.</li>
+<li>AOT = build-time (default); JIT = runtime (needs compiler in bundle).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sochna template runtime pe interpret hota — actually AOT-compiled to JS instructions.</li>
+<li>JIT ke bhaari runtime compiler ko production mein ship karna.</li>
+<li>Non-statically-analyzable metadata (dynamic decorator values) — AOT compile nahi kar pati.</li>
+<li><code>ɵ</code>-prefixed APIs ko directly use karna — framework-private, unstable.</li>
+<li>Template type-checking (<code>strictTemplates</code>) off rakhna — compiler errors miss.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>AOT (default) rakho production mein — smaller + faster + safer.</li>
+<li><code>strictTemplates: true</code> — compiler template errors build-time pe pakde.</li>
+<li>Statically-analyzable metadata likho (AOT-friendly).</li>
+<li><code>ɵ</code> private APIs kabhi directly use na karo.</li>
+<li>Compiled output samjho — debugging + perf intuition ke liye.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>AOT compilation ka perf win huge: browser mein compiler nahi (bundle chhota — <code>@angular/compiler</code> ~thousands of lines saved), aur startup fast (templates pre-compiled, runtime parse nahi). Static <code>ɵ</code> definitions tree-shakable — unused code drops. Build-time template errors bugs jaldi pakadte. Ivy locality (S-04) incremental compilation deti — sirf changed files recompile. Yani compiler design directly bundle size + startup + build speed affect karta.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Dynamic components</td><td>Runtime-created components still work via <code>ɵcmp</code> + <code>createComponent</code>.</td></tr>
+<tr><td>Partial compilation</td><td>Libraries ship "partial" Ivy (linker completes at app build).</td></tr>
+<tr><td>JIT for tests</td><td>Some test setups still JIT-compile; TestBed handles it.</td></tr>
+<tr><td>Metadata errors</td><td>Non-analyzable metadata → AOT compile error (must be static).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular compiler kya karta hai?</summary><div class="ans"><p>Tumhare declarative Angular code (decorators + templates) ko plain runnable JavaScript mein badalta. Modern compiler <strong>ngtsc</strong> ek TypeScript transformer hai jo <code>tsc</code> ke saath chalti: har decorator ke liye static definition emit karti — <code>@Component</code> → <code>ɵcmp</code> (template function + metadata) + <code>ɵfac</code> (factory), <code>@Injectable</code> → <code>ɵprov</code>, etc. — aur decorator erase kar deti. Template ko Ivy instruction function mein compile karti. Ye sab AOT (build-time) pe hota production mein.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> AOT vs JIT compilation?</summary><div class="ans"><p><strong>AOT (Ahead-of-Time):</strong> templates + decorators build-time pe compile hote — browser ko ready JS instructions milte, compiler ship nahi hota. Fayde: chhota bundle (no <code>@angular/compiler</code>), fast startup (no runtime compile), build-time template errors. <strong>JIT (Just-in-Time):</strong> compilation browser mein runtime pe — needs compiler in bundle (bigger, slower startup), errors runtime pe. Ivy ne AOT ko v9 se default banaya. Production hamesha AOT.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Compiler <code>@Component</code> se kya generate karti hai?</summary><div class="ans"><p>Do static fields class pe: <code>ɵcmp</code> (via <code>ɵɵdefineComponent</code>) — component definition jismein compiled template instruction function, selectors, inputs/outputs, dependency defs hote; aur <code>ɵfac</code> — factory function jo DI-aware instance banata. Decorator khud erase ho jaata (metadata ab static fields mein hai). Ye <code>ɵ</code> (theta) prefix framework-private denote karta. Runtime pe Angular <code>ɵcmp</code> read karke component render karta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Interviewer: "Jab tum <code>{{ user.name }}</code> template mein likhte ho, browser tak pahunchne tak usska kya hota hai?" Explain.</summary><div class="ans"><p>Build-time pe ngtsc (AOT) us template ko parse karti aur ek <strong>Ivy instruction function</strong> mein compile karti (<code>ɵcmp</code> ke andar). <code>{{ user.name }}</code> ka <code>&lt;h1&gt;</code> element ek create-instruction (<code>ɵɵelementStart</code>/<code>ɵɵtext</code>) banata (jo ek baar DOM banata) aur interpolation ek update-instruction (<code>ɵɵtextInterpolate(ctx.user.name)</code>) banata (jo har change detection pe value compare karke DOM update karta). Ye compiled JS browser ko jaata — koi template string runtime pe parse nahi hoti. Runtime pe bas ye instruction function chalti (create pass ek baar, update pass har CD). Yani template "code" ban jaata hai, "data" nahi rehta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><strong>ngtsc</strong> = Ivy compiler, a TS transformer. Decorators → static <code>ɵ</code> defs: <code>ɵcmp</code>+<code>ɵfac</code> (Component), <code>ɵprov</code> (Injectable), <code>ɵmod</code>+<code>ɵinj</code> (NgModule).</li>
+<li>Template → Ivy instruction function inside <code>ɵcmp</code>. Decorators erased → static, tree-shakable JS.</li>
+<li><strong>AOT</strong> (build-time, default): no runtime compiler, small+fast, build-time errors. <strong>JIT</strong> (runtime, legacy): compiler in bundle.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.5 · Read the compiled output</div><p>Ek simple component build karke <code>dist/main.js</code> mein uska <code>ɵcmp</code> / <code>defineComponent</code> / template instruction function dhoondho. Template constructs ko instructions se map karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.6 · AOT vs JIT bundle diff</div><p>Same app ko AOT (default) vs JIT (force) compile karke bundle size + startup difference measure karo. Prove karo AOT bundle mein <code>@angular/compiler</code> nahi hai.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Ivy Architecture</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>Ivy rendering engine · locality · tree-shakability · instruction set · LView / TView · ɵɵ instructions · incremental compilation · why Ivy replaced View Engine</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Ivy Angular ka rendering + compilation <strong>engine</strong> hai (v9 se default) — woh architecture jo decide karta hai templates kaise compile hote aur views kaise runtime pe render/update hote. Iske do signature ideas: <strong>instructions</strong> (templates → <code>ɵɵ</code> function calls) aur <strong>locality</strong> (har component independently compile hota). Runtime data ye <code>LView</code>/<code>TView</code> structures mein rakhta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Purana engine (View Engine) global compilation maangta (har component ko doosron ki metadata chahiye thi — <code>.ngfactory</code> files, slow builds, bade bundles, poor tree-shaking). Ivy ne isse locality se replace kiya: har component apne aap compile hota, sirf apni template + used deps ki public API jaanke. Isse fast incremental builds, chhote bundles, better tree-shaking, aur naye features (@defer, signals, hydration) possible hue.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>View Engine ki global-compilation bottleneck. Ivy: (a) <strong>locality</strong> — component-by-component compile (incremental, fast); (b) <strong>tree-shakability</strong> — instructions tree-shakable functions, unused framework code drops (chhote bundles); (c) modern-feature foundation — <code>@defer</code>, signals, incremental hydration sab Ivy ke instruction+LView model pe khade hain.</p>
+
+<h3 class="part">4. Internal Working — instructions, LView, TView</h3>
+<div class="panel why"><div class="ptitle">Templates become instructions; runtime lives in LView/TView</div><p><strong>Instructions:</strong> Ivy mein template ek function ban jaata hai jo Ivy runtime <strong>instructions</strong> (<code>ɵɵ</code> prefixed — "theta theta") call karta: <code>ɵɵelementStart</code>, <code>ɵɵtext</code>, <code>ɵɵproperty</code>, <code>ɵɵadvance</code>, etc. (S-05). Ye instructions tree-shakable standalone functions hain — jo use na hon, drop. <strong>Locality:</strong> component ko compile karne ke liye compiler ko sirf uski apni template aur uski dependencies ki <em>public API</em> chahiye (unki full metadata nahi) — isliye har file independently compile hoti (incremental builds). <strong>Runtime data structures:</strong> jab component render hota, Ivy do parallel structures banata: <strong><code>TView</code> (Template View)</strong> — component <em>type</em> ka <em>shared, static</em> data (template ka "blueprint": instructions ki list, directive defs, binding metadata). Ek TView per component type, saari instances share karti — jaise ek "class". <strong><code>LView</code> (Logical/Live View)</strong> — ek component <em>instance</em> ka <em>live</em> data (ek array): component instance, DOM node references, current binding values, injected tokens, child view pointers. Ek LView per instance — jaise ek "object". LView apne TView ko point karta (<code>LView[TVIEW]</code>). Ye class/instance separation memory bachata (shared static data duplicate nahi hota) aur fast rendering deta.</p></div>
+
+<div class="dg-title">Diagram — TView (shared) vs LView (per-instance)</div>
+<pre class="diagram">
+  TView (per component TYPE — shared blueprint)
+  ┌──────────────────────────────┐
+  │ template instructions list   │
+  │ directiveDefs, binding meta  │◄──────┐
+  │ (static, created once)       │       │  LView[TVIEW]
+  └──────────────────────────────┘       │  points to shared TView
+        ▲            ▲            ▲       │
+        │            │            │       │
+  LView #1     LView #2     LView #3   (per component INSTANCE — live data)
+  [instance,   [instance,   [instance,   ← array holding: component,
+   DOM refs,    DOM refs,    DOM refs,       DOM nodes, binding values,
+   bindings]    bindings]    bindings]       injector data, child views
+</pre>
+
+<h3 class="part">5. Execution Flow — first render</h3>
+<pre class="diagram">
+ component instantiated
+   → TView created (once per type) — the static blueprint
+   → LView created (per instance) — the live data array, points to TView
+   → template fn CREATE pass builds DOM (ɵɵelement...) into LView slots
+   → template fn UPDATE pass fills bindings (S-05, S-08)
+</pre>
+
+<h3 class="part">6. Architecture — the model</h3>
+<table>
+<tr><td>Instructions (<code>ɵɵ</code>)</td><td>Tree-shakable runtime functions the compiled template calls.</td></tr>
+<tr><td>TView</td><td>Per-<em>type</em> shared static blueprint (instructions, defs, binding meta).</td></tr>
+<tr><td>LView</td><td>Per-<em>instance</em> live data array (instance, DOM refs, binding values).</td></tr>
+<tr><td>Locality</td><td>Compile each component independently → incremental builds.</td></tr>
+<tr><td>Tree-shakability</td><td>Unused instructions + components dropped → smaller bundles.</td></tr>
+<tr><td>Foundation</td><td>@defer, signals, hydration all build on the instruction/LView model.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — one type, many instances</h3>
+<div class="code-label">why TView/LView split matters</div>
+<pre><code>// &lt;app-user-card&gt; used 100 times in a list:
+//   → ONE TView (shared blueprint: the template's instructions + metadata)
+//   → 100 LViews (one per card instance: each card's DOM refs + binding values)
+// The static template info isn't duplicated 100x — huge memory + speed win.
+// This is Ivy's "class vs instance" separation at the rendering level.</code></pre>
+
+<h3 class="part">8. Beginner Example — instructions concept</h3>
+<div class="code-label">a template is a function of instructions</div>
+<pre><code>// template: &lt;div&gt;{{ title }}&lt;/div&gt;  compiles (conceptually) to:
+function Template(rf, ctx) {
+  if (rf &amp; 1 /* Create */) { ɵɵelementStart(0,'div'); ɵɵtext(1); ɵɵelementEnd(); }
+  if (rf &amp; 2 /* Update */) { ɵɵadvance(1); ɵɵtextInterpolate(ctx.title); }
+}
+// each ɵɵ call is a tree-shakable function; unused ones never ship.</code></pre>
+
+<h3 class="part">9. Advanced Example — locality &amp; incremental builds</h3>
+<div class="code-label">why Ivy builds are incremental</div>
+<pre><code>// View Engine: compiling ComponentA needed the full metadata of ComponentB,
+//   ComponentC... (global compilation) → change one file, recompile a lot.
+// Ivy locality: to compile ComponentA, the compiler needs only A's template
+//   + the PUBLIC API (selector, inputs) of what A uses — not their internals.
+//   → change ComponentB's internals, ComponentA needn't recompile.
+//   → fast incremental rebuilds; better tree-shaking; no .ngfactory files.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Template → instruction function (<code>ɵɵ</code> calls, tree-shakable).</li>
+<li>TView — per-type shared static blueprint (created once).</li>
+<li>LView — per-instance live array; points to TView.</li>
+<li>Create pass builds DOM into LView; update pass fills bindings.</li>
+<li>Locality → independent compilation → incremental builds.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>LView aur TView ko gadbad karna — LView = instance (live), TView = type (shared static).</li>
+<li>Sochna har component instance apna template metadata rakhta — nahi, TView shared hai.</li>
+<li>Ivy ko "just a rewrite" samajhna — locality + tree-shaking + modern features ka foundation.</li>
+<li><code>ɵɵ</code> instructions ko manually call karna — compiler-generated, private.</li>
+<li>View Engine mental model use karna (global compilation) — Ivy local hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Standalone components — Ivy locality + tree-shaking se best fit.</li>
+<li>TView/LView mental model samjho — CD (S-10) + debugging ke liye key.</li>
+<li>Bundle size Ivy tree-shaking pe bharosa — dead code drops.</li>
+<li>Modern features (@defer/signals/hydration) confidently use — sab Ivy-native.</li>
+<li>DevTools se view structure inspect karke intuition build karo.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ivy ke perf wins architectural: (1) <strong>Tree-shakability</strong> — instructions + unused components drop → chhote bundles. (2) <strong>Locality</strong> — incremental compilation → fast builds. (3) <strong>TView/LView split</strong> — shared static data duplicate nahi hota → memory efficient + fast instantiation (100 cards, 1 blueprint). (4) Instruction-based rendering fast + predictable. (5) Modern perf features (@defer, zoneless, incremental hydration) Ivy ke model pe hi possible. Yani Ivy Angular ki modern performance ki neenv hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Embedded views</td><td>Structural blocks (@for/@if) → sub-TViews + child LViews (S-05).</td></tr>
+<tr><td>Library partial-Ivy</td><td>Libs ship partial defs; linker completes at app build.</td></tr>
+<tr><td>Dynamic components</td><td><code>createComponent</code> builds LView at runtime from <code>ɵcmp</code>.</td></tr>
+<tr><td>DevTools</td><td>Angular DevTools reads LView tree for the component inspector.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Ivy kya hai aur kyun aaya?</summary><div class="ans"><p>Ivy Angular ka rendering + compilation engine hai (v9 se default), jo purane View Engine ko replace karta. Iske signature ideas: templates ko tree-shakable <strong>instructions</strong> (<code>ɵɵ</code> functions) mein compile karna, aur <strong>locality</strong> — har component independently compile hota. Kyun aaya: View Engine global compilation maangta tha (slow builds, bade bundles, poor tree-shaking); Ivy ne locality se fast incremental builds, chhote bundles, aur modern features (@defer, signals, hydration) ka foundation diya.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>LView</code> aur <code>TView</code> mein kya farq?</summary><div class="ans"><p><strong>TView (Template View):</strong> ek component <em>type</em> ka <em>shared, static</em> data — template ka "blueprint": instructions ki list, directive defs, binding metadata. Ek TView per type, saari instances share karti (jaise "class"). <strong>LView (Logical View):</strong> ek component <em>instance</em> ka <em>live</em> data — ek array jismein component instance, DOM node references, current binding values, injector data, child view pointers. Ek LView per instance (jaise "object"), aur ye apne TView ko point karta. Ye class/instance separation memory bachata (static data duplicate nahi) + fast rendering.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Ivy ki "locality" property kya hai?</summary><div class="ans"><p>Locality matlab: ek component ko compile karne ke liye compiler ko sirf <em>us component ki apni</em> template aur uski dependencies ki <em>public API</em> (selector, inputs/outputs) chahiye — un dependencies ki full internal metadata nahi. Iska fayda: har file independently compile hoti, toh ek component badalne pe uske consumers ko recompile karne ki zaroorat nahi → fast incremental builds, no <code>.ngfactory</code> global metadata files, better tree-shaking. View Engine (global compilation) ka ulta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek list mein same component 1000 baar render hota. Interviewer: "Memory-wise Ivy isse efficiently kaise handle karta?" Explain.</summary><div class="ans"><p>Ivy ke <strong>TView/LView</strong> split ki wajah se. Component ka static template data — instructions ki list, directive defs, binding metadata — ek <strong>TView</strong> mein rehta jo us type ki saari 1000 instances <em>share</em> karti (blueprint duplicate nahi hota). Har instance ka sirf <em>live</em> data — uske DOM node references + current binding values — ek separate <strong>LView</strong> array mein hota. Toh 1000 cards ke liye: 1 TView (shared blueprint) + 1000 lightweight LViews (per-instance live data), na ki 1000 full copies of template metadata. Ye "class vs instance" separation huge memory + instantiation-speed win deta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Ivy = compilation + rendering engine (v9+). Templates → tree-shakable <code>ɵɵ</code> instructions. Replaced View Engine.</li>
+<li><strong>TView</strong> = per-type shared static blueprint (instructions/defs). <strong>LView</strong> = per-instance live array (instance, DOM refs, bindings). LView→TView.</li>
+<li><strong>Locality</strong> (compile independently) → incremental builds + tree-shaking. Foundation for @defer, signals, hydration.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.7 · Find the instructions</div><p>Ek component ke compiled output mein template instruction function locate karo. <code>ɵɵelementStart</code>/<code>ɵɵtext</code>/<code>ɵɵproperty</code>/<code>ɵɵadvance</code> calls ko template constructs se map karo. Create vs Update block identify karo (<code>rf &amp; 1</code> vs <code>rf &amp; 2</code>).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.8 · Inspect LView in DevTools</div><p>Angular DevTools se ek component ka view inspect karo. Ek component ko list mein multiple baar render karke samjho ki shared blueprint (TView) vs per-instance data (LView) kaise organize hota. (Concept-level exploration.)</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Template Compiler</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>template → instruction function · create vs update passes · RenderFlags · binding instructions · ɵɵadvance · slot allocation · embedded views (@if/@for)</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Template compiler Angular compiler ka woh hissa hai jo specifically tumhare HTML template ko ek <strong>instruction function</strong> mein badalta. Ye template ko parse karke ek two-phase function generate karta: ek <strong>create pass</strong> (DOM structure ek baar banati) aur ek <strong>update pass</strong> (bindings har change detection pe update karti). Har binding ko LView mein ek "slot" milta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>HTML templates + Angular bindings (<code>{{ }}</code>, <code>[prop]</code>, <code>(event)</code>, <code>@if</code>, <code>@for</code>) browser ke liye directly executable nahi. Template compiler inko efficient imperative instructions mein translate karta — jo exactly batate DOM kaise banao aur kaunse bindings kab update karo. Ye Angular ke declarative templates ko fast runtime rendering se jodta hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Declarative template → efficient runtime code. Bina compilation, template ko runtime pe interpret karna padta (slow, needs compiler in bundle). Template compiler isse pre-generated instruction function mein badalta: create pass DOM structure once banata, update pass sirf changed bindings touch karta (dirty checking, S-10). Efficient + no runtime template parsing.</p>
+
+<h3 class="part">4. Internal Working — create/update passes &amp; slots</h3>
+<div class="panel why"><div class="ptitle">Two passes, indexed slots, ɵɵadvance</div><p>Template compiler HTML ko parse karke ek <strong>template AST</strong> banata, phir ek instruction function emit karta jiska signature hai <code>(rf: RenderFlags, ctx)</code>. <code>rf</code> ek bitmask hai: <code>RenderFlags.Create</code> (=1) aur <code>RenderFlags.Update</code> (=2). Function ke andar do blocks: <code>if (rf &amp; 1) { ... }</code> — <strong>create pass</strong>, DOM structure banata (<code>ɵɵelementStart</code>, <code>ɵɵelement</code>, <code>ɵɵtext</code>, <code>ɵɵtemplate</code> for structural blocks) — ye <em>ek baar</em> chalta (view creation pe). <code>if (rf &amp; 2) { ... }</code> — <strong>update pass</strong>, bindings evaluate + update karta (<code>ɵɵproperty</code>, <code>ɵɵtextInterpolate</code>, <code>ɵɵattribute</code>) — ye <em>har change detection</em> pe chalta. Har element/binding ko ek numbered <strong>slot index</strong> milta LView array mein (compiler <code>decls</code> = declaration count aur <code>vars</code> = binding var count declare karta). <strong><code>ɵɵadvance(n)</code></strong> instruction "current node pointer" ko n slots aage badhati — taaki update instructions sahi node/binding slot pe apply hon (create order aur update order match karein). Bindings ke liye compiler ek slot mein last value store karta; update pass naya value compare karke (dirty check) sirf change pe DOM touch karta. <strong>Structural constructs</strong> (<code>@if</code>, <code>@for</code>, <code>*ngIf</code>) <strong>embedded views</strong> banate: <code>ɵɵtemplate</code> ek "container" declare karta, aur block ka content ek alag sub-template function + child LView(s) ban jaata (conditionally/repeatedly created).</p></div>
+
+<div class="dg-title">Diagram — the two-pass template function</div>
+<pre class="diagram">
+ template: &lt;h1 [title]="t"&gt;{{ name }}&lt;/h1&gt;
+
+ function Tmpl(rf, ctx) {
+   if (rf &amp; 1 /*Create*/) {        ← runs ONCE (view creation)
+     ɵɵelementStart(0, 'h1');       slot 0 = &lt;h1&gt;
+       ɵɵtext(1);                   slot 1 = text node
+     ɵɵelementEnd();
+   }
+   if (rf &amp; 2 /*Update*/) {         ← runs EVERY change detection
+     ɵɵadvance(1);                  move pointer to slot 1
+     ɵɵtextInterpolate(ctx.name);   update text if changed
+     ɵɵproperty('title', ctx.t);    update [title] if changed
+   }
+ }
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ view created ─▶ template fn called with rf=Create ─▶ DOM built into LView slots
+ change detection ─▶ template fn called with rf=Update
+   ─▶ ɵɵadvance moves pointer ─▶ each binding compared to stored slot value
+   ─▶ DOM/child-input updated only if changed (S-10)
+</pre>
+
+<h3 class="part">6. Architecture — instruction categories</h3>
+<table>
+<tr><td>Create: <code>ɵɵelementStart/End</code>, <code>ɵɵelement</code></td><td>Build element nodes (once).</td></tr>
+<tr><td>Create: <code>ɵɵtext</code>, <code>ɵɵtemplate</code></td><td>Text nodes; embedded-view containers (structural).</td></tr>
+<tr><td>Update: <code>ɵɵproperty</code>, <code>ɵɵattribute</code></td><td>Property/attribute bindings (<code>[x]</code>).</td></tr>
+<tr><td>Update: <code>ɵɵtextInterpolate</code></td><td>Text interpolation (<code>{{ }}</code>).</td></tr>
+<tr><td>Events: <code>ɵɵlistener</code></td><td>Event bindings (<code>(click)</code>).</td></tr>
+<tr><td><code>ɵɵadvance(n)</code></td><td>Move the node/binding pointer to keep create/update aligned.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — a binding-rich template</h3>
+<div class="code-label">how each construct compiles</div>
+<pre><code>// template:
+// &lt;button [disabled]="loading" (click)="save()"&gt;{{ label }}&lt;/button&gt;
+
+function Tmpl(rf, ctx) {
+  if (rf &amp; 1) {
+    ɵɵelementStart(0, 'button');
+      ɵɵlistener('click', () =&gt; ctx.save());   // event bound once
+      ɵɵtext(1);
+    ɵɵelementEnd();
+  }
+  if (rf &amp; 2) {
+    ɵɵproperty('disabled', ctx.loading);       // updated each CD if changed
+    ɵɵadvance(1);
+    ɵɵtextInterpolate(ctx.label);              // updated each CD if changed
+  }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — create once, update always</h3>
+<div class="code-label">the key mental model</div>
+<pre><code>// CREATE pass (rf &amp; 1): runs ONCE — builds the DOM structure.
+// UPDATE pass (rf &amp; 2): runs EVERY change detection — refreshes bindings.
+// This is why structure is stable but values stay live:
+//   the DOM nodes persist; only changed binding values touch the DOM.</code></pre>
+
+<h3 class="part">9. Advanced Example — structural blocks become embedded views</h3>
+<div class="code-label">@if / @for → ɵɵtemplate + child views</div>
+<pre><code>// template: @if (show) { &lt;p&gt;{{ msg }}&lt;/p&gt; }
+// compiles to a ɵɵtemplate (container) in the create pass + a SEPARATE
+// sub-template function for the &lt;p&gt; block. At runtime, the container
+// conditionally creates/destroys a CHILD LView for that block.
+// @for similarly creates one child LView per item (tied to track, Ch18 S-03).
+// This is why structural directives create/tear-down embedded views.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Template parsed → AST → instruction function <code>(rf, ctx)</code>.</li>
+<li><code>rf &amp; 1</code> create pass — DOM once (<code>ɵɵelementStart</code>/<code>ɵɵtext</code>).</li>
+<li><code>rf &amp; 2</code> update pass — bindings each CD (<code>ɵɵproperty</code>/interpolate).</li>
+<li><code>ɵɵadvance(n)</code> — pointer align create/update slots.</li>
+<li>Structural blocks → <code>ɵɵtemplate</code> + child embedded views.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sochna poora template har CD pe re-run/re-build hota — sirf update pass chalta, create nahi.</li>
+<li>Samajhna template runtime pe parse hota — pre-compiled instruction function hai.</li>
+<li>Template mein function calls — update pass har CD chalti, function har baar re-run (Ch18 S-02).</li>
+<li>Structural blocks ke embedded-view cost ko ignore karna (create/destroy).</li>
+<li>Bindings ki slot-based dirty-checking na samajhna — sirf changed values DOM touch karte.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Template expressions cheap + pure rakho (update pass har CD chalta) — Ch18 S-02.</li>
+<li>Samjho create-once/update-always model — perf intuition.</li>
+<li>Structural blocks minimal + <code>track</code> ke saath (Ch18 S-03) — embedded-view churn kam.</li>
+<li>Bindings pe bharosa (dirty-checked) — manual DOM mat chhuo.</li>
+<li>Compiled template read karke instruction↔construct mapping seekho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Template compiler ka design directly rendering perf deta: create pass ek baar (DOM structure stable), update pass har CD par sirf <em>changed</em> bindings DOM touch karta (slot-based dirty checking, S-10) — na ki poora re-render. Instructions tree-shakable + fast. <code>ɵɵadvance</code> pointer-based traversal efficient. Isliye template mein cheap expressions crucial — update pass har CD chalti. Structural blocks embedded views banate — <code>track</code> se unka churn control hota (Ch18 S-03).</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Pipes</td><td><code>ɵɵpipe</code>/<code>ɵɵpipeBind</code>; pure pipes memoized in a slot.</td></tr>
+<tr><td>Two-way binding</td><td><code>[(x)]</code> → property + event instruction pair.</td></tr>
+<tr><td>Host bindings</td><td>Directive host bindings compile to their own update instructions.</td></tr>
+<tr><td>i18n</td><td>Special i18n instructions for translatable text blocks.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Template compiler ek template ko kya banata hai?</summary><div class="ans"><p>Ek two-phase <strong>instruction function</strong> <code>(rf, ctx)</code>. <code>rf</code> (RenderFlags) batata konsa pass: <strong>Create pass</strong> (<code>rf &amp; 1</code>) — DOM structure banata (<code>ɵɵelementStart</code>, <code>ɵɵtext</code>), ek baar chalta. <strong>Update pass</strong> (<code>rf &amp; 2</code>) — bindings update karta (<code>ɵɵproperty</code>, <code>ɵɵtextInterpolate</code>), har change detection pe chalta. Har element/binding ko LView mein ek numbered slot milta, aur <code>ɵɵadvance</code> pointer ko align rakhta. Yani template pre-compiled JS ban jaata, runtime pe parse nahi hota.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Create pass aur update pass mein kya farq, aur konsa kab chalta?</summary><div class="ans"><p><strong>Create pass</strong> (<code>rf &amp; RenderFlags.Create</code>) DOM structure banata — elements, text nodes, event listeners, containers — aur ye view creation pe <em>ek baar</em> chalta. <strong>Update pass</strong> (<code>rf &amp; RenderFlags.Update</code>) bindings ({{ }}, [prop]) evaluate karke DOM update karta, aur ye <em>har change detection</em> pe chalta (par sirf changed bindings DOM touch karte — slot-based dirty checking). Isliye structure stable rehta par values live — DOM nodes persist, sirf badle values update hote. Ye split rendering ko efficient banata.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>@if</code> / <code>@for</code> internally kaise compile hote?</summary><div class="ans"><p>Structural blocks <strong>embedded views</strong> banate. Compiler create pass mein ek <code>ɵɵtemplate</code> instruction emit karta (ek "container" declare karta us position pe) aur block ke content ke liye ek <em>alag sub-template function</em> generate karta. Runtime pe container us block ke content ke liye <strong>child LView(s)</strong> conditionally (<code>@if</code>) ya repeatedly (<code>@for</code> — per item, <code>track</code> se identified) create/destroy karta. Isliye structural directives DOM subtrees ko dynamically add/remove karte — har ek apna child view (LView) leke.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Interviewer: "Tumne template mein <code>{{ getData() }}</code> likha. Compiled level pe explain karo ye perf-heavy kyun hai." </summary><div class="ans"><p>Template compiler us interpolation ko <strong>update pass</strong> ke andar ek instruction (<code>ɵɵtextInterpolate(ctx.getData())</code>) banata hai. Update pass <em>har change detection cycle</em> pe chalti hai (S-10) — aur har baar <code>ctx.getData()</code> call hota hai kyunki Angular function ka result cache nahi karta (sirf woh binding <em>value</em> compare karta, function ko nahi). Toh default CD + zone.js mein har mousemove/timer/click par CD → update pass → <code>getData()</code> phir se run. Heavy function pe ye massive waste. Fix (Ch18 S-02): <code>computed</code> signal ya pure pipe (memoized) use karo taaki value dep-change pe hi recompute ho, na ki har update pass pe.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Template → instruction function <code>(rf, ctx)</code>. <strong>Create pass</strong> (<code>rf&amp;1</code>): DOM once. <strong>Update pass</strong> (<code>rf&amp;2</code>): bindings every CD.</li>
+<li>Slots + <code>ɵɵadvance(n)</code> align create/update; bindings dirty-checked per slot (only changed touch DOM).</li>
+<li>Structural <code>@if</code>/<code>@for</code> → <code>ɵɵtemplate</code> + child embedded LViews (create/destroy). Cheap expressions matter (update runs every CD).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.9 · Map constructs to instructions</div><p>Ek template with interpolation, property binding, event binding, aur <code>@if</code> banao. Compiled output mein create-pass vs update-pass blocks aur har construct ka instruction identify karke table banao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.10 · Embedded view lifecycle</div><p>Ek <code>@if</code> toggle karo aur ngOnInit/ngOnDestroy logs se prove karo ki block ka child view create/destroy hota hai (embedded view). <code>@for</code> ke saath per-item view creation observe karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Bootstrapping</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>PlatformRef · bootstrapApplication · ApplicationRef · root environment injector · root component · root LView · first change detection · zone/zoneless start</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Bootstrapping woh process hai jismein Angular application <strong>start</strong> hoti — entry point se lekar pehli render tak. <code>bootstrapApplication(RootComponent, config)</code> (standalone) call hoti, jo platform banati, root injector setup karti, <code>ApplicationRef</code> create karti, root component instantiate karke uska view render karti, aur pehli change detection chalati.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Ek Angular app ko start hone ke liye bahut kuch wire karna padta: platform-level services, root-level dependency injection, error handling, zone (ya zoneless) setup, aur root component ko DOM se attach karna. Bootstrapping ye poora startup sequence orchestrate karti — ek command se blank HTML page ek live interactive Angular app ban jaata.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>App initialization ki complexity. Bina structured bootstrap, tumhe manually injectors, root providers, change detection loop, aur DOM attachment set karna padega. Bootstrapping isse ek deterministic sequence deti: platform → root injector → ApplicationRef → root component → first render. Standalone bootstrap ne isse NgModule boilerplate se aur simple banaya.</p>
+
+<h3 class="part">4. Internal Working — the startup sequence</h3>
+<div class="panel why"><div class="ptitle">Platform → root injector → ApplicationRef → root component → first CD</div><p><code>main.ts</code> se <code>bootstrapApplication(AppComponent, appConfig)</code> call hoti. Steps: (1) <strong>Platform banti</strong> — <code>PlatformRef</code> (browser platform), jo lowest-level services (DOM adapter, sanitizer) provide karti; ek platform pe multiple apps ho sakti. (2) <strong>Root environment injector</strong> — <code>appConfig.providers</code> (aur <code>importProvidersFrom</code>, <code>provideRouter</code>, <code>provideHttpClient</code>, etc.) se root <code>EnvironmentInjector</code> (R3Injector) banta — ye application-wide DI ka top (S-07). (3) <strong><code>ApplicationRef</code> banti</strong> — ye app ki central runtime object hai: root views ka set manage karti, change detection coordinate karti (<code>tick()</code>), aur app stability track karti. (4) <strong>Root component bootstrap</strong> — root component (host element index.html mein selector se milta) instantiate hota, uska <strong>root LView + TView</strong> banta (S-04), template ka create pass DOM build karta us host element mein, phir <strong>pehli change detection</strong> (update pass) bindings fill karti. (5) <strong>Zone setup</strong> — agar zone.js present, woh async ko patch karke har turn pe <code>ApplicationRef.tick()</code> call karti; zoneless mein ek scheduler signals/markForCheck pe tick karta (Ch16 S-08). Ab app live hai — CD loop chal raha, events handle ho rahe.</p></div>
+
+<div class="dg-title">Diagram — the bootstrap sequence</div>
+<pre class="diagram">
+ main.ts: bootstrapApplication(AppComponent, appConfig)
+        │
+        ▼
+ 1. PlatformRef        (browser platform, low-level services)
+        │
+ 2. Root EnvironmentInjector  ← appConfig.providers (provideRouter, etc.)
+        │
+ 3. ApplicationRef     (manages root views + coordinates CD tick())
+        │
+ 4. Root component instantiated ─▶ root LView/TView created
+        │                          ─▶ create pass builds DOM into host el
+ 5. First change detection (update pass) ─▶ bindings filled ─▶ app visible
+        │
+ 6. Zone (or zoneless scheduler) drives future tick()s
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ bootstrapApplication(AppComponent, appConfig)
+   → create platform → create root injector (providers)
+   → create ApplicationRef → bootstrap AppComponent
+   → build root LView → create pass (DOM) → first CD (bindings)
+   → attach to host element → app running (CD loop active)
+</pre>
+
+<h3 class="part">6. Architecture — the objects</h3>
+<table>
+<tr><td><code>PlatformRef</code></td><td>Lowest-level platform (browser); can host multiple apps.</td></tr>
+<tr><td>Root <code>EnvironmentInjector</code></td><td>App-wide DI top, built from <code>appConfig.providers</code> (S-07).</td></tr>
+<tr><td><code>ApplicationRef</code></td><td>Central runtime: root views, CD coordination (<code>tick()</code>), stability.</td></tr>
+<tr><td>Root component + LView</td><td>The app's root view; host element from index.html.</td></tr>
+<tr><td>First CD</td><td>Initial update pass that fills bindings and makes the app visible.</td></tr>
+<tr><td>Zone / zoneless</td><td>Drives subsequent <code>tick()</code>s (Ch16 S-08).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — the modern entry point</h3>
+<div class="code-label">main.ts + app.config.ts</div>
+<pre><code>// main.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { appConfig } from './app/app.config';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch(err =&gt; console.error(err));
+
+// app.config.ts — providers become the ROOT environment injector
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes),
+    provideHttpClient(),
+    provideZonelessChangeDetection(),   // or zone.js by default
+  ],
+};</code></pre>
+
+<h3 class="part">8. Beginner Example — standalone vs NgModule bootstrap</h3>
+<div class="code-label">two ways</div>
+<pre><code>// MODERN (standalone, default v17+):
+bootstrapApplication(AppComponent, appConfig);
+
+// LEGACY (NgModule):
+platformBrowserDynamic().bootstrapModule(AppModule);
+// both: create platform → root injector → ApplicationRef → root component → first CD.
+// standalone removes the AppModule boilerplate.</code></pre>
+
+<h3 class="part">9. Advanced Example — APP_INITIALIZER &amp; startup hooks</h3>
+<div class="code-label">running code before the app renders</div>
+<pre><code>// run async setup (config fetch, feature flags) BEFORE first render:
+providers: [
+  provideAppInitializer(() =&gt; {
+    const config = inject(ConfigService);
+    return config.load();   // bootstrap waits for this promise to resolve
+  }),
+]
+// ApplicationRef delays bootstrapping the root view until initializers finish.
+// (Older API: { provide: APP_INITIALIZER, useFactory, multi: true }.)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>bootstrapApplication</code> — startup entry (standalone).</li>
+<li>Platform + root <code>EnvironmentInjector</code> (from providers) bante.</li>
+<li><code>ApplicationRef</code> — root views + CD coordination.</li>
+<li>Root component → root LView → create pass (DOM) → first CD.</li>
+<li>Zone/zoneless scheduler future ticks drive karta.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Root providers ko component-level pe daalna (per-instance ban jaate, app-wide nahi).</li>
+<li>Bootstrap ke pehle chalne wale async setup ke liye initializer na use karna.</li>
+<li>Multiple bootstrap calls / host element galat.</li>
+<li>Zone vs zoneless setup gadbad (Ch16 S-08) — CD trigger toot sakta.</li>
+<li>Standalone app mein purana NgModule bootstrap mental model mix karna.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Standalone <code>bootstrapApplication</code> + <code>appConfig</code> (modern default).</li>
+<li>App-wide providers <code>appConfig.providers</code> mein (root injector).</li>
+<li>Pre-render async setup → app initializer.</li>
+<li><code>provide*</code> functions (provideRouter/HttpClient) use karo.</li>
+<li>Bootstrap sequence samjho — DI + CD debugging ke liye foundational.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Bootstrapping app ka "time to first render" set karta. Fast bootstrap = fast startup: chhota root injector (only needed providers), minimal synchronous startup work, aur app initializers ko lightweight rakhna (blocking async first render ko delay karta). SSR + hydration (S-12) bootstrap ko badalta — server pe pre-rendered, client pe hydrate (re-bootstrap nahi). Standalone bootstrap NgModule graph resolution overhead hatata. Root component ke bade eager imports startup slow karte — lazy loading (Ch18 S-05) initial view minimal rakhta.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multiple apps</td><td>One <code>PlatformRef</code> can bootstrap several apps on a page.</td></tr>
+<tr><td>SSR bootstrap</td><td>Server bootstraps + serializes; client hydrates (S-12), no full re-bootstrap.</td></tr>
+<tr><td>Initializer failure</td><td>Rejected initializer → bootstrap fails; handle in <code>.catch</code>.</td></tr>
+<tr><td>Dynamic bootstrap</td><td>Micro-frontends may bootstrap components into existing hosts.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular app bootstrap hone pe kya hota hai?</summary><div class="ans"><p><code>bootstrapApplication(AppComponent, appConfig)</code> ye sequence chalati: (1) <strong>PlatformRef</strong> banti (browser platform, low-level services). (2) <strong>Root EnvironmentInjector</strong> banta <code>appConfig.providers</code> se (app-wide DI). (3) <strong>ApplicationRef</strong> banti (root views manage + CD coordinate). (4) Root component instantiate hota, uska <strong>root LView</strong> banta, create pass DOM banata host element mein, aur <strong>pehli change detection</strong> bindings fill karti. (5) Zone/zoneless scheduler future ticks drive karta. Ab app live hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>ApplicationRef</code> ka role kya hai?</summary><div class="ans"><p><code>ApplicationRef</code> app ki central runtime object hai. Ye: (1) root views ka set manage karti (bootstrap kiye components), (2) change detection coordinate karti — <code>tick()</code> method poori app ki CD chalati (zone har async turn pe, ya zoneless scheduler signal changes pe ise call karta), aur (3) application stability track karti (pending async work — SSR/testing ke liye <code>isStable</code>). Yani ApplicationRef bootstrap ke baad app ka CD loop + view lifecycle ka orchestrator hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> App render hone se pehle async setup (config load) kaise chalate ho?</summary><div class="ans"><p>App initializer se. <code>provideAppInitializer(() =&gt; inject(ConfigService).load())</code> (ya legacy <code>APP_INITIALIZER</code> multi-provider) ek function register karta jo bootstrap ke dauraan chalti hai; agar woh Promise/Observable return kare, Angular root view render karne se <strong>pehle</strong> uske resolve hone ka wait karta. Isse tum guarantee kar sakte ho ki config/feature-flags/auth state app dikhne se pehle load ho jaaye. Bootstrap sequence initializers finish hone tak first render ko delay karti.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek service ko poore app mein ek hi shared instance chahiye. Kahan register karoge aur kyun, bootstrap ke context mein?</summary><div class="ans"><p>Root environment injector mein — ya toh <code>@Injectable({ providedIn: 'root' })</code> (best, tree-shakable) ya <code>appConfig.providers</code> array mein. Bootstrap ke dauraan root <code>EnvironmentInjector</code> banta hai jo poore app ka DI top hai (S-07); yahan registered service ek hi singleton instance rakhta jo saare components/services share karte. Agar main isse kisi component ke <code>providers</code> mein daalu, toh har component instance ko apna alag copy milega (app-wide singleton nahi). Isliye shared/global services root level pe — bootstrap-time root injector mein — rakhne chahiye.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>bootstrapApplication(Root, config)</code>: PlatformRef → root EnvironmentInjector (providers) → ApplicationRef → root component → root LView → create pass → first CD.</li>
+<li><code>ApplicationRef</code> = root views + CD coordination (<code>tick()</code>) + stability. Zone/zoneless drives future ticks.</li>
+<li>App-wide providers in <code>appConfig.providers</code>/<code>providedIn:'root'</code>. Pre-render async → app initializer. Standalone removes NgModule boilerplate.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.11 · Trace bootstrap</div><p><code>main.ts</code> se root component render tak sequence ko console logs (constructor, ngOnInit, app initializer) se trace karo. App initializer add karke prove karo woh first render se pehle chalti hai.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.12 · Root vs component provider</div><p>Ek service ko pehle <code>providedIn:'root'</code>, phir ek component ke <code>providers</code> mein register karke instance-count difference prove karo (singleton vs per-instance).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Dependency Injection Engine</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>injector tree · environment vs element injectors · resolution algorithm · bloom filters · R3Injector · tokens &amp; providers · hierarchical resolution · tree-shakable providers · resolution modifiers</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Dependency Injection (DI) engine woh system hai jo services (dependencies) ko create karke components/services ko provide karta — tum <code>inject(X)</code> ya constructor param likhte ho, engine sahi instance dhoondh ke deta. Andar se ye ek <strong>hierarchical injector tree</strong> hai: <strong>environment injectors</strong> (app/module-level) aur <strong>element injectors</strong> (component-tree-level), jo ek resolution algorithm se tokens ko instances mein resolve karte.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Bina DI, har class ko apni dependencies khud <code>new</code> karni padegi — tight coupling, hard testing, no shared singletons, manual wiring. DI dependencies ko invert karta: tum sirf "mujhe X chahiye" declare karte ho, engine lifecycle + sharing manage karta. Isse loose coupling, easy mocking (testing), aur controlled sharing (singletons/scoped) milta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Manual dependency wiring + coupling. DI dependencies ko centralize + automate karta: shared services (root singletons), scoped services (component-level), aur swappable implementations (tokens) sab declaratively. Hierarchical injectors scoping dete (kahan service available hai), aur tree-shakable providers unused services ko bundle se drop karte.</p>
+
+<h3 class="part">4. Internal Working — two trees, bloom-filter resolution</h3>
+<div class="panel why"><div class="ptitle">Element injector tree → environment injector tree, with bloom filters</div><p>Angular DI ke do parallel hierarchies hain: (1) <strong>EnvironmentInjector</strong> tree — application/module-level. Root environment injector bootstrap pe banta (S-06); lazy-loaded routes apne child environment injectors bana sakte. Ivy ka implementation <strong>R3Injector</strong> hai. Ye <code>providedIn:'root'</code> services + <code>appConfig.providers</code> host karta. (2) <strong>ElementInjector</strong> tree — component/directive tree ke saath, har DOM element jiske component/directive <code>providers</code> hon, uska apna element injector. <strong>Resolution algorithm:</strong> jab ek component <code>inject(X)</code> maangta, engine: pehle us component ke <strong>element injector</strong> se shuru karke <em>upar</em> element injector tree mein chadhta (parent elements) — jab tak X mile; agar element tree mein na mile, phir <strong>environment injector</strong> hierarchy mein jaata (current → parents → root → platform); agar kahin na mile → <strong>NullInjector</strong> jo <code>NullInjectorError</code> throw karta. <strong>Bloom filters:</strong> element injectors ko fast banane ke liye, Ivy har injector pe ek <strong>bloom filter</strong> (ek bitmask) rakhta jo probabilistically batata "is injector mein ye token ho <em>sakta</em> hai ya definitely nahi". Resolution ke dauraan, engine bloom filter se quickly un injectors ko skip karta jinmein token definitely nahi hai — poora tree slow-search karne ke bajaye. (Bloom filter false-positive de sakta but false-negative nahi — toh "definitely not" skip safe hai.) <strong>Tokens:</strong> class, <code>InjectionToken</code>, ya string. <strong>Providers:</strong> <code>useClass</code>/<code>useValue</code>/<code>useFactory</code>/<code>useExisting</code>. <strong>Tree-shakable:</strong> <code>providedIn:'root'</code> service pe <code>ɵprov</code> deta — agar service inject na ho, tree-shaken (module providers array ke ulta, jo tree-shakable nahi).</p></div>
+
+<div class="dg-title">Diagram — resolution walks up two trees</div>
+<pre class="diagram">
+ inject(X) requested in ChildComponent:
+
+ ELEMENT INJECTOR TREE (component tree)      ENVIRONMENT INJECTOR TREE
+   ChildComponent el injector ─┐               (module/app level)
+        │ (not found, go up)   │  not found     Root EnvironmentInjector
+   ParentComponent el injector │  in element ─▶   (providedIn:'root', config)
+        │                      │  tree at all         │
+   ...root element injector ───┘                  Platform injector
+                                                      │
+                              still not found ─▶  NullInjector → ERROR
+
+ bloom filter at each injector: "could X be here?" → skip if definitely not
+</pre>
+
+<h3 class="part">5. Execution Flow — resolving a token</h3>
+<pre class="diagram">
+ inject(UserService)
+   → check requesting element injector (bloom filter fast-skip if absent)
+   → walk UP element injector tree (parents)
+   → then environment injector hierarchy (→ root → platform)
+   → found: return (cached) instance | not found: NullInjectorError
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td>EnvironmentInjector (R3Injector)</td><td>App/module level: <code>providedIn:'root'</code>, <code>appConfig</code>, lazy-route injectors.</td></tr>
+<tr><td>ElementInjector</td><td>Component/directive tree: per-element <code>providers</code>.</td></tr>
+<tr><td>Bloom filter</td><td>Fast "token possibly here?" check to skip injectors.</td></tr>
+<tr><td>Tokens</td><td>Class / <code>InjectionToken</code> / string.</td></tr>
+<tr><td>Providers</td><td><code>useClass</code>/<code>useValue</code>/<code>useFactory</code>/<code>useExisting</code>.</td></tr>
+<tr><td>Modifiers</td><td><code>@Optional</code>/<code>@Self</code>/<code>@SkipSelf</code>/<code>@Host</code> (or <code>inject()</code> options).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — tokens &amp; providers</h3>
+<div class="code-label">the DI toolkit</div>
+<pre><code>// tree-shakable root singleton:
+@Injectable({ providedIn: 'root' })
+export class UserService {}
+
+// InjectionToken for a config value / interface:
+export const API_URL = new InjectionToken&lt;string&gt;('API_URL');
+providers: [{ provide: API_URL, useValue: 'https://api.example.com' }]
+
+// swap implementation via useClass:
+providers: [{ provide: Logger, useClass: ProdLogger }]
+
+// consuming:
+export class OrdersComponent {
+  private users = inject(UserService);
+  private apiUrl = inject(API_URL);
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — hierarchical scoping</h3>
+<div class="code-label">where you provide = who shares it</div>
+<pre><code>// root: ONE shared instance for the whole app
+@Injectable({ providedIn: 'root' }) class CartService {}
+
+// component providers: a NEW instance per component instance (scoped)
+@Component({ providers: [CartService] }) class WidgetComponent {}
+// child components of WidgetComponent get ITS instance (element injector).
+// resolution walks up → nearest provider wins.</code></pre>
+
+<h3 class="part">9. Advanced Example — resolution modifiers</h3>
+<div class="code-label">controlling the search</div>
+<pre><code>// @Self — only this element injector (don't walk up):
+const local = inject(Service, { self: true });
+
+// @SkipSelf — start at the PARENT injector (skip own):
+const parent = inject(Service, { skipSelf: true });
+
+// @Optional — return null instead of throwing if not found:
+const maybe = inject(Service, { optional: true });
+
+// @Host — stop at the host element injector boundary.
+// these modify HOW the resolution algorithm walks the injector tree.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>inject(X)</code> — engine element injector se resolve shuru karta.</li>
+<li>Element injector tree upar walk; bloom filter absent injectors skip.</li>
+<li>Na mile toh environment injector hierarchy (→ root → platform).</li>
+<li>Na mile toh NullInjector → error; mile toh cached instance.</li>
+<li>Modifiers (self/skipSelf/optional/host) walk ko control karte.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Service ko galti se component <code>providers</code> mein daalna jab app-wide singleton chahiye tha (per-instance ban jaata).</li>
+<li><code>providedIn:'root'</code> ke bajaye module providers array — not tree-shakable.</li>
+<li>Interface ko token banane ki koshish (interfaces runtime pe nahi hote) — <code>InjectionToken</code> use karo.</li>
+<li>NullInjectorError na samajhna — provider missing / wrong injector scope.</li>
+<li>Resolution modifiers galat use (skipSelf/self) — unexpected instance.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>App-wide singletons → <code>providedIn:'root'</code> (tree-shakable).</li>
+<li>Scoped/per-instance state → component <code>providers</code> (element injector).</li>
+<li>Config/interfaces → <code>InjectionToken</code>; swap impls via <code>useClass</code>.</li>
+<li><code>inject()</code> function prefer (modern, flexible, works in more contexts).</li>
+<li>Resolution modifiers sochi-samjhi jagah — samjho tree kaise walk hota.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>DI engine ka perf mostly resolution speed + bundle size. <strong>Bloom filters</strong> element injector resolution ko fast banate — token-absent injectors ko O(1)-ish bitmask check se skip, poore tree ko slow-scan nahi. Resolved instances cache hote (dobara na banein). <strong>Tree-shakable providers</strong> (<code>providedIn:'root'</code>) unused services ko bundle se drop karte — chhota bundle. Resolution ek baar per token per injector; hot paths mein <code>inject()</code> constructor/field mein (injection context) sasta. Over-providing (har component mein bhaari service) memory + init cost badhata.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Lazy route injectors</td><td>Lazy routes get child environment injectors (scoped providers).</td></tr>
+<tr><td>Multi providers</td><td><code>multi: true</code> → array of values (interceptors, initializers).</td></tr>
+<tr><td>Forward refs</td><td><code>forwardRef</code> for circular token references.</td></tr>
+<tr><td>Injection context</td><td><code>inject()</code> needs injection context (constructor/field/factory/<code>runInInjectionContext</code>).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular DI resolution kaise kaam karta hai?</summary><div class="ans"><p>Jab <code>inject(X)</code> hota, engine requesting component ke <strong>element injector</strong> se shuru karke <em>upar</em> element injector tree mein chadhta (parent elements) jab tak X mile. Na mile toh <strong>environment injector</strong> hierarchy mein jaata (current → root → platform). Kahin na mile toh <strong>NullInjector</strong> <code>NullInjectorError</code> throw karta. Nearest provider wins. Bloom filters resolution ko fast karte (token-absent injectors skip). Do parallel trees: element injectors (component tree) + environment injectors (module/app level).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Environment injector aur element injector mein kya farq?</summary><div class="ans"><p><strong>EnvironmentInjector</strong> (Ivy: R3Injector) application/module-level hai — root injector (bootstrap pe banta) <code>providedIn:'root'</code> + <code>appConfig.providers</code> host karta; lazy routes child environment injectors bana sakte. <strong>ElementInjector</strong> component/directive tree ke saath hai — har element jiske component/directive <code>providers</code> hon, uska element injector. Resolution pehle element injector tree upar walk karta, phir environment injector hierarchy. Element injectors component-scoped instances dete; environment injectors app/route-scoped singletons.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Angular DI resolution ko fast karne ke liye bloom filters kaise use karta hai?</summary><div class="ans"><p>Element injector tree bada ho sakta, aur har <code>inject()</code> pe poore tree ko scan karke "is token yahan hai?" check karna slow hoga. Isliye Ivy har injector pe ek <strong>bloom filter</strong> (ek compact bitmask) rakhta — jab providers register hote, unke token hashes bloom filter mein set hote. Resolution ke dauraan, engine pehle bloom filter check karta: agar token ke bits set nahi, woh injector <em>definitely</em> is token ko provide nahi karta → skip (fast). Agar bits set hain, token ho <em>sakta</em> hai → actual lookup. Bloom filter false-positives de sakta (occasional unnecessary lookup) par false-negatives nahi — toh "skip if definitely absent" safe hai. Ye O(1)-ish skip poore tree walk ko drastically fast banata.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek parent aur child component dono <code>DataService</code> ko provide karte hain apne <code>providers</code> mein. Child <code>inject(DataService)</code> kaunsa instance paata, aur parent ka instance kaise lega?</summary><div class="ans"><p>Child apne <em>khud</em> ke element injector ka instance paayega — resolution child ke element injector se shuru hota, aur wahan <code>DataService</code> mil jaata (nearest provider wins), toh upar nahi jaata. Yani parent aur child ke paas <em>alag</em> instances honge. Agar child ko <em>parent</em> ka instance chahiye, toh child apne <code>providers</code> se <code>DataService</code> hata de (taaki resolution upar chal ke parent ka mile), ya explicitly <code>inject(DataService, { skipSelf: true })</code> use kare — <code>skipSelf</code> apne element injector ko skip karke parent se resolve karta, toh parent ka shared instance milega.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Two trees: <strong>ElementInjector</strong> (component tree) + <strong>EnvironmentInjector</strong> (R3Injector, module/app). Resolution walks element tree up → environment hierarchy → NullInjector error.</li>
+<li><strong>Bloom filters</strong> fast-skip token-absent injectors. <code>providedIn:'root'</code> = tree-shakable singleton; component <code>providers</code> = scoped/per-instance.</li>
+<li>Tokens: class/<code>InjectionToken</code>/string. Providers: useClass/Value/Factory/Existing. Modifiers: self/skipSelf/optional/host.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.13 · Injector hierarchy experiment</div><p>Ek service ko root, parent-component, aur child-component levels pe provide karke prove karo (via instance ids/logs) ki resolution nearest provider se hota. <code>skipSelf</code>/<code>optional</code> se behavior change dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-19.14 · Build a tiny DI container</div><p>Ek chhota apna DI container likho (tokens → factories map, parent-fallback resolution, singleton caching). Angular ke hierarchical model ko mimic karke DI internals samjho.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Rendering Pipeline</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>createLView · renderView (create pass) · refreshView (update pass) · lifecycle hooks order · component tree traversal · view creation → first render → updates</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Rendering pipeline woh end-to-end runtime flow hai jo ek component ko instance se lekar DOM tak le jaata, aur phir update karta. Ye do phases orchestrate karta: <strong>view creation</strong> (<code>createLView</code> + <code>renderView</code> — DOM structure banao ek baar) aur <strong>view refresh</strong> (<code>refreshView</code> — bindings update + child components refresh + lifecycle hooks, har CD pe). Ye S-04/S-05 ke pieces ko ek chalti hui process mein jodta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Instructions + LView/TView (S-04) aur create/update passes (S-05) alag concepts hain — inhe ek coordinated runtime process mein orchestrate karna padta. Rendering pipeline ye karta: kis order mein views create hon, DOM kab attach ho, bindings kab refresh hon, child components kab process hon, aur lifecycle hooks kab fire hon. Bina ye orchestration, individual pieces useless hain.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Coordinating creation, updates, children, aur lifecycle. Pipeline deterministic ordering deti: parent view create → children create → DOM attach → first CD; phir har CD pe parent refresh → child inputs update → child refresh → hooks in correct order. Ye ensure karta ki data flows top-down consistently aur hooks predictable order mein chalein.</p>
+
+<h3 class="part">4. Internal Working — createLView, renderView, refreshView</h3>
+<div class="panel why"><div class="ptitle">Create the view, render it once, then refresh it each CD</div><p>Jab ek component render hota, pipeline ye steps chalati: (1) <strong><code>createLView</code></strong> — us component instance ke liye ek naya LView array allocate hota (S-04), uske TView (blueprint, once per type) se linked. (2) <strong><code>renderView</code> (create pass)</strong> — template function <code>rf=Create</code> ke saath chalti (S-05) — DOM structure build hota (<code>ɵɵelementStart</code>, etc.) LView slots mein, event listeners attach hote. Ye <em>ek baar</em>. Child components encounter hone pe unke LViews bhi create hote (recursive). (3) DOM host element se attach. (4) <strong><code>refreshView</code> (update pass)</strong> — ye CD ka core hai (S-10): template function <code>rf=Update</code> chalti (bindings evaluate + DOM update if changed), phir child components ko refresh karti (unke inputs update karke, phir unka refreshView), aur <strong>lifecycle hooks</strong> correct order mein fire karti. Lifecycle order (roughly per view): <code>ngOnChanges</code> (input changes) → <code>ngOnInit</code> (first only) → <code>ngDoCheck</code> → child content/view hooks → <code>ngAfterContentInit/Checked</code> → <code>ngAfterViewInit/Checked</code>. Ye <em>har change detection</em> par (except once-only hooks). Data top-down flow karta: parent apne bindings evaluate karke child inputs set karta, phir child refresh. Ye "unidirectional data flow" pipeline ka core hai — isliye "expression changed after checked" error aata jab child parent ka state badalta (top-down violate).</p></div>
+
+<div class="dg-title">Diagram — the rendering pipeline</div>
+<pre class="diagram">
+ COMPONENT RENDER:
+ 1. createLView (allocate instance array, link to TView)
+ 2. renderView / CREATE pass ──▶ build DOM (once), attach listeners
+        │  (recurse into child components → create their LViews)
+ 3. attach to host element
+ 4. refreshView / UPDATE pass (every CD):
+        ├─ run update instructions (bindings → DOM if changed)
+        ├─ update child inputs → refresh child views (top-down)
+        └─ fire lifecycle hooks in order
+           ngOnChanges → ngOnInit(once) → ngDoCheck
+           → AfterContentInit/Checked → AfterViewInit/Checked
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ first render:  createLView → renderView(create) → attach DOM → refreshView(first CD)
+ subsequent CD: refreshView(update) per view, top-down
+   parent bindings → child inputs → child refreshView → hooks
+</pre>
+
+<h3 class="part">6. Architecture — the functions</h3>
+<table>
+<tr><td><code>createLView</code></td><td>Allocate the per-instance LView, link to its TView.</td></tr>
+<tr><td><code>renderView</code> (create pass)</td><td>Build DOM once; attach listeners; recurse into children.</td></tr>
+<tr><td><code>refreshView</code> (update pass)</td><td>Update bindings, refresh children, fire hooks — every CD (S-10).</td></tr>
+<tr><td>Top-down data flow</td><td>Parent bindings → child inputs → child refresh.</td></tr>
+<tr><td>Lifecycle hooks</td><td>Fired in deterministic order during refreshView.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — lifecycle order in the pipeline</h3>
+<div class="code-label">hooks fire during refreshView</div>
+<pre><code>export class ProfileComponent implements OnChanges, OnInit, AfterViewInit {
+  @Input() userId!: string;
+  ngOnChanges() {}      // when inputs change (before OnInit on first pass)
+  ngOnInit() {}         // once, after first ngOnChanges
+  ngAfterViewInit() {}  // once, after this view + children rendered
+}
+// pipeline (refreshView) fires these in order: parent processes bindings,
+// sets child @Input (userId), child ngOnChanges → ngOnInit → view hooks.
+// data flows top-down: parent → child, one direction per CD pass.</code></pre>
+
+<h3 class="part">8. Beginner Example — create vs refresh</h3>
+<div class="code-label">two moments</div>
+<pre><code>// CREATE (once): renderView builds the DOM structure + wires listeners.
+// REFRESH (every CD): refreshView updates bindings + children + fires hooks.
+// So a component is "created" once, but "refreshed" many times.
+// ngOnInit = once (create-time); ngDoCheck/AfterViewChecked = every refresh.</code></pre>
+
+<h3 class="part">9. Advanced Example — the ExpressionChanged error</h3>
+<div class="code-label">why top-down flow matters</div>
+<pre><code>// dev mode runs CD twice to verify stability. If a child changes a value
+// that a parent already rendered this pass, the second check sees a DIFFERENT
+// value → "ExpressionChangedAfterItHasBeenCheckedError".
+// Cause: violating top-down data flow (child mutating parent state mid-pass).
+// Fix: don't change bound state during the same CD pass from a child;
+//   use signals / setTimeout / restructure so data flows parent→child only.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>createLView</code> — per-instance array, linked to TView.</li>
+<li><code>renderView</code> (create) — DOM once + listeners + child LViews.</li>
+<li>DOM host se attach.</li>
+<li><code>refreshView</code> (update) — bindings + child refresh + hooks, per CD.</li>
+<li>Top-down flow: parent bindings → child inputs → child refresh.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>CD pass ke dauraan child se parent-bound state badalna → ExpressionChanged error.</li>
+<li>Sochna DOM har CD pe rebuild hota — create ek baar, refresh baar-baar.</li>
+<li>Lifecycle hook order galat samajhna (OnInit once vs DoCheck every).</li>
+<li>Heavy work <code>ngDoCheck</code>/<code>ngAfterViewChecked</code> mein (har CD chalta).</li>
+<li>Data flow ko bidirectional treat karna — pipeline top-down hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Data top-down flow karo (parent → child inputs) — pipeline ke saath align.</li>
+<li>Once-only setup <code>ngOnInit</code> mein; per-CD hooks light rakho.</li>
+<li>ExpressionChanged errors ko top-down violation ke signal maano — fix accordingly.</li>
+<li>Create-once/refresh-many model samjho — perf + hook intuition.</li>
+<li>Signals se derived state (Ch18 S-02) — cleaner than DoCheck.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Rendering pipeline ka cost mostly refreshView (update pass) mein hai — har CD pe har checked view ke bindings + hooks chalti. Optimizations (Ch18 S-02): OnPush se views skip (refreshView na chale), signals se targeted refresh, cheap template expressions (update pass har baar). Create pass ek baar (structure stable). Per-CD hooks (<code>ngDoCheck</code>, <code>ngAfterViewChecked</code>) heavy na ho — pipeline har CD inhe chalati. Top-down flow predictable + cache-friendly. Pipeline samajhna CD optimization (S-10) ki neenv hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Embedded views</td><td>@if/@for child LViews pipeline mein create/refresh/destroy hote (S-05).</td></tr>
+<tr><td>Dynamic components</td><td><code>createComponent</code> pipeline ko manually invoke karta.</td></tr>
+<tr><td>OnPush skip</td><td>Non-dirty OnPush view ka refreshView skip (S-10).</td></tr>
+<tr><td>afterRender hooks</td><td><code>afterNextRender</code>/<code>afterRender</code> — post-render DOM work (SSR-safe).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Rendering pipeline ke main phases kya hain?</summary><div class="ans"><p>Do phases: <strong>View creation</strong> — <code>createLView</code> (per-instance array banao) + <code>renderView</code> (create pass — DOM structure ek baar build, listeners attach). Aur <strong>View refresh</strong> — <code>refreshView</code> (update pass — bindings update, child components refresh, lifecycle hooks fire), jo har change detection pe chalta. Yani component <em>ek baar</em> create hota par <em>kai baar</em> refresh. Create pass structure banata; refresh pass values live rakhta. Data top-down flow karta (parent → child).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Lifecycle hooks pipeline mein kis order mein fire hote?</summary><div class="ans"><p>refreshView ke dauraan (roughly): <code>ngOnChanges</code> (jab inputs badle) → <code>ngOnInit</code> (sirf pehli baar, first ngOnChanges ke baad) → <code>ngDoCheck</code> → content hooks (<code>ngAfterContentInit</code> once / <code>ngAfterContentChecked</code>) → view hooks (<code>ngAfterViewInit</code> once / <code>ngAfterViewChecked</code>). Once-only hooks (OnInit, AfterViewInit) sirf pehle pass; baaki (DoCheck, AfterViewChecked) har CD. Parent apne bindings process karke child inputs set karta phir child ke hooks — top-down. Isliye <code>ngOnInit</code> once-setup ke liye, aur per-CD hooks light rakho.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> "ExpressionChangedAfterItHasBeenChecked" error pipeline ke context mein kyun aata?</summary><div class="ans"><p>Dev mode mein Angular CD ko <em>do baar</em> chalata (stability verify karne ke liye). Pipeline top-down data flow assume karta — parent apne bindings render karta, phir children. Agar koi <strong>child</strong> (ya lifecycle hook) ek value badalta jise <em>parent</em> is pass mein already render kar chuka, toh doosre verification check mein woh binding ka value alag dikhta → ye error. Root cause: unidirectional top-down flow violate karna (child mid-pass parent-bound state mutate kar raha). Fix: CD pass ke dauraan bound state child se mat badlo; signals use karo, ya restructure karo taaki data sirf parent→child bahe.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek component ka <code>ngAfterViewChecked</code> heavy calculation karta hai aur app janky ho gaya. Pipeline ke lens se kya galat hai?</summary><div class="ans"><p><code>ngAfterViewChecked</code> ek <em>per-refresh</em> hook hai — pipeline ise <strong>har change detection cycle</strong> pe (har refreshView pe) fire karta hai, na ki ek baar. Toh heavy calculation har CD pe chal raha (mousemove/click/timer sab pe zone.js mein), main thread block. Fix: (1) heavy work ko once-only hook (<code>ngOnInit</code>/<code>ngAfterViewInit</code>) mein le jao agar ek baar chahiye; (2) ya <code>computed</code> signal se derived value memoize karo (dep-change pe hi recompute, Ch18 S-02); (3) ya OnPush + signals se is view ke refresh hi kam karo. Key insight: pipeline mein per-CD hooks light hone chahiye.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Pipeline: <code>createLView</code> → <code>renderView</code> (create pass, DOM once) → attach → <code>refreshView</code> (update pass, every CD).</li>
+<li>refreshView = bindings + child refresh (top-down) + lifecycle hooks. Create once, refresh many.</li>
+<li>Hook order: OnChanges → OnInit(once) → DoCheck → AfterContent → AfterView. Top-down flow violation → ExpressionChanged error. Per-CD hooks must be light.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.15 · Log the lifecycle</div><p>Parent + child components mein saare lifecycle hooks log karo. Fire order + kaunse once vs every-CD chalte observe karo. Inputs change karke ngOnChanges timing dekho.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.16 · Reproduce &amp; fix ExpressionChanged</div><p>Ek child se parent-bound value mid-CD change karke ExpressionChangedAfterItHasBeenChecked error reproduce karo. Top-down flow restore karke (signals / restructure) fix karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s9">
+<div class="sec-head">
+  <span class="sec-num">S-09</span>
+  <h2>The Renderer</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s9"> Done</label>
+</div>
+<p class="covers">Covers: <b>Renderer2 · RendererFactory2 · DOM abstraction · platform independence · DefaultDomRenderer2 · server-side renderer · how instructions touch the DOM · sanitization/animation hooks</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Renderer woh abstraction layer hai jiske through Angular actually DOM (ya kisi platform) ko touch karta — elements create karta, properties set karta, listeners lagata. Ivy instructions (S-05) directly <code>document.createElement</code> call nahi karte; woh ek <strong>Renderer</strong> ke through jaate. Public API <code>Renderer2</code> (via <code>RendererFactory2</code>) hai; browser pe implementation <code>DefaultDomRenderer2</code>, server pe ek HTML-string renderer.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Agar Angular directly DOM APIs call kare, toh woh sirf browser mein chalega — SSR (server, no DOM), ya doosre platforms possible nahi. Renderer abstraction Angular ko <strong>platform-independent</strong> banata: same rendering logic browser DOM, server HTML-string, ya (historically) web workers/native mein kaam kar sakti. Plus ye ek central choke-point deta jahan sanitization, animations, aur security hooks lag sakte.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Direct DOM coupling. Agar rendering DOM se tightly bound ho, SSR/testing/platform-portability tootti, aur security (XSS sanitization) har jagah manually karni padti. Renderer abstraction rendering ko platform se decouple karta (SSR possible) aur ek single layer deta jahan Angular safely DOM manipulate + sanitize + animate karta.</p>
+
+<h3 class="part">4. Internal Working — the abstraction &amp; its implementations</h3>
+<div class="panel why"><div class="ptitle">Instructions → Renderer → platform-specific DOM ops</div><p>Ivy runtime ke paas ek lower-level <code>Renderer</code> interface hai (aur public <code>Renderer2</code>). Jab template instructions chalti (<code>ɵɵelementStart</code>, <code>ɵɵlistener</code>, <code>ɵɵproperty</code>), woh actual DOM operation ke liye current <strong>renderer</strong> ko call karti — na ki DOM API directly. Renderer <strong><code>RendererFactory2</code></strong> se banta (per-component renderer, jo animations/encapsulation handle karta). Platform-specific implementations: <strong>Browser</strong> — <code>DefaultDomRenderer2</code>, jo real DOM operations (<code>createElement</code>, <code>setProperty</code>, <code>addEventListener</code>) karta. <strong>Server (SSR)</strong> — ek server-side renderer jo DOM ke bajaye <em>HTML string</em> generate karta (kyunki server pe DOM nahi) — yahi SSR (S-12) enable karta. Historically web-worker aur native renderers bhi the. Kyunki sab kuch renderer ke through jaata, Angular yahan <strong>hooks</strong> laga sakta: <strong>sanitization</strong> (property/attribute values ko XSS ke liye sanitize karna), <strong>animations</strong> (renderer ko wrap karke element add/remove pe animations trigger — <code>AnimationRenderer</code>), aur <strong>style encapsulation</strong> (component-scoped CSS ke liye attributes add karna). Yani renderer = "Angular DOM ko kaise chhuta hai" ka single, swappable, hook-able layer.</p></div>
+
+<div class="dg-title">Diagram — renderer abstraction</div>
+<pre class="diagram">
+ template instructions (ɵɵelement, ɵɵproperty, ɵɵlistener)
+        │  (never call DOM directly)
+        ▼
+     Renderer  ◄── created by RendererFactory2 (per component)
+        │
+   ┌────┴─────────────┬──────────────────┐
+   ▼                  ▼                  ▼
+ DefaultDomRenderer2  ServerRenderer     (wrapped renderers)
+ (browser: real DOM)  (SSR: HTML string) AnimationRenderer / sanitization
+        │                  │
+   real DOM ops        HTML output for SSR
+
+ same instructions → different platform via a swapped renderer
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ ɵɵelementStart('div') ─▶ renderer.createElement('div')
+   browser → document.createElement('div')
+   server  → append to an HTML string buffer
+ ɵɵproperty('title', v) ─▶ renderer.setProperty(el, 'title', sanitize(v))
+ ɵɵlistener('click', fn) ─▶ renderer.listen(el, 'click', fn)
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td><code>Renderer2</code></td><td>Public DOM abstraction API (createElement, setProperty, listen, etc.).</td></tr>
+<tr><td><code>RendererFactory2</code></td><td>Creates renderers (per component; handles encapsulation/animations).</td></tr>
+<tr><td><code>DefaultDomRenderer2</code></td><td>Browser implementation — real DOM operations.</td></tr>
+<tr><td>Server renderer</td><td>SSR — emits HTML strings instead of touching a DOM.</td></tr>
+<tr><td>Wrapped renderers</td><td>Animations, sanitization, style encapsulation hook in here.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — using Renderer2 safely</h3>
+<div class="code-label">platform-safe DOM manipulation</div>
+<pre><code>import { Renderer2, ElementRef } from '@angular/core';
+
+export class HighlightDirective {
+  private r = inject(Renderer2);
+  private el = inject(ElementRef);
+
+  highlight() {
+    // platform-safe: works in browser AND server (SSR) — no direct DOM API
+    this.r.setStyle(this.el.nativeElement, 'background', 'yellow');
+    this.r.addClass(this.el.nativeElement, 'active');
+  }
+}
+// prefer Renderer2 over direct nativeElement.style for SSR-safety + abstraction.</code></pre>
+
+<h3 class="part">8. Beginner Example — why not direct DOM?</h3>
+<div class="code-label">Renderer2 vs direct DOM</div>
+<pre><code>// AVOID (browser-only, breaks SSR, bypasses sanitization):
+el.nativeElement.innerHTML = userInput;   // XSS risk + SSR-unsafe
+
+// PREFER (platform-abstracted, safe):
+renderer.setProperty(el.nativeElement, 'textContent', userInput);
+// the renderer routes through the platform impl + Angular's safety layers.</code></pre>
+
+<h3 class="part">9. Advanced Example — the same app, two renderers</h3>
+<div class="code-label">platform independence in action</div>
+<pre><code>// BROWSER bootstrap → RendererFactory2 provides DefaultDomRenderer2
+//   → ɵɵelement instructions create real DOM nodes.
+// SERVER bootstrap (SSR, @angular/ssr) → a server renderer
+//   → the SAME instructions produce an HTML STRING (no DOM exists).
+// You write ONE component; the renderer abstraction makes it render
+// correctly on both platforms. This is what makes SSR (S-12) possible.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Instructions DOM directly nahi chhute — renderer ko call karte.</li>
+<li><code>RendererFactory2</code> per-component renderer banati.</li>
+<li>Browser → <code>DefaultDomRenderer2</code> (real DOM ops).</li>
+<li>Server → HTML-string renderer (SSR).</li>
+<li>Sanitization/animations/encapsulation renderer layer pe hook.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Direct <code>nativeElement</code> DOM manipulation — SSR todta + sanitization bypass.</li>
+<li><code>innerHTML</code> se user input — XSS (renderer/sanitizer bypass).</li>
+<li>Sochna Angular directly DOM APIs call karta — nahi, renderer ke through.</li>
+<li>SSR mein <code>document</code>/<code>window</code> assume karna — server pe DOM nahi (S-12).</li>
+<li>Renderer abstraction ke bina custom rendering — platform portability toot.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>DOM manipulation ke liye <code>Renderer2</code> use karo (SSR-safe + abstracted).</li>
+<li>Direct <code>innerHTML</code>/DOM APIs avoid karo (XSS + platform coupling).</li>
+<li>SSR ke liye browser-only APIs guard karo (<code>isPlatformBrowser</code>, S-12).</li>
+<li>Angular ki binding/sanitization pe bharosa — manual DOM last resort.</li>
+<li>Samjho renderer = platform-independence + security ka layer.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Renderer abstraction ki cost negligible hai (thin layer) par uska value huge: SSR possible (server pe HTML render → fast LCP/SEO, S-12), sanitization built-in (security), animations centralized. Renderer2 direct DOM se marginally slower ho sakta (extra indirection) par platform-safety + security worth it. Perf-critical bulk DOM work ke liye Angular bindings + <code>@for track</code> (Ch18 S-03) prefer karo — renderer ke through efficiently batch hote. Direct DOM sirf jab absolutely zaroori + browser-guarded.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>SSR DOM APIs</td><td>Server pe <code>document</code> nahi — <code>afterNextRender</code>/<code>isPlatformBrowser</code> guard.</td></tr>
+<tr><td>Animations</td><td><code>AnimationRenderer</code> wraps base renderer to intercept add/remove.</td></tr>
+<tr><td>Sanitization bypass</td><td><code>DomSanitizer.bypassSecurityTrust*</code> — use with extreme care.</td></tr>
+<tr><td>Custom renderers</td><td>Rare; possible for non-DOM targets via RendererFactory2.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular ka Renderer kya hai aur kyun?</summary><div class="ans"><p>Renderer (<code>Renderer2</code> via <code>RendererFactory2</code>) ek abstraction layer hai jiske through Angular DOM touch karta — elements create, properties set, listeners lagata. Instructions directly DOM API call nahi karte, renderer ke through jaate. Kyun: (1) <strong>platform independence</strong> — browser mein real DOM, server mein HTML-string (SSR), same rendering logic; (2) ek central layer jahan <strong>sanitization</strong> (XSS), <strong>animations</strong>, aur style encapsulation hook karte. Browser impl <code>DefaultDomRenderer2</code>, server ka HTML-string renderer.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Renderer abstraction SSR ko kaise enable karta hai?</summary><div class="ans"><p>Kyunki instructions DOM ko directly nahi chhute — woh <em>renderer</em> ko call karte — Angular platform ke hisaab se alag renderer plug kar sakta. Browser pe <code>DefaultDomRenderer2</code> real DOM nodes banata. Server pe (jahan <code>document</code>/DOM hi nahi) ek server-side renderer wahi instructions ko <em>HTML string</em> mein render karta. Tum ek hi component likhte ho; renderer abstraction usse dono platforms pe correctly render karwata. Ye decoupling hi SSR (S-12) possible banati — same app, swapped renderer.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Direct DOM manipulation ke bajaye <code>Renderer2</code> kyun use karein?</summary><div class="ans"><p>(1) <strong>SSR-safety</strong> — direct <code>nativeElement.style</code>/<code>document</code> server pe crash karega (DOM nahi); Renderer2 platform-abstracted hai. (2) <strong>Security</strong> — renderer Angular ke sanitization layer se guzarta, jabki <code>innerHTML = userInput</code> XSS khol deta. (3) <strong>Abstraction/portability</strong> — same code multiple platforms pe. (4) Animations/encapsulation renderer ke through consistent. Isliye jab DOM manipulate karna ho, <code>Renderer2</code> methods (setStyle, addClass, setProperty) prefer karo — direct DOM last resort + browser-guarded.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek directive <code>el.nativeElement.innerHTML = data</code> use karti hai. Do problems batao aur sahi approach.</summary><div class="ans"><p>Do problems: (1) <strong>XSS security</strong> — <code>innerHTML</code> se raw <code>data</code> set karna Angular ki sanitization bypass karta; agar <code>data</code> mein malicious markup/script ho, execute ho sakta. (2) <strong>SSR-unsafe + platform coupling</strong> — direct DOM API server pe (jahan DOM nahi) crash karega, aur renderer abstraction bypass hoti. Sahi approach: agar plain text chahiye, <code>renderer.setProperty(el, 'textContent', data)</code> (safe, escaped). Agar HTML render karna zaroori hai, Angular binding <code>[innerHTML]="data"</code> use karo (Angular auto-sanitize karta), ya <code>DomSanitizer</code> se explicitly sanitize karo. Renderer/binding ke through jao — direct <code>innerHTML</code> nahi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Renderer = abstraction through which instructions touch the DOM (not direct DOM APIs). <code>Renderer2</code> / <code>RendererFactory2</code>.</li>
+<li>Browser → <code>DefaultDomRenderer2</code> (real DOM); server → HTML-string renderer (enables SSR). Same instructions, swapped renderer = platform independence.</li>
+<li>Central layer for sanitization (XSS), animations, encapsulation. Prefer <code>Renderer2</code> over direct DOM (SSR-safe + secure).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.17 · Renderer2 directive</div><p>Ek directive banao jo <code>Renderer2</code> (setStyle/addClass/listen) se element style + event handle kare, bina direct DOM API. SSR-safe kyun hai justify karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.18 · Sanitization demo</div><p><code>[innerHTML]</code> binding vs direct <code>innerHTML</code> se ek script-injection attempt karo. Prove karo Angular binding sanitize karta hai (renderer/sanitizer layer) jabki direct nahi.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s10">
+<div class="sec-head">
+  <span class="sec-num">S-10</span>
+  <h2>Change Detection Internals</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s10"> Done</label>
+</div>
+<p class="covers">Covers: <b>refreshView · LView flags (Dirty/CheckAlways/Attached) · bindingUpdated · NO_CHANGE sentinel · ɵɵadvance · CD tree traversal · OnPush at flag level · signal → markViewDirty</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Change detection (CD) woh mechanism hai jo tumhare component ke data aur DOM ko sync mein rakhta — jab state badalti, CD DOM update karta. Andar se ye <code>refreshView</code> ke through LView tree ko traverse karke har binding ko uske pichle value se compare karta (dirty checking) aur sirf changed ko DOM mein likhta. LView <strong>flags</strong> (Dirty, CheckAlways) decide karte kaunsa view check ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>UI ko data ke saath sync rakhna manually karna painful + error-prone hoga (har state change pe kaunsa DOM update kare?). CD ise automate karta — tum state badlo, CD figure out karta kya DOM mein change karna hai. Internals samajhna zaroori hai kyunki wahi batata OnPush/signals/zoneless (Ch16, Ch18) <em>kaise</em> CD ko optimize karte, aur kyun kuch changes reflect nahi hote.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Data↔DOM synchronization, efficiently. Naive approach har change pe poora DOM re-render karega (slow). CD internals selective updates dete: LView flags se sirf relevant views check hote, aur binding-level dirty checking (<code>bindingUpdated</code>/<code>NO_CHANGE</code>) se sirf actually-changed values DOM touch karte. OnPush/signals is machinery ko aur narrow karte.</p>
+
+<h3 class="part">4. Internal Working — refreshView, flags, bindingUpdated</h3>
+<div class="panel why"><div class="ptitle">Traverse LView tree; check flagged views; compare bindings per slot</div><p>CD ka core <strong><code>refreshView</code></strong> (S-08) hai. Jab CD chalti (<code>ApplicationRef.tick()</code> se, zone ya zoneless/signal se), Angular root LView se shuru karke <strong>LView tree ko top-down traverse</strong> karta. Har LView ke paas <strong>flags</strong> hote: <code>CheckAlways</code> (Default strategy components — har CD check hote), <code>Dirty</code> (OnPush components tabhi check hote jab ye flag set ho), <code>Attached</code>, <code>FirstLViewPass</code>, etc. Ek view check hota agar <code>CheckAlways</code> true hai <em>ya</em> <code>Dirty</code> flag set hai. Check karne pe, template ka <strong>update pass</strong> (S-05) chalti: har binding instruction (<code>ɵɵproperty</code>, <code>ɵɵtextInterpolate</code>) <strong><code>bindingUpdated</code></strong> call karta jo naya value ko LView slot mein stored purane value se compare karta (<code>Object.is</code>-style). Agar same → <code>NO_CHANGE</code> sentinel return, DOM touch nahi hota. Agar different → LView slot update + DOM/child-input update. <code>ɵɵadvance(n)</code> binding pointer ko sahi slot pe le jaata (S-05). <strong>OnPush at flag level:</strong> OnPush components ka <code>CheckAlways</code> false hota — woh sirf tab check hote jab <code>Dirty</code> flag set ho, jo hota hai: input reference change, event fire hone pe (us view mein), <code>markForCheck()</code>, async pipe emit, ya <strong>signal change</strong>. <strong>Signals + CD:</strong> jab template mein ek signal read hota, woh view us signal ka <strong>live consumer</strong> ban jaata (S-11); signal change hone pe <code>markViewDirty</code> us view (aur ancestors) ko Dirty mark karta + CD schedule karta. Zoneless mein yahi CD ka sole trigger hai (Ch16 S-08).</p></div>
+
+<div class="dg-title">Diagram — CD traversal + binding check</div>
+<pre class="diagram">
+ ApplicationRef.tick() ─▶ traverse LView tree from root (top-down)
+
+ for each LView:
+   check if (CheckAlways || Dirty flag)?
+      NO  → skip this view (OnPush optimization)
+      YES → run UPDATE pass:
+              ɵɵproperty('x', v) → bindingUpdated(slot, v):
+                 v === stored? → NO_CHANGE (skip DOM)
+                 v changed?    → update slot + DOM + child input
+   recurse into child LViews
+
+ signal change ─▶ markViewDirty(view + ancestors) ─▶ schedule tick
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ trigger (zone async / signal / event) ─▶ ApplicationRef.tick()
+   ─▶ refreshView from root, top-down
+       Default view (CheckAlways) → always checked
+       OnPush view → checked only if Dirty flag set
+   ─▶ per binding: bindingUpdated → NO_CHANGE (skip) or update DOM
+</pre>
+
+<h3 class="part">6. Architecture — the mechanics</h3>
+<table>
+<tr><td><code>refreshView</code></td><td>Runs a view's update pass + children + hooks (S-08).</td></tr>
+<tr><td>LView flags</td><td><code>CheckAlways</code> (Default), <code>Dirty</code> (OnPush trigger), <code>Attached</code>.</td></tr>
+<tr><td><code>bindingUpdated</code></td><td>Compare new vs stored slot value; <code>NO_CHANGE</code> if same.</td></tr>
+<tr><td><code>NO_CHANGE</code></td><td>Sentinel meaning "binding unchanged, skip DOM".</td></tr>
+<tr><td><code>ɵɵadvance</code></td><td>Move the binding pointer to the correct slot.</td></tr>
+<tr><td><code>markViewDirty</code></td><td>Set Dirty up the tree (input/event/markForCheck/signal).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — OnPush + signal at the flag level</h3>
+<div class="code-label">what sets the Dirty flag</div>
+<pre><code>@Component({ changeDetection: ChangeDetectionStrategy.OnPush, template: `{{ count() }}` })
+export class CounterComponent {
+  count = signal(0);       // reading count() in template = live consumer
+  inc() { this.count.set(this.count() + 1); }
+  // signal change → markViewDirty(this view) → scheduled CD → view checked.
+}
+// with OnPush, CheckAlways=false. The view is only re-checked because the
+// signal marked it Dirty. Without a signal/input/event/markForCheck, an OnPush
+// view stays skipped even if some unrelated field mutates.</code></pre>
+
+<h3 class="part">8. Beginner Example — Default vs OnPush at flag level</h3>
+<div class="code-label">CheckAlways vs Dirty</div>
+<pre><code>// DEFAULT strategy: LView flag CheckAlways = true → checked EVERY CD cycle.
+// ONPUSH strategy:  CheckAlways = false → checked ONLY when Dirty flag is set.
+// Dirty is set by: @Input reference change, an event in the view,
+//   markForCheck(), async pipe emission, or a signal change.
+// This flag difference IS the OnPush optimization, internally.</code></pre>
+
+<h3 class="part">9. Advanced Example — bindingUpdated &amp; NO_CHANGE</h3>
+<div class="code-label">binding-level dirty checking</div>
+<pre><code>// conceptually, each binding does:
+function ɵɵproperty(name, value) {
+  if (bindingUpdated(lView, bindingIndex, value)) {  // value !== stored slot?
+    renderer.setProperty(el, name, value);            // only then touch DOM
+  }
+  // else: NO_CHANGE — skip DOM write entirely
+}
+// so even a CHECKED view only writes to the DOM for bindings that changed.
+// two levels of skipping: (1) skip whole view (flags), (2) skip binding (NO_CHANGE).</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Trigger → <code>tick()</code> → root se LView tree traverse.</li>
+<li>Per view: <code>CheckAlways</code> ya <code>Dirty</code>? nahi → skip.</li>
+<li>Checked view → update pass; <code>bindingUpdated</code> per binding.</li>
+<li>Value same → <code>NO_CHANGE</code> (skip DOM); different → update.</li>
+<li>Signal change → <code>markViewDirty</code> → schedule CD.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>OnPush view mein object ko mutate karna (reference same) — Dirty flag set nahi hota, view update nahi.</li>
+<li>Sochna CD har binding ko har CD pe DOM likhta — actually NO_CHANGE skip karta.</li>
+<li>Zoneless mein non-signal async se view update expect karna — markForCheck chahiye (Ch16).</li>
+<li>markForCheck aur detectChanges gadbad — markForCheck flag set, detectChanges sync run.</li>
+<li>CheckAlways/Dirty distinction na samajhna — OnPush debugging fail.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>OnPush + immutable inputs / signals — Dirty flag reliably set (Ch18 S-02).</li>
+<li>Signals prefer — automatic markViewDirty, fine-grained.</li>
+<li>OnPush mein object mutation avoid — reference change ya signal.</li>
+<li>Zoneless-ready code (Ch16 S-08) — signals/markForCheck se CD drive.</li>
+<li>Internals samjho — OnPush/skip debugging aur perf ke liye.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>CD internals do levels ka skipping dete: (1) <strong>view-level</strong> — OnPush views (CheckAlways false) skip hote jab tak Dirty na ho, toh poore subtrees CD se bach jaate; (2) <strong>binding-level</strong> — <code>bindingUpdated</code>/<code>NO_CHANGE</code> se checked view mein bhi sirf changed bindings DOM likhte. Signals dono ko sharpen karte — signal change sirf consuming views ko Dirty marks (targeted), aur zoneless mein CD sirf signal changes pe chalti (no zone over-triggering). Yani CD internals hi Ch18 ki performance optimizations ke "kaise" hain.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td><code>detach()</code>/<code>reattach()</code></td><td>ChangeDetectorRef se view ko CD tree se detach — manual control.</td></tr>
+<tr><td><code>detectChanges()</code></td><td>Ek view ki CD synchronously run (local, not full tick).</td></tr>
+<tr><td>ExpressionChanged</td><td>Dev double-check top-down violation pakadta (S-08).</td></tr>
+<tr><td>Signal in non-OnPush</td><td>Signals Default views mein bhi kaam karte, par OnPush + signals best.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Change detection internally kaise kaam karti hai?</summary><div class="ans"><p>CD trigger hone pe (<code>ApplicationRef.tick()</code>), Angular root LView se LView tree ko top-down traverse karta. Har view ke flags check karta: <code>CheckAlways</code> (Default — har CD check) ya <code>Dirty</code> (OnPush — tabhi check jab set ho). Checked view ka update pass chalta — har binding <code>bindingUpdated</code> se naya value stored slot value se compare karta; same → <code>NO_CHANGE</code> (DOM skip), different → DOM update. Yani do-level skipping: view-level (flags) + binding-level (NO_CHANGE). Sirf changed bindings DOM touch karte.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> OnPush internally flag level pe kya karta hai?</summary><div class="ans"><p>OnPush component ke LView ka <code>CheckAlways</code> flag <strong>false</strong> hota (Default components ka true). Iska matlab woh view CD traversal mein <em>skip</em> hota jab tak uska <code>Dirty</code> flag set na ho. Dirty flag set hota jab: <code>@Input</code> reference change, us view mein event fire, <code>markForCheck()</code> call, async pipe emit, ya <strong>signal change</strong> (jo view us signal ka consumer ho). Toh OnPush view + uska subtree har CD pe check hone se bach jaata jab tak in triggers mein se kuch na ho — yahi "OnPush optimization" internally hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Signal change CD ko kaise trigger karta hai internally?</summary><div class="ans"><p>Jab ek signal template mein read hota, woh view us signal ka <strong>live consumer</strong> ban jaata (producer↔consumer edge, S-11). Jab signal ka value change hota (aur naya value purane se different hai), woh apne consumers ko notify karta — us view ke liye <code>markViewDirty</code> call hota, jo view (aur uske ancestors) ka Dirty flag set karta aur ek CD tick schedule karta. Next tick pe woh Dirty view check hota. Zoneless mode mein (Ch16 S-08) yahi CD ka <em>sole</em> trigger hai — koi zone.js nahi, sirf signal changes CD schedule karti. Isliye signals + OnPush/zoneless = precise, minimal CD.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek OnPush component ke <code>@Input() user</code> object ka field code se mutate karte ho (<code>this.user.name = 'X'</code>) par UI update nahi hoti. Internally kyun, aur do fixes.</summary><div class="ans"><p>OnPush component ka <code>CheckAlways</code> false hai — woh sirf tab check hota jab <code>Dirty</code> flag set ho. <code>@Input</code> reference change Dirty set karta, par tumne object ko <em>mutate</em> kiya (<code>user.name = 'X'</code>) — reference wahi raha, toh Angular ko lagta input change nahi hua → Dirty flag set nahi → view skip → UI stale. Fixes: (1) <strong>Immutable update</strong> — naya object reference pass karo (<code>this.user = { ...this.user, name: 'X' }</code>) → input reference change → Dirty set. (2) <strong>Signals</strong> — <code>user</code> ko signal banao aur <code>user.set(...)</code>/<code>update(...)</code> use karo → signal change markViewDirty karega. (3) (workaround) <code>ChangeDetectorRef.markForCheck()</code> manually call karke Dirty set. Best: immutability ya signals.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>CD = <code>tick()</code> → traverse LView tree top-down → <code>refreshView</code> per view. Check if <code>CheckAlways</code> (Default) or <code>Dirty</code> (OnPush).</li>
+<li>Binding-level: <code>bindingUpdated</code> compares to stored slot → <code>NO_CHANGE</code> skips DOM. Two-level skip: view (flags) + binding (NO_CHANGE).</li>
+<li>OnPush = CheckAlways false, checked only when Dirty (input ref / event / markForCheck / async pipe / signal). Signal change → <code>markViewDirty</code> → schedule (sole trigger in zoneless).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.19 · OnPush mutation trap</div><p>Ek OnPush component banao jismein object mutation UI update na kare. Prove karo (logs) view skip ho raha. Immutable update aur signal — dono se fix karke Dirty-flag trigger samjho.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.20 · Count CD passes</div><p>Default vs OnPush vs signal-based components mein ek getter/log se count karo kitni baar CD unhe check karta (mousemove/timer ke dauraan). Teeno strategies ka difference measure karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s11">
+<div class="sec-head">
+  <span class="sec-num">S-11</span>
+  <h2>Signals Internals</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s11"> Done</label>
+</div>
+<p class="covers">Covers: <b>ReactiveNode · producer/consumer graph · bidirectional edges · valueVersion · push/pull algorithm · glitch-free · computed lazy memoization · effect scheduling · live consumers</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Signals Angular ka fine-grained reactivity primitive hai (v16+). Andar se ye ek <strong>reactive dependency graph</strong> hai jo <strong>producers</strong> (values jo change notify karti — signals, computed) aur <strong>consumers</strong> (jo values pe depend karti — effects, templates, computed) ke beech banti. Ek clever <strong>push/pull algorithm</strong> se ye <em>glitch-free</em> aur efficient updates deta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Traditional CD (zone.js) poore component tree ko check karta har async event pe — coarse + wasteful. Signals fine-grained reactivity dete: exactly woh cheezein re-run/update hoti jo actually changed value pe depend karti, aur exactly tab. Ye zoneless CD (Ch16), efficient derived state (computed), aur predictable reactivity enable karta. Internals samajhna "signals kaise glitch-free + lazy hote" ka answer deta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Coarse, redundant reactivity + glitches. Zone-based CD over-checks; naive push-based reactivity "diamond problem" (ek value ko multiple baar recompute) + glitches (intermediate stale values) deta. Signals ka push/pull dono solve karta: change eagerly propagate hoti (correctness) par recomputation lazy hoti (efficiency) — glitch-free, minimal computation.</p>
+
+<h3 class="part">4. Internal Working — the reactive graph, push/pull, versions</h3>
+<div class="panel why"><div class="ptitle">Producers &amp; consumers, bidirectional edges, push dirtiness / pull values</div><p>Angular signals ka core <code>@angular/core/primitives/signals</code> mein hai. Har participant ek <strong><code>ReactiveNode</code></strong> interface implement karta — jo producer, consumer, ya dono ho sakta. <strong>Producer</strong> = value jo change notifications deti (writable signals, computed). <strong>Consumer</strong> = reactive context jo producers pe depend karti (effects, templates, computed). <code>computed</code> <strong>dono</strong> hai (doosre signals consume karta, naya value produce karta). Jab ek consumer ek producer ko read karta (reactive context mein), unke beech ek <strong>bidirectional edge</strong> banti — dependency graph. <strong>valueVersion:</strong> har producer ek monotonically-increasing <code>valueVersion</code> rakhta — jab producer semantically-naya value produce karta, version increment hota. Jab consumer producer se read karta, current version dependency edge mein save hota — taaki baad mein consumer check kar sake "kya mera dependency badla?". <strong>Push/pull algorithm (glitch-free):</strong> jab ek source signal set hoti, "dirtiness" <em>eagerly PUSH</em> hoti graph mein downstream (consumers ko "tum shayad stale ho" mark karti) — par actual recomputation nahi. Recomputation <em>lazily PULL</em> hoti — sirf jab koi consumer apna value <em>read</em> karta (jaise template CD mein), tab woh apne dependencies ki versions check karke, agar koi badla, recompute karta. Ye do-phase (eager dirty-push, lazy value-pull) <strong>diamond problem</strong> solve karta: ek value multiple paths se depend ho toh bhi ek hi baar recompute (na ki intermediate glitchy states). <strong>computed lazy + memoized:</strong> computed tabhi recompute karta jab (a) koi dependency badla ho AND (b) uska value actually read ho — warna cached value. <strong>effect:</strong> ek consumer; <em>set ke saath synchronously nahi</em> chalta — schedule hota (microtask), batches (multiple deps ek saath badlein toh ek hi run), aur destroy pe auto-cleanup. <strong>Live consumers &amp; CD:</strong> component template ek live consumer hai — template mein signal read karna view ko us signal ka consumer bana deta; signal change → view Dirty mark + CD schedule (S-10). <strong>Equality:</strong> set/update pe naya value purane se compare hota (<code>Object.is</code> ya custom <code>equal</code>) — agar equal, consumers notify hi nahi hote (no wasted work).</p></div>
+
+<div class="dg-title">Diagram — push/pull reactive graph</div>
+<pre class="diagram">
+ PRODUCERS              CONSUMERS
+ signal(a) ──┐
+ signal(b) ──┼──▶ computed(sum) ──▶ template (live consumer)
+             │        (both)              effect
+ bidirectional edges store valueVersion at read time
+
+ set signal(a):
+   PHASE 1 (eager PUSH): mark sum + template dirty downstream
+   PHASE 2 (lazy PULL):  when template reads sum during CD,
+                         sum checks versions → recompute if changed → return
+   → diamond problem avoided: sum recomputes ONCE, no glitchy intermediate
+
+ equality: if new value === old (Object.is) → consumers NOT notified
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ signal.set(v)
+   → equality check (=== old? → stop, no notify)
+   → different: increment valueVersion, PUSH dirty flag downstream
+   → mark live-consumer views dirty → schedule CD
+ later, consumer reads (template CD / computed / effect):
+   → PULL: check dependency versions → recompute only if changed → memoize
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td><code>ReactiveNode</code></td><td>Base interface; a node can be producer, consumer, or both.</td></tr>
+<tr><td>Producer</td><td>Delivers change notifications: writable signal, computed.</td></tr>
+<tr><td>Consumer</td><td>Depends on producers: effect, template, computed.</td></tr>
+<tr><td><code>valueVersion</code></td><td>Monotonic; bumped on semantically-new value; stored in edges.</td></tr>
+<tr><td>Push/pull</td><td>Dirtiness pushed eagerly; recomputation pulled lazily → glitch-free.</td></tr>
+<tr><td><code>computed</code></td><td>Lazy + memoized; recompute only if dep changed AND value read.</td></tr>
+<tr><td><code>effect</code></td><td>Consumer; scheduled (microtask), batched, auto-cleanup.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — the graph in code</h3>
+<div class="code-label">producers, computed (both), effect (consumer)</div>
+<pre><code>price = signal(100);              // producer
+qty = signal(2);                 // producer
+total = computed(() =&gt; this.price() * this.qty());  // producer + consumer
+// reading price()/qty() inside computed → edges: price→total, qty→total
+
+constructor() {
+  effect(() =&gt; console.log('total:', this.total()));  // consumer of total
+}
+// template: {{ total() }}  → template is a LIVE CONSUMER of total
+// price.set(120): pushes dirty to total + template + effect;
+//   total recomputes lazily when read (CD / effect run), memoized.</code></pre>
+
+<h3 class="part">8. Beginner Example — lazy &amp; memoized computed</h3>
+<div class="code-label">computed doesn't run until read</div>
+<pre><code>const a = signal(1);
+const doubled = computed(() =&gt; { console.log('compute'); return a() * 2; });
+// nothing logged yet — computed is LAZY (not evaluated on creation)
+doubled();          // logs 'compute', returns 2  (now evaluated + memoized)
+doubled();          // returns 2, NO log (memoized — a() didn't change)
+a.set(5);           // pushes dirty, but does NOT recompute yet
+doubled();          // logs 'compute', returns 10 (pulled: dep changed → recompute)</code></pre>
+
+<h3 class="part">9. Advanced Example — glitch-free (diamond problem)</h3>
+<div class="code-label">why push/pull avoids double computation</div>
+<pre><code>const a = signal(1);
+const b = computed(() =&gt; a() + 1);   // depends on a
+const c = computed(() =&gt; a() + 2);   // depends on a
+const d = computed(() =&gt; b() + c()); // depends on b AND c  → "diamond"
+
+// naive eager push: set(a) → recompute b → recompute d, then recompute c
+//   → recompute d AGAIN (d computed twice; glitchy intermediate value)
+// signals push/pull: set(a) pushes dirtiness to b,c,d (no compute);
+//   reading d() pulls → b,c recompute if needed → d computes ONCE, correct.
+// → glitch-free: no double-compute, no stale intermediate shown.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Producers (signals) values dete; consumers (template/effect/computed) read karte.</li>
+<li>Read pe producer↔consumer edge banti (+ valueVersion stored).</li>
+<li>Set pe: equality check → different → dirty PUSH downstream (eager).</li>
+<li>Read pe: version check → changed? → recompute PULL (lazy) → memoize.</li>
+<li>Template live consumer → signal change → view dirty → CD schedule.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sochna computed eagerly recompute hota — lazy hai (read pe hi).</li>
+<li>Effect ko synchronous samajhna — scheduled (microtask), batched.</li>
+<li>Signal ko function ki tarah call na karna (<code>x()</code> vs <code>x</code>) — read = dependency register.</li>
+<li>Computed ke andar side effects — computed pure hona chahiye (effect use karo).</li>
+<li>Mutable object signal mein rakhke mutate karna — equality (Object.is) same reference dekhta, no notify.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Derived state → <code>computed</code> (lazy + memoized), na ki manual recompute.</li>
+<li>Side effects → <code>effect</code> (not computed); auto-cleanup use karo.</li>
+<li>Immutable updates (naya reference) ya custom <code>equal</code> — change detect ho.</li>
+<li>Templates mein signals read karo — live-consumer CD (OnPush+signals, Ch18 S-02).</li>
+<li>Push/pull + memoization pe bharosa — over-optimize mat karo.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Signals internals hi unki perf hain: (1) <strong>Lazy computed</strong> — sirf read pe + dep-change pe recompute (memoized) — wasted computation nahi. (2) <strong>Push/pull glitch-free</strong> — diamond problem mein ek hi recompute, no double work. (3) <strong>Equality check</strong> — same value pe consumers notify hi nahi — no wasted CD. (4) <strong>Fine-grained CD</strong> — signal change sirf consuming views ko dirty marks (targeted, S-10), poora tree nahi. (5) <strong>Batched effects</strong> — multiple sync changes → ek effect run. Isliye signals + OnPush/zoneless (Ch16/Ch18) = Angular ki most efficient reactivity.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Dynamic dependencies</td><td>Computed conditionally read signals → dependency set changes per run.</td></tr>
+<tr><td>effect timing</td><td>Exact timing unspecified (scheduled); don't rely on sync execution.</td></tr>
+<tr><td>Custom equality</td><td><code>signal(v, { equal: fn })</code> for deep/structural equality.</td></tr>
+<tr><td>toSignal/toObservable</td><td>Bridge RxJS ↔ signals for phased migration.</td></tr>
+<tr><td>untracked</td><td><code>untracked(() =&gt; ...)</code> reads without creating a dependency edge.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Signals internally kaise organized hain?</summary><div class="ans"><p>Ek <strong>reactive dependency graph</strong> ke roop mein. Har node ek <code>ReactiveNode</code> hai jo <strong>producer</strong> (value jo change notify kare — signal, computed), <strong>consumer</strong> (jo depend kare — effect, template, computed), ya dono (computed) ho sakta. Jab consumer producer ko read karta (reactive context mein), unke beech bidirectional edge banti. Signal change hone pe consumers ko notify kiya jaata (dirty marked), aur reads pe values pulled/recomputed hote. Ye graph fine-grained reactivity deta — exactly woh cheezein update hoti jo changed value pe depend karti.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Signals "glitch-free" kaise hote? Push/pull algorithm explain karo.</summary><div class="ans"><p>Signals ek <strong>push/pull</strong> algorithm use karte, do phases mein. Jab ek source signal set hoti: <strong>Phase 1 (eager PUSH)</strong> — "dirtiness" turant downstream graph mein propagate hoti, dependent nodes (computed, template, effect) ko "tum shayad stale ho" mark karti — par <em>koi recomputation nahi</em>. <strong>Phase 2 (lazy PULL)</strong> — jab koi consumer apna value actually <em>read</em> karta (template CD, effect run), tab woh apne dependencies ki <code>valueVersion</code> check karta, aur sirf jo actually badla usko recompute karta. Ye "diamond problem" solve karta: agar ek node D, B aur C dono pe depend karta jo dono A pe depend karte, naive eager approach D ko do baar compute karega (glitchy intermediate). Push/pull mein A set → dirtiness B,C,D ko push (no compute); D read → B,C recompute if needed → D <em>ek hi baar</em> compute, correct final value. No double-compute, no stale intermediate shown = glitch-free.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>computed</code> lazy aur memoized kaise hai?</summary><div class="ans"><p><strong>Lazy:</strong> computed creation pe evaluate nahi hota — uska computation function tabhi chalta jab koi consumer uska value <em>read</em> karta (<code>total()</code>). Agar koi read na kare, kabhi compute nahi hota. <strong>Memoized:</strong> ek baar compute hone pe result cache hota; dobara read pe, agar uske dependencies mein se koi <em>nahi</em> badla (valueVersion check), toh cached value return hota — recompute nahi. Recompute sirf tab jab (a) koi dependency badla AND (b) value read ho. Isse expensive derivations har CD pe re-run hone se bach jaate — bahut efficient derived state.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek <code>computed</code> mein tum ek object signal se derive karte ho, par mutation ke baad computed update nahi hota. Internally kyun?</summary><div class="ans"><p>Signals default equality ke liye <code>Object.is</code> use karte hain. Jab tum object ko <em>mutate</em> karte ho (<code>obj.field = x</code>) aur <code>signal.set(obj)</code> karte ho (ya set hi nahi karte), reference wahi rehta — <code>Object.is(old, new)</code> <code>true</code> return karta, toh signal sochta value "same" hai aur consumers ko <strong>notify hi nahi karta</strong> (no valueVersion bump). Isliye computed (jo us signal ka consumer hai) ko dirtiness push nahi hoti, woh cached value hi deta. Fix: <strong>immutable update</strong> — naya reference banao (<code>signal.set({ ...obj, field: x })</code>) taaki <code>Object.is</code> different dekhe aur change propagate ho; ya signal creation pe custom <code>equal</code> function do jo structural comparison kare. Immutability signals ke saath key hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Reactive graph: <code>ReactiveNode</code>s as producers (signal/computed) + consumers (effect/template/computed). computed = both. Bidirectional edges store <code>valueVersion</code>.</li>
+<li><strong>Push/pull</strong>: set → dirtiness pushed eagerly downstream (no compute); read → recompute pulled lazily (version check). = glitch-free, solves diamond problem.</li>
+<li>computed = lazy + memoized. effect = scheduled (microtask) + batched + auto-cleanup. Templates = live consumers → drive CD. Equality (<code>Object.is</code>): equal → no notify (immutability matters).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.21 · Prove lazy + memoized</div><p>Ek computed banao jismein console.log ho. Reads, repeated reads, aur dependency-change ke through prove karo: lazy (creation pe compute nahi), memoized (unchanged dep pe recompute nahi), recompute (dep-change + read pe).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-19.22 · Build a toy signal</div><p>Ek minimal signal/computed system likho (plain TS): producer value + version, consumer dependency tracking, lazy recompute on read. Diamond problem test karke glitch-free behavior verify karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s12">
+<div class="sec-head">
+  <span class="sec-num">S-12</span>
+  <h2>Hydration Internals</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s12"> Done</label>
+</div>
+<p class="covers">Covers: <b>ngh markers · serialized view info · DOM claiming · non-destructive hydration · incremental hydration · DEHYDRATED_BLOCK_REGISTRY · event replay (jsaction) · @defer hydrate · mismatch handling</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Hydration woh process hai jismein client-side Angular server-rendered (SSR) static HTML ko "activate" karta — usse re-create karne ke bajaye <strong>existing DOM ko reuse (claim)</strong> karke, aur usme interactivity (event listeners, bindings) add karke. Internally ye <strong>serialized view info</strong> (DOM pe <code>ngh</code> markers) use karta taaki client server ke DOM structure ko match karke usse adopt kar sake.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>SSR fast content + SEO deta (server HTML). Par bina hydration, client us HTML ko throw karke poora phir se render karega (destructive) — flicker, wasted work, lost server benefit. Hydration non-destructive reuse deta: server ka DOM rehta (no flicker), client bas usse interactive banata. Aur incremental hydration isse selective karke JS aur kam karta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Destructive re-rendering after SSR. Naive client bootstrap server DOM ko ignore karke re-create karta — flicker + double work. Hydration server DOM ko claim karke ye eliminate karta. Incremental hydration ek aur problem solve karta: full hydration poore app ka JS ek saath chahiye (slow TTI) — incremental sirf zaroori parts hydrate karta.</p>
+
+<h3 class="part">4. Internal Working — markers, claiming, incremental, event replay</h3>
+<div class="panel why"><div class="ptitle">Serialize on server, claim on client, hydrate incrementally, replay events</div><p><strong>Serialization (server):</strong> SSR ke dauraan, Angular HTML render karke uske saath <strong>serialized hydration info</strong> bhi bhejta — DOM nodes pe <code>ngh</code> (Angular hydration) attributes annotate karta jo ek serialized data structure (ek script mein, TransferState-style) ko reference karte. Ye info batati view structure: kitne nodes, containers kahan, template boundaries — taaki client match kar sake. <strong>DOM claiming (client):</strong> jab client hydrate karta (<code>provideClientHydration()</code>), woh apna create pass (S-05) chalata par <code>document.createElement</code> ke bajaye <strong>existing server DOM nodes ko "claim" (adopt)</strong> karta — <code>ngh</code> info se guide hoke. Ye <strong>non-destructive</strong> hai: DOM nodes wahi rehte (no flicker/re-create), Angular bas unpe LView bind karke listeners/bindings attach karta. <strong>Incremental hydration</strong> (<code>withIncrementalHydration()</code>, v19): <code>@defer (hydrate on ...)</code> se app "hydration zones" mein bat-ta. Deferred block ka content <em>SSR-render</em> hota (placeholder nahi, actual content) par uski hydration (interactivity) trigger (idle/viewport/interaction) tak <strong>deferred</strong> — woh block "dehydrated" rehta. Ek <strong><code>DEHYDRATED_BLOCK_REGISTRY</code></strong> in dehydrated blocks ko track karta. <strong>Event replay</strong> (<code>withEventReplay()</code>, v18, v19 SSR default; incremental hydration mein auto-included): hydration se pehle, ek global event listener (document root pe) user events capture karta — SSR-rendered elements pe <code>jsaction</code> attributes mark karte kaunse events capture karne — aur hydration complete hone pe woh captured events <strong>replay</strong> hote. Isse pehle-click-before-hydration lost nahi hota. <strong>Mismatch:</strong> agar client render server DOM se differ kare (different markup), hydration mismatch error → Angular us part ko re-render (fallback). Guard: browser-only APIs (<code>window</code>/<code>document</code>) ko <code>isPlatformBrowser</code>/<code>afterNextRender</code> se guard karo, warna server/client divergence.</p></div>
+
+<div class="dg-title">Diagram — hydration flow</div>
+<pre class="diagram">
+ SERVER (SSR): render HTML + serialize view info
+   &lt;div ngh="0"&gt;...&lt;/div&gt;  + &lt;script&gt;serialized structure&lt;/script&gt;
+        │  sent to browser → content VISIBLE immediately (fast LCP, SEO)
+        ▼
+ CLIENT: provideClientHydration()
+   create pass CLAIMS existing DOM (adopt, not createElement) via ngh
+        │  non-destructive → no flicker, no re-render
+        ▼  attach LView + listeners → interactive
+
+ INCREMENTAL (v19): @defer (hydrate on viewport)
+   block SSR-rendered but DEHYDRATED (tracked in registry)
+   trigger fires → load + hydrate that block only (less upfront JS)
+
+ EVENT REPLAY: jsaction attrs capture pre-hydration events → replay after
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ server: render HTML + ngh markers + serialized view data → browser shows it
+ client: provideClientHydration() → walk create pass, CLAIM DOM via ngh
+   → attach listeners/bindings (non-destructive) → interactive
+ incremental: dehydrated @defer blocks hydrate on their trigger only
+ event replay: captured pre-hydration events replayed after hydration
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td><code>ngh</code> attributes</td><td>DOM markers referencing serialized view-structure info.</td></tr>
+<tr><td>DOM claiming</td><td>Client adopts existing server nodes (non-destructive) instead of creating.</td></tr>
+<tr><td><code>provideClientHydration()</code></td><td>Enables full-app hydration (v16).</td></tr>
+<tr><td><code>withIncrementalHydration()</code></td><td>Selective hydration via <code>@defer hydrate</code> (v19); auto event-replay.</td></tr>
+<tr><td><code>DEHYDRATED_BLOCK_REGISTRY</code></td><td>Tracks SSR-rendered-but-not-yet-hydrated blocks.</td></tr>
+<tr><td>Event replay (<code>jsaction</code>)</td><td>Capture pre-hydration events, replay after (<code>withEventReplay()</code>).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — hydration setup</h3>
+<div class="code-label">full + incremental hydration</div>
+<pre><code>// app.config.ts
+import { provideClientHydration, withIncrementalHydration }
+  from '@angular/platform-browser';
+
+providers: [
+  provideClientHydration(withIncrementalHydration()),  // includes event replay
+];
+
+// template — SSR-rendered content, hydrated (made interactive) on viewport:
+@defer (hydrate on viewport) {
+  &lt;app-reviews /&gt;      &lt;!-- server-rendered + SEO-visible; JS loads on scroll --&gt;
+} @placeholder { &lt;div&gt;Loading...&lt;/div&gt; }
+// static, never-interactive block ships ZERO client JS:
+@defer (hydrate never) { &lt;app-footer /&gt; }</code></pre>
+
+<h3 class="part">8. Beginner Example — claiming vs re-creating</h3>
+<div class="code-label">non-destructive hydration</div>
+<pre><code>// WITHOUT hydration: client bootstrap IGNORES server DOM → wipes + re-renders
+//   → visible flicker + wasted work (server HTML thrown away)
+// WITH provideClientHydration(): client CLAIMS the server DOM nodes (via ngh)
+//   → same nodes kept, just wired up → no flicker, no re-render
+// this is why hydration is called "non-destructive".</code></pre>
+
+<h3 class="part">9. Advanced Example — incremental hydration triggers</h3>
+<div class="code-label">hydrate on / when / never</div>
+<pre><code>@defer (hydrate on interaction) { &lt;search-bar /&gt; }  // interactive on first interaction
+@defer (hydrate on viewport)    { &lt;comments /&gt; }    // interactive when scrolled to
+@defer (hydrate when isAdmin()) { &lt;admin-panel /&gt; } // interactive on condition
+@defer (hydrate never)          { &lt;static-hero /&gt; } // SSR-rendered, ZERO client JS
+
+// all are SSR-RENDERED (content visible + SEO); only INTERACTIVITY is deferred.
+// this differs from lazy loading, which defers the RENDERING itself.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Server: HTML + <code>ngh</code> markers + serialized view info render + send.</li>
+<li>Client <code>provideClientHydration()</code>: create pass DOM claim karta (non-destructive).</li>
+<li>Listeners/bindings attach → interactive (no re-render).</li>
+<li>Incremental: dehydrated <code>@defer</code> blocks trigger pe hydrate.</li>
+<li>Event replay: pre-hydration events capture → replay after.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Incremental hydration ko lazy loading samajhna — alag (neeche Q).</li>
+<li>Browser-only APIs (<code>window</code>/<code>document</code>) SSR mein direct — server crash / mismatch; guard karo.</li>
+<li>Server vs client different markup (non-deterministic render) — hydration mismatch.</li>
+<li><code>withEventReplay()</code> + <code>withIncrementalHydration()</code> dono — incremental auto-includes replay.</li>
+<li>Direct DOM manipulation jo server DOM structure se differ kare — claiming toot.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li><code>provideClientHydration()</code> SSR apps mein (non-destructive, no flicker).</li>
+<li>Large apps → <code>withIncrementalHydration()</code> — minimize upfront JS.</li>
+<li><code>hydrate never</code> purely static blocks pe — zero client JS.</li>
+<li>Browser APIs guard karo (<code>isPlatformBrowser</code>/<code>afterNextRender</code>) — no mismatch.</li>
+<li>Deterministic render rakho (server=client markup) — mismatch avoid.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Hydration internals SSR ke benefits ko preserve + extend karte. <strong>Non-destructive claiming</strong> — server HTML reuse, no re-render/flicker, wasted work eliminate. <strong>Incremental hydration</strong> — sirf zaroori blocks hydrate (less upfront JS → better TTI/INP), baaki dehydrated (SSR-rendered, interactive-on-trigger). <strong><code>hydrate never</code></strong> — static blocks pe zero client JS. <strong>Event replay</strong> — pre-hydration interactions lost nahi (better UX). Yani hydration internals fast paint (SSR) + minimal JS (incremental) + full interactivity ko ek saath deliver karte — modern Angular performance ki top layer (Ch18 S-09 se connected).</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Hydration mismatch</td><td>Server≠client markup → error + re-render that part; keep render deterministic.</td></tr>
+<tr><td>Browser APIs</td><td><code>isPlatformBrowser</code>/<code>afterNextRender</code> guard; no <code>window</code> on server.</td></tr>
+<tr><td>i18n + hydration</td><td>Supported; serialized info accounts for translated blocks.</td></tr>
+<tr><td>Third-party DOM</td><td>Libraries mutating DOM pre-hydration can break claiming.</td></tr>
+<tr><td>DevTools</td><td>Angular DevTools (v19+) shows hydration status (hydrated/dehydrated/skipped).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Hydration internally kya karta hai?</summary><div class="ans"><p>Server-rendered static HTML ko client-side "activate" karta — usse re-create karne ke bajaye <strong>existing DOM ko claim (adopt)</strong> karke. Server SSR ke saath <strong>serialized view info</strong> bhejta (<code>ngh</code> attributes DOM pe jo view structure describe karte). Client (<code>provideClientHydration()</code>) apna create pass chalata par <code>createElement</code> ke bajaye server ke DOM nodes ko claim karta (guided by <code>ngh</code>), phir listeners/bindings attach karta. Ye <strong>non-destructive</strong> hai — DOM wahi rehta (no flicker/re-render), bas interactive ban jaata.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Incremental hydration aur lazy loading — same cheez hai kya? Internally explain.</summary><div class="ans"><p>Nahi, fundamentally alag. <strong>Lazy loading</strong> content ke <em>rendering</em> ko defer karta — component ka code + markup tabhi aata jab trigger fire ho; tab tak placeholder dikhta (content SSR mein bhi nahi hota real). <strong>Incremental hydration</strong> content ko server pe <em>SSR-render</em> karta (real content, immediately visible + SEO-crawlable), sirf client-side <em>interactivity</em> (event listeners + JS hydration) ko defer karta — woh block "dehydrated" rehta (<code>DEHYDRATED_BLOCK_REGISTRY</code> mein tracked) jab tak trigger na aaye. Toh: lazy loading = "render later"; incremental hydration = "render now via SSR, become interactive later". Isliye incremental hydration SEO + LCP friendly hai (content pehle se present), aur event replay se pre-hydration clicks bhi preserve hote. Ye distinction senior interviews ka classic discriminator hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Event replay kya hai aur kyun zaroori?</summary><div class="ans"><p>SSR ke baad content visible hota par abhi hydrate (interactive) nahi hua — is gap mein agar user click kare, normally woh event lost ho jaata (koi listener nahi). <strong>Event replay</strong> (<code>withEventReplay()</code>, v19 SSR default) ye solve karta: SSR-rendered elements pe <code>jsaction</code> attributes mark karte kaunse events track karne, aur ek global listener (document root pe) hydration se pehle un events ko <strong>capture</strong> karta. Jab woh part hydrate ho jaata, captured events <strong>replay</strong> hote — jaise user ne abhi kiya ho. Isse "clicked before it was ready" wali frustration khatam. Incremental hydration ismein event replay auto-included hota.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek content-heavy e-commerce page: fast load + SEO chahiye, par bahut interactive widgets (reviews, cart, recommendations) TTI slow kar rahe. Hydration internals se kaise solve karoge?</summary><div class="ans"><p>SSR + <strong>incremental hydration</strong>. SSR se poora page (product info, reviews, recommendations) server-render hota — content turant visible (fast LCP) + crawlable (SEO), aur client claiming se non-destructive (no flicker). Phir <code>withIncrementalHydration()</code> se interactive widgets ko <code>@defer (hydrate on ...)</code> mein wrap karo: reviews <code>hydrate on viewport</code> (scroll pe interactive), cart <code>hydrate on interaction</code>, recommendations <code>hydrate on idle</code>, aur static footer <code>hydrate never</code> (zero client JS). Sab content SSR-rendered hai (visible + SEO), par JS sirf zaroori widgets ke liye on-demand load/hydrate hota — upfront JS drastically kam → fast TTI/INP. Event replay se early clicks (jaise "add to cart" hydration se pehle) preserve. Ye fast paint + minimal JS + full interactivity ek saath deta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Hydration = client CLAIMS server DOM (non-destructive) via <code>ngh</code> markers + serialized view info. <code>provideClientHydration()</code>. No flicker/re-render.</li>
+<li>Incremental (v19, <code>withIncrementalHydration()</code>): <code>@defer (hydrate on ..)</code> — SSR-renders content, defers only INTERACTIVITY. Dehydrated blocks tracked in <code>DEHYDRATED_BLOCK_REGISTRY</code>. <code>hydrate never</code> = zero JS.</li>
+<li>Incremental hydration ≠ lazy loading (renders via SSR vs render-later). Event replay (<code>jsaction</code>) captures + replays pre-hydration events. Guard browser APIs; keep render deterministic (avoid mismatch).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-19.23 · Inspect ngh markers</div><p>Ek SSR app (<code>ng add @angular/ssr</code> + <code>provideClientHydration()</code>) banao. View-source mein <code>ngh</code> attributes + serialized hydration script dhoondho. Hydration on/off karke flicker/re-render difference observe karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-19.24 · Incremental hydration zones</div><p>Ek page pe 3 blocks: <code>hydrate on viewport</code>, <code>hydrate on interaction</code>, <code>hydrate never</code>. Angular DevTools (v19+) se hydration status observe karo aur Network se prove karo har block ka JS kab (ya kabhi nahi) load/hydrate hota.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <p><b>Chapter 19 complete! 🎉</b> Tumne Angular ka <b>poora engine khol ke dekh liya</b> — ek end-to-end internals journey, tumhare keystroke se lekar screen ke pixel tak. Build-time toolchain: <b>CLI Internals</b> (schematics + architect), <b>Build Process</b> (esbuild + Vite), <b>The Compiler</b> (ngtsc, AOT), <b>Ivy</b> (LView/TView, instructions, locality), aur <b>Template Compiler</b> (create/update passes). Runtime: <b>Bootstrapping</b> (platform → ApplicationRef → first CD), <b>DI Engine</b> (injector trees + bloom filters), <b>Rendering Pipeline</b> (createLView → renderView → refreshView), <b>The Renderer</b> (platform abstraction), <b>Change Detection Internals</b> (LView flags, NO_CHANGE), <b>Signals Internals</b> (producer/consumer graph, push/pull glitch-free), aur <b>Hydration Internals</b> (ngh claiming, incremental hydration). Ye woh depth hai jo SDE-3 interviews mein tumhe alag khada karti — ab tum "Angular kaise kaam karta hai" ka jawab <em>internals se</em> de sakte ho, na ki sirf API level pe.</p>
+  <p style="margin-bottom:0"><b>Aage kya? (Next chapter options):</b><br>
+  <b>Option A — Angular Testing (Vitest / Jest / Testing Library):</b> unit + component + integration testing, TestBed internals, mocking, harnesses, signal/zoneless testing, coverage — production Angular ka must-have (aur internals knowledge yahan directly kaam aati).<br>
+  <b>Option B — Angular Accessibility (a11y) &amp; i18n:</b> ARIA, CDK a11y (FocusMonitor/LiveAnnouncer), keyboard navigation, <code>@angular/localize</code>, RTL, translation extraction — enterprise + inclusive apps ka essential layer.<br>
+  Bolo kaunsa banaayein! 🚀</p>
+</div>
+
+</div>
+
+<script>
+(function () {
+  var KEY = 'ng_ch19_progress_v1';
+  var total = 12;
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+  var boxes = document.querySelectorAll('.done-toggle input[type=checkbox]');
+  function refresh() {
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    var fill = document.getElementById('pfill');
+    var label = document.getElementById('plabel');
+    if (fill) fill.style.width = pct + '%';
+    if (label) label.textContent = done + ' / ' + total + ' sections done';
+  }
+  boxes.forEach(function (b) {
+    var sec = b.getAttribute('data-sec');
+    if (saved[sec]) b.checked = true;
+    b.addEventListener('change', function () {
+      saved[sec] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      refresh();
+    });
+  });
+  refresh();
+})();
+</script>
+
+<script>
+(function () {
+  var KW = /\b(abstract|any|as|async|await|boolean|break|case|catch|class|const|constructor|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|instanceof|interface|is|keyof|let|namespace|new|null|number|of|private|protected|public|readonly|return|set|static|string|super|switch|this|throw|true|try|type|typeof|undefined|void|while|yield)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(code){
+    var out = code;
+    out = out.replace(/(\/\/[^\n]*)/g, function(m){ return '\u0001cm\u0002' + m + '\u0003'; });
+    out = out.replace(/('[^'\n]*'|"[^"\n]*"|`[^`]*`)/g, function(m){ return '\u0001st\u0002' + m + '\u0003'; });
+    out = out.replace(KW, function(m){ return '\u0001kw\u0002' + m + '\u0003'; });
+    out = out.replace(/\b(\d+(?:\.\d+)?)\b/g, function(m){ return '\u0001nm\u0002' + m + '\u0003'; });
+    out = out.replace(/([a-zA-Z_$][\w$]*)(\s*\()/g, function(m,p1,p2){ return '\u0001fn\u0002' + p1 + '\u0003' + p2; });
+    out = esc(out);
+    out = out.replace(/\u0001(kw|st|cm|nm|fn)\u0002/g, function(m,c){ return '<span class="'+c+'">'; })
+             .replace(/\u0003/g, '</span>');
+    return out;
+  }
+  document.querySelectorAll('pre code').forEach(function(block){
+    block.innerHTML = hl(block.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

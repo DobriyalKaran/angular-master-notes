@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 1 — JavaScript Essentials for Angular Developers | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 8 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 1 — <span>JavaScript Essentials</span> for Angular Developers</h1>
+  <p class="subtitle">Angular expert banne se pehle JavaScript ka engine samajhna zaroori hai — kyunki Angular ke saare "magic" (Change Detection, DI, RxJS, Zone.js) isi engine ke upar bane hain. Is chapter mein hum har concept ko <em>WHY-first</em> approach se todenge: pehle problem, phir solution, phir internals.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Sections: <b>8</b> · Topics: <b>24</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Variables, Scope &amp; Hoisting</a><div class="sub">var/let/const · TDZ · Lexical Environment · Scope Chain</div></li>
+    <li><a href="#s2">Functions, Arrow Functions &amp; <code>this</code></a><div class="sub">Binding rules · call/apply/bind · Angular event handlers</div></li>
+    <li><a href="#s3">Closures</a><div class="sub">[[Environment]] · Module pattern · Memory leaks</div></li>
+    <li><a href="#s4">Objects, Arrays, Destructuring, Spread &amp; Rest</a><div class="sub">References · Immutability · OnPush ka foundation</div></li>
+    <li><a href="#s5">Prototype, Prototypal Inheritance &amp; Classes</a><div class="sub">[[Prototype]] chain · class sugar · Angular DI connection</div></li>
+    <li><a href="#s6">Event Loop — Call Stack, Web APIs, Micro &amp; Macrotasks</a><div class="sub">Zone.js isi pe khada hai</div></li>
+    <li><a href="#s7">Promise &amp; Async/Await</a><div class="sub">States · Chaining internals · Microtask scheduling</div></li>
+    <li><a href="#s8">Modules, Memory Management &amp; Garbage Collection</a><div class="sub">ESM · Tree shaking · Mark-and-Sweep · SPA leaks</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>Variables, Scope &amp; Hoisting</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>var · let · const · Function/Block/Module Scope · Hoisting · TDZ · Lexical Environment · Scope Chain</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><strong>Variable</strong> ek named memory reference hai — ek label jo kisi value ko point karta hai. <strong>Scope</strong> decide karta hai ki wo label code mein <em>kahan se visible</em> hai. Aur <strong>Hoisting</strong> JavaScript engine ka wo behavior hai jisme declarations ko code run hone se <em>pehle</em> register kar liya jata hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Socho agar har variable globally visible hota — 50 files ke Angular project mein <code>count</code> naam ka variable 20 jagah hota, sab ek dusre ko overwrite karte. Scope hume <em>isolation</em> deta hai: har function, har block apni chhoti duniya mein kaam karta hai. Ye encapsulation ka foundation hai — wahi cheez jo aage jaake Angular components ko independent banati hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Naming collisions</strong> — do developers same naam use kar sakte hain bina takraye.</li>
+<li><strong>Accidental mutation</strong> — <code>const</code> reassignment rok deta hai, bugs compile... sorry, <em>run hone se pehle</em> hi pakde jaate hain (TypeScript mein toh compile time pe).</li>
+<li><strong>Predictability</strong> — block scope (<code>let</code>/<code>const</code>) se loop counters aur temporary values leak nahi karte.</li>
+</ul>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<p>Jab JS engine (V8) koi function ya script run karta hai, wo ek <strong>Execution Context</strong> banata hai. Har execution context ke paas ek <strong>Lexical Environment</strong> hota hai — ek internal object jisme do cheezein hoti hain:</p>
+<ul>
+<li><strong>Environment Record</strong> — is scope ke saare variables/functions ki actual storage.</li>
+<li><strong>Outer reference</strong> — parent lexical environment ka pointer (isi se scope chain banti hai).</li>
+</ul>
+<p>Execution do phases mein hota hai:</p>
+<ul>
+<li><strong>Creation Phase</strong> — engine code ko scan karta hai. <code>var</code> declarations ko <code>undefined</code> se initialize karta hai, function declarations ko <em>poora</em> hoist karta hai, aur <code>let</code>/<code>const</code> ko register toh karta hai <em>par initialize nahi karta</em> — ye "uninitialized" state hi <strong>Temporal Dead Zone (TDZ)</strong> hai.</li>
+<li><strong>Execution Phase</strong> — line by line code chalta hai, assignments ab hoti hain.</li>
+</ul>
+<div class="dg-title">Diagram — Creation vs Execution Phase</div>
+<pre class="diagram">
+  SOURCE CODE                CREATION PHASE                EXECUTION PHASE
+  ─────────────              (memory setup)                (line-by-line run)
+  console.log(a);            var a  → undefined            log(a) → undefined
+  console.log(b);            let b  → &lt;uninitialized&gt;      log(b) → ❌ ReferenceError (TDZ!)
+  var a = 10;                fn foo → [complete function]  a = 10
+  let b = 20;                                              b = 20
+  function foo(){}
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+  Script load
+     │
+     ▼
+  Global Execution Context create
+     │── Creation Phase: hoisting yahin hota hai
+     │── Execution Phase: assignments + function calls
+     ▼
+  Function call → NAYA execution context (stack pe push)
+     │── uska apna Lexical Environment + outer reference
+     ▼
+  Variable lookup: current scope → outer → outer → global → ReferenceError
+</pre>
+
+<h3 class="part">6. Architecture (Scope ki hierarchy)</h3>
+<pre class="diagram">
+  ┌─────────────────────────────────────────────┐
+  │ Global Scope (window / globalThis)          │
+  │  ┌───────────────────────────────────────┐  │
+  │  │ Module Scope (har ES module ka apna)  │  │
+  │  │  ┌─────────────────────────────────┐  │  │
+  │  │  │ Function Scope                  │  │  │
+  │  │  │  ┌───────────────────────────┐  │  │  │
+  │  │  │  │ Block Scope { let/const } │  │  │  │
+  │  │  │  └───────────────────────────┘  │  │  │
+  │  │  └─────────────────────────────────┘  │  │
+  │  └───────────────────────────────────────┘  │
+  └─────────────────────────────────────────────┘
+  Lookup hamesha andar → bahar jaata hai, kabhi ulta nahi.
+</pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<p>Angular component ki har <code>.ts</code> file ek <strong>ES module</strong> hai — isliye tumhare component ke bahar likhe constants globally leak nahi karte. Production mein common pattern:</p>
+<pre><code><span class="cm">// payment.component.ts</span>
+<span class="kw">const</span> <span class="nm">RETRY_LIMIT</span> = <span class="st">3</span>;              <span class="cm">// module-scoped, poori app mein safe</span>
+<span class="kw">const</span> <span class="nm">GATEWAY_TIMEOUT_MS</span> = <span class="st">30_000</span>;   <span class="cm">// const = intent clear: ye config hai, state nahi</span>
+
+<span class="kw">@Component</span>({...})
+<span class="kw">export class</span> <span class="fn">PaymentComponent</span> {
+  <span class="kw">private</span> attempts = <span class="st">0</span>;  <span class="cm">// class field = instance scope, har component apna</span>
+}</code></pre>
+<p class="mut">Razorpay-clone jaise project mein config values <code>const</code> module-level pe, mutable state class fields mein — ye separation hi clean architecture ki shuruaat hai.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">function</span> <span class="fn">demo</span>() {
+  <span class="kw">if</span> (<span class="st">true</span>) {
+    <span class="kw">var</span> a = <span class="st">1</span>;   <span class="cm">// function-scoped</span>
+    <span class="kw">let</span> b = <span class="st">2</span>;   <span class="cm">// block-scoped</span>
+  }
+  console.<span class="fn">log</span>(a); <span class="cm">// 1  ✅ var block se bahar bhi zinda</span>
+  console.<span class="fn">log</span>(b); <span class="cm">// ❌ ReferenceError — b block ke andar hi mar gaya</span>
+}</code></pre>
+
+<h3 class="part">9. Advanced Example — Loop + Closure trap</h3>
+<pre><code><span class="cm">// Interview classic: output kya hoga?</span>
+<span class="kw">for</span> (<span class="kw">var</span> i = <span class="st">0</span>; i &lt; <span class="st">3</span>; i++) {
+  <span class="fn">setTimeout</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'var:'</span>, i), <span class="st">0</span>);
+}
+<span class="cm">// var: 3, 3, 3  — kyunki teeno callbacks EK hi 'i' share karte hain</span>
+
+<span class="kw">for</span> (<span class="kw">let</span> j = <span class="st">0</span>; j &lt; <span class="st">3</span>; j++) {
+  <span class="fn">setTimeout</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'let:'</span>, j), <span class="st">0</span>);
+}
+<span class="cm">// let: 0, 1, 2  — har iteration mein NAYA block-scoped 'j' banta hai</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><code>for (var i = 0; ...)</code> — <code>var</code> function/global scoped hai, toh poore loop mein <em>sirf ek</em> <code>i</code> exist karta hai.</li>
+<li><code>setTimeout(() =&gt; ..., 0)</code> — callback abhi run nahi hota; wo macrotask queue mein jaata hai (Section 6 mein detail). Tab tak loop khatam, <code>i = 3</code> ho chuka.</li>
+<li>Callback jab chalta hai, wo closure se <em>live</em> <code>i</code> padhta hai — value ka snapshot nahi, reference. Isliye teeno baar 3.</li>
+<li><code>let j</code> — spec kehta hai ki <code>for</code> loop ka <code>let</code> har iteration pe <em>fresh binding</em> banata hai, aur previous iteration ki value copy hoti hai. Har callback apne apne <code>j</code> ko capture karta hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan jo interviews aur PRs mein pakdi jaati hain</div>
+<ul>
+<li><code>var</code> use karna 2026 mein — legacy codebases ke alawa koi excuse nahi.</li>
+<li>Ye maanna ki <code>const</code> object ko <em>freeze</em> kar deta hai. <code>const obj = {}</code> ke baad <code>obj.x = 1</code> bilkul valid hai — sirf <em>reassignment</em> (<code>obj = {}</code>) blocked hai.</li>
+<li>TDZ ko "hoisting nahi hota" samajhna. <code>let</code>/<code>const</code> <em>hoist hote hain</em> — bas initialize nahi hote. Isi liye error <code>ReferenceError: Cannot access 'b' before initialization</code> aata hai, na ki <code>b is not defined</code>.</li>
+<li>Undeclared assignment: <code>x = 5</code> (bina keyword) non-strict mode mein global variable bana deta hai. ES modules by-default strict hain, isliye Angular mein ye error dega — good!</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Default <code>const</code>. Reassignment chahiye toh hi <code>let</code>. <code>var</code> kabhi nahi.</li>
+<li>Variables ko use se <em>theek pehle</em> declare karo, top pe dump mat karo — readability + TDZ dono ka fayda.</li>
+<li>Module-level constants ko <code>SCREAMING_SNAKE_CASE</code> mein rakho — intent turant dikhta hai.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>let</code>/<code>const</code> vs <code>var</code> ka runtime performance difference practically <em>zero</em> hai — V8 dono ko optimize kar leta hai. Asli performance angle: <strong>block scoping se variables jaldi unreachable hote hain</strong>, toh GC unhe jaldi collect kar sakta hai (Section 8). Aur tight loops mein har iteration pe fresh <code>let</code> binding banane ki cost negligible hai — micro-optimize mat karo.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>typeof undeclaredVar</code> → <code>'undefined'</code> (no error), <em>lekin</em> TDZ mein <code>typeof b</code> (jahan <code>let b</code> neeche hai) → <strong>ReferenceError</strong>. Ye ek famous gotcha hai.</li>
+<li><code>const</code> declaration bina initializer ke → <code>SyntaxError</code>. <code>let</code> allowed hai (value <code>undefined</code>).</li>
+<li>Function declarations block ke andar (<code>if</code> block mein) — browsers mein weird legacy semantics. Kabhi mat karo; function expression use karo.</li>
+<li>Global <code>var</code> → <code>window</code> ki property banta hai; global <code>let</code>/<code>const</code> → nahi banta. <code>window.x</code> check karne wale purane code isi pe toot te hain.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> var, let aur const mein kya difference hai?</summary><div class="ans"><p>Scope: <code>var</code> function-scoped, <code>let</code>/<code>const</code> block-scoped. Hoisting: teeno hoist hote hain, par <code>var</code> <code>undefined</code> se initialize hota hai jabki <code>let</code>/<code>const</code> TDZ mein rehte hain. Reassignment: <code>const</code> mein nahi ho sakti. Redeclaration: <code>var</code> allow karta hai, baaki nahi. Global pe: <code>var</code> window property banata hai, baaki nahi.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Hoisting kya hai — ek line mein define karo, phir example do.</summary><div class="ans"><p>Hoisting = creation phase mein declarations ka memory mein pehle se register hona. <code>console.log(x); var x = 5;</code> → <code>undefined</code> print hoga (error nahi), kyunki <code>x</code> already <code>undefined</code> se initialize ho chuka tha.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> TDZ exactly kab start aur end hoti hai?</summary><div class="ans"><p>TDZ scope ke <em>start</em> se shuru hoti hai (declaration line se nahi!) aur declaration statement execute hone pe khatam. Matlab agar block ki line 1 pe variable access karo aur line 10 pe <code>let</code> ho, toh line 1–9 tak TDZ hai. Isi liye ise "temporal" (time-based) kehte hain, "positional" nahi — agar function declaration ke <em>baad</em> call ho jo variable use karta hai, toh error nahi aayega.</p><pre><code>{
+  <span class="kw">const</span> <span class="fn">fn</span> = () =&gt; console.<span class="fn">log</span>(x); <span class="cm">// define ho raha, run nahi</span>
+  <span class="kw">let</span> x = <span class="st">5</span>;
+  <span class="fn">fn</span>(); <span class="cm">// ✅ 5 — call ke waqt TDZ khatam ho chuki thi</span>
+}</code></pre></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Function declaration aur var — dono hoist hote hain, toh conflict ho toh kaun jeet ta hai?</summary><div class="ans"><p>Creation phase mein function declaration jeetta hai — variable ko <code>undefined</code> nahi, poora function milta hai. Lekin execution phase mein assignment overwrite kar degi. <code>console.log(typeof a); var a = 1; function a(){}</code> → <code>'function'</code> print hoga.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Lexical Environment aur Variable Environment mein kya farak hai spec level pe?</summary><div class="ans"><p>ES spec mein execution context ke paas dono hote hain: <strong>VariableEnvironment</strong> <code>var</code> aur function declarations hold karta hai (function-level), jabki <strong>LexicalEnvironment</strong> <code>let</code>/<code>const</code> bindings ke liye hai aur har block pe naya ban sakta hai. Block enter karne pe LexicalEnvironment change hota hai, VariableEnvironment wahi rehta hai — isi se <code>var</code> block se "leak" karta hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Legacy Angular codebase mein ek utility file hai jisme sab kuch <code>var</code> se likha hai aur ek loop ke andar event listeners register hote hain jo galat index print karte hain. Fix strategy kya hogi?</summary><div class="ans"><p>Root cause: shared <code>var</code> binding + closures. Fixes (priority order): (1) <code>var</code> → <code>let</code> in loop headers — har iteration ki fresh binding milegi; (2) agar ES5 target ho toh IIFE se value capture karo; (3) better: listener ko data-attribute ya <code>event.currentTarget</code> se index nikalne do taaki closure dependency hi khatam ho. Sath mein ESLint rule <code>no-var</code> enable karo taaki regression na ho.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Execution = Creation phase (hoisting) + Execution phase (assignments).</li>
+<li><code>var</code> → hoisted + <code>undefined</code>; <code>let</code>/<code>const</code> → hoisted + TDZ; function declaration → fully hoisted.</li>
+<li>Scope chain = Lexical Environment ka <em>outer</em> pointer chain; lookup andar→bahar.</li>
+<li><code>const</code> = reassignment lock, mutation lock <strong>nahi</strong>.</li>
+<li>Loop + async callback: <code>var</code> = shared binding (3,3,3), <code>let</code> = per-iteration binding (0,1,2).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-1.1 · Scope Visualizer</div><p>Ek function <code>analyzeScopes(codeString)</code> likho jo simple JS code (nested functions + blocks) parse karke bataye kaunsa variable kis scope mein declare hua. Regex se start karo, edge cases note karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-1.2 · TDZ Detector</div><p>Ek code snippet do jisme 5 variable accesses hain — predict karo (bina run kiye) har access ka result: value, <code>undefined</code>, ya ReferenceError. Phir run karke verify karo aur galat predictions ka reason likho.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-1.3 · var→let Codemod</div><p>Ek function likho jo diye gaye code mein <code>var</code> ko safely <code>let</code>/<code>const</code> mein convert kare — lekin sirf tab jab behavior change na ho (hint: loop + closure cases flag karo, convert mat karo).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Functions, Arrow Functions &amp; <code>this</code></h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>Function declarations/expressions · First-class functions · Arrow functions · this binding rules · call/apply/bind</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Function ek <em>callable object</em> hai — haan, object! Isi liye functions ke paas properties ho sakti hain (<code>fn.name</code>, <code>fn.length</code>) aur inhe variables mein store, arguments mein pass, aur return kiya ja sakta hai — ise <strong>first-class functions</strong> kehte hain. <code>this</code> ek <em>implicit parameter</em> hai jo har normal function call ke waqt decide hota hai — <strong>kaise call kiya, usse</strong>, na ki kahan likha, usse.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>First-class functions ke bina RxJS impossible hai — <code>map(x =&gt; x * 2)</code> mein tum ek function ko data ki tarah pass kar rahe ho. Angular ka poora reactive ecosystem (operators, callbacks, effects) isi capability pe khada hai. Aur <code>this</code> chahiye taaki ek hi method alag-alag objects pe reuse ho sake bina object ka naam hardcode kiye.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Code reuse without duplication</strong> — ek method, kai instances. <code>this</code> runtime pe sahi instance choose karta hai.</li>
+<li><strong>Behavior as data</strong> — strategies, callbacks, higher-order functions. Bina iske event-driven programming nahi ho sakti.</li>
+<li><strong>Arrow functions ne <code>this</code>-loss problem solve ki</strong> — ES5 era ka <code>var self = this</code> hack khatam.</li>
+</ul>
+
+<h3 class="part">4. Internal Working — <code>this</code> ke 5 binding rules (priority order)</h3>
+<table>
+<tr><th>#</th><th>Rule</th><th>Kab lagta hai</th><th><code>this</code> kya hoga</th></tr>
+<tr><td>1</td><td><strong>new binding</strong></td><td><code>new Fn()</code></td><td>Naya banaya object</td></tr>
+<tr><td>2</td><td><strong>Explicit binding</strong></td><td><code>fn.call(obj)</code> / <code>apply</code> / <code>bind</code></td><td>Jo obj pass kiya</td></tr>
+<tr><td>3</td><td><strong>Implicit binding</strong></td><td><code>obj.fn()</code></td><td>Dot se pehle wala object</td></tr>
+<tr><td>4</td><td><strong>Default binding</strong></td><td><code>fn()</code> seedha call</td><td>strict: <code>undefined</code>, sloppy: <code>window</code></td></tr>
+<tr><td>5</td><td><strong>Arrow function</strong></td><td>Rule lagta hi nahi!</td><td>Lexical — jahan <em>define</em> hua, wahan ka <code>this</code></td></tr>
+</table>
+<p>Internal mechanism: normal function ke paas apna <code>[[ThisMode]]</code> hota hai aur call ke waqt engine <code>this</code> ko environment record mein bind karta hai. <strong>Arrow function ke environment record mein <code>this</code> binding hoti hi nahi</strong> — jab arrow ke andar <code>this</code> likhte ho, engine scope chain mein bahar dhundhta hai, bilkul kisi normal variable ki tarah. Yahi "lexical this" ka asli matlab hai.</p>
+
+<h3 class="part">5. Execution Flow — <code>this</code> resolution</h3>
+<pre class="diagram">
+  fn ke andar `this` mila
+     │
+     ├─ Arrow function? ──── YES ──► scope chain mein bahar dhundo
+     │                               (variable lookup jaisa)
+     ▼ NO
+  Call-site dekho:
+     new Fn()?        ──► naya object
+     call/apply/bind? ──► diya gaya object
+     obj.fn()?        ──► obj
+     fn()?            ──► undefined (strict) / window (sloppy)
+</pre>
+
+<h3 class="part">6. Architecture — Function ke andar kya-kya hota hai</h3>
+<pre class="diagram">
+  Function Object
+  ├── [[Call]]            ← callable banata hai
+  ├── [[Construct]]       ← new ke liye (arrows ke paas NAHI hota!)
+  ├── [[Environment]]     ← closure ka scope pointer (Section 3)
+  ├── prototype property  ← new se bane objects ka [[Prototype]] (Section 5)
+  ├── name, length
+  └── arguments binding   ← normal fn mein hota hai, arrow mein nahi
+</pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="kw">@Component</span>({ template: <span class="st">`&lt;button (click)="save()"&gt;Save&lt;/button&gt;`</span> })
+<span class="kw">export class</span> <span class="fn">InvoiceComponent</span> {
+  invoiceId = <span class="st">42</span>;
+
+  <span class="fn">save</span>() {
+    <span class="cm">// ❌ CLASSIC BUG: normal function callback</span>
+    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+      console.<span class="fn">log</span>(<span class="kw">this</span>.invoiceId); <span class="cm">// undefined ka error — this component nahi hai!</span>
+    }, <span class="st">1000</span>);
+
+    <span class="cm">// ✅ FIX: arrow function — lexical this = component instance</span>
+    <span class="fn">setTimeout</span>(() =&gt; console.<span class="fn">log</span>(<span class="kw">this</span>.invoiceId), <span class="st">1000</span>);
+  }
+}</code></pre>
+<p class="mut">Yahi reason hai ki Angular/RxJS code mein callbacks 99% arrow functions hote hain — <code>subscribe(data =&gt; this.items = data)</code> tabhi kaam karta hai jab <code>this</code> lexically component ko point kare.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">const</span> user = {
+  name: <span class="st">'Karan'</span>,
+  <span class="fn">greet</span>() { console.<span class="fn">log</span>(<span class="st">`Hi ${</span><span class="kw">this</span>.name<span class="st">}`</span>); }
+};
+user.<span class="fn">greet</span>();               <span class="cm">// Hi Karan   (implicit: dot se pehle user)</span>
+
+<span class="kw">const</span> g = user.greet;
+<span class="fn">g</span>();                        <span class="cm">// Hi undefined (default binding — dot kho gaya!)</span>
+
+<span class="kw">const</span> bound = user.greet.<span class="fn">bind</span>(user);
+<span class="fn">bound</span>();                    <span class="cm">// Hi Karan   (explicit: bind ne lock kar diya)</span></code></pre>
+
+<h3 class="part">9. Advanced Example — apna <code>bind</code> polyfill (interview favourite)</h3>
+<pre><code>Function.prototype.<span class="fn">myBind</span> = <span class="kw">function</span>(ctx, ...preArgs) {
+  <span class="kw">const</span> originalFn = <span class="kw">this</span>;                    <span class="cm">// L1</span>
+  <span class="kw">return function</span> <span class="fn">boundFn</span>(...laterArgs) {     <span class="cm">// L2</span>
+    <span class="kw">if</span> (<span class="kw">new</span>.target) {                          <span class="cm">// L3: new ke saath call hua?</span>
+      <span class="kw">return new</span> <span class="fn">originalFn</span>(...preArgs, ...laterArgs);  <span class="cm">// L4</span>
+    }
+    <span class="kw">return</span> originalFn.<span class="fn">apply</span>(ctx, [...preArgs, ...laterArgs]); <span class="cm">// L5</span>
+  };
+};</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> <code>myBind</code> ko <code>fn.myBind(obj)</code> se call kiya jayega, toh implicit binding se <code>this</code> = original function. Use capture kar liya.</li>
+<li><strong>L2:</strong> Ek naya function return — closure se <code>originalFn</code>, <code>ctx</code>, <code>preArgs</code> yaad rakhega. <code>...preArgs</code> partial application enable karta hai (currying ka base).</li>
+<li><strong>L3:</strong> <code>new.target</code> tabhi defined hota hai jab function <code>new</code> ke saath call ho. Real <code>bind</code> ka rule: <strong>new binding, bind ko bhi override kar deta hai</strong> — hum wahi replicate kar rahe hain.</li>
+<li><strong>L5:</strong> Normal call pe <code>apply</code> se explicit binding — pre-filled + baad wale args merge karke.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Class methods ko event handlers mein directly pass karna: <code>btn.addEventListener('click', this.save)</code> — <code>this</code> kho jayega. Fix: <code>this.save.bind(this)</code> ya arrow wrapper, ya class field syntax <code>save = () =&gt; {...}</code>.</li>
+<li>Object literal ke methods ko arrow banana: <code>{ greet: () =&gt; this.name }</code> — yahan <code>this</code> object nahi, <em>bahar ka scope</em> hai. Methods ke liye shorthand syntax use karo.</li>
+<li>Arrow function ko <code>new</code> se call karne ki koshish → TypeError, kyunki <code>[[Construct]]</code> hai hi nahi.</li>
+<li>Arrow ke andar <code>arguments</code> expect karna — nahi milta; rest params (<code>...args</code>) use karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Callbacks = arrow functions (lexical <code>this</code>). Object/class methods = normal method syntax.</li>
+<li>RxJS subscribe/operators mein hamesha arrows — component ka <code>this</code> preserve hota hai.</li>
+<li><code>bind</code> render-path mein baar-baar mat karo (har call naya function banata hai) — constructor mein ek baar, ya class field arrow.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Arrow vs normal function — V8 mein call performance same league mein hai. Asli cost: <strong>har render/call pe naya function object banana</strong> (e.g., template ke andar inline arrows) — ye GC pressure badhata hai aur OnPush comparisons tod deta hai (naya reference har baar). <code>bind</code> bhi har call pe naya bound function banata hai — hot paths mein cache karo.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>bind</code> ke upar dobara <code>bind</code> → pehla hi jeetta hai; dusra context ignore hota hai.</li>
+<li>Arrow ko <code>call/apply/bind</code> se context dena → context <em>silently ignore</em>, args pass ho jaate hain.</li>
+<li>Class bodies hamesha strict mode mein — method ko detach karke call karo toh <code>this</code> = <code>undefined</code> (window nahi), isliye error jaldi milta hai.</li>
+<li><code>setTimeout(obj.method, 100)</code> — implicit binding call-site pe hoti hai, pass karne se nahi. Reference pass hua, dot ka context nahi.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Function declaration vs function expression — hoisting difference?</summary><div class="ans"><p>Declaration poori hoist hoti hai (define hone se pehle call kar sakte ho). Expression variable ki tarah treat hoti hai — <code>var</code> se ho toh <code>undefined</code> milega (call pe TypeError), <code>const</code> se ho toh TDZ ReferenceError.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> call, apply, bind mein difference?</summary><div class="ans"><p><code>call(ctx, a, b)</code> — turant call, args alag-alag. <code>apply(ctx, [a,b])</code> — turant call, args array. <code>bind(ctx, a)</code> — call NAHI karta, naya permanently-bound function return karta hai. Yaad rakhne ka trick: <b>A</b>pply = <b>A</b>rray.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Arrow functions mein this "bind" hota hai ya kuch aur? Precisely batao.</summary><div class="ans"><p>Precisely: arrow mein <code>this</code> <em>bind hota hi nahi</em> — arrow ke environment record mein <code>this</code> ki entry nahi hoti. Lookup scope chain se resolve hota hai, jaise koi normal variable. Isliye "arrow captures this" kehna bhi loose hai — wo capture nahi karta, bas <em>resolve outward</em> karta hai. Consequence: call-site kuch bhi ho, arrow ka <code>this</code> kabhi nahi badalta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Output kya hoga? <code>const obj = { x: 1, getX: () =&gt; this.x, getX2() { return (() =&gt; this.x)(); } }</code></summary><div class="ans"><p><code>obj.getX()</code> → <code>undefined</code> (arrow ka <code>this</code> = module/global scope, object nahi). <code>obj.getX2()</code> → <code>1</code> — outer normal method ka <code>this</code> implicit binding se <code>obj</code> hai, andar ka arrow usi ko resolve karta hai. Ye pattern (method + inner arrow) hi Angular components mein hero hai.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> new binding, bind ko kaise override karta hai — aur kyun design kiya gaya aisa?</summary><div class="ans"><p>Spec: bound function pe <code>new</code> lagao toh <code>[[Construct]]</code> original target function pe chala jaata hai aur bound <code>this</code> ignore hota hai (partial args phir bhi lagte hain). Design reason: <code>new</code> ka contract hai "fresh object banao" — agar bind ka stale context jeet jaata toh constructor semantics hi toot jaate. Isse partial application + construction dono coexist karte hain: <code>const Btn = El.bind(null, 'button')</code> jaisa factory pattern.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek Angular component mein third-party JS library (e.g., chart lib) callback deti hai jisme wo apna context set karti hai this pe (chart instance). Tumhe callback ke andar chart instance BHI chahiye aur component BHI. Kaise karoge?</summary><div class="ans"><p>Normal function use karo taaki library ka <code>this</code> (chart) mile, aur component ko closure variable se pakdo: <code>const self = this; chart.on('click', function(e){ /* this = chart, self = component */ })</code>. Ya cleaner: arrow use karo (component <code>this</code> ke liye) aur chart instance callback params ya bahar ki reference se lo. Interview mein dono batao + trade-off: library APIs jo <code>this</code> pe depend karti hain wahan arrow use karne se wo context <em>permanently inaccessible</em> ho jaata hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li><code>this</code> = call-site decide karta hai. Priority: <code>new</code> &gt; explicit (<code>bind</code>) &gt; implicit (<code>obj.</code>) &gt; default.</li>
+<li>Arrow = no own <code>this</code>, no <code>arguments</code>, no <code>[[Construct]]</code>, no <code>prototype</code>. <code>this</code> scope chain se resolve.</li>
+<li>Detached method (<code>const f = obj.m</code>) = context lost.</li>
+<li>Angular rule: callbacks arrow, methods normal syntax.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-2.1 · myCall + myApply</div><p><code>Function.prototype.myCall</code> aur <code>myApply</code> implement karo <em>bina</em> built-in call/apply/bind use kiye. Hint: context object pe temporary unique key (Symbol) se function attach karke implicit binding exploit karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-2.2 · once(fn)</div><p>Higher-order function jo diye gaye fn ko sirf ek baar chalne de; baad ke calls pehla result return karein. <code>this</code> aur arguments dono forward hone chahiye.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-2.3 · Method context guard</div><p>Ek decorator-style wrapper <code>autoBindAll(instance)</code> likho jo class instance ke saare methods ko instance se bind kar de — getters/setters aur inherited methods handle karna bonus.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Closures</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>[[Environment]] slot · Lexical scoping · Module pattern · Private state · Closure memory leaks</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Closure = <strong>function + uska birth-place ka lexical environment</strong>. Jab function apne define hone ki jagah se bahar jaakar bhi wahan ke variables access kar pata hai — wahi closure hai. Technically: <em>har</em> JS function closure hai, kyunki har function apne <code>[[Environment]]</code> internal slot mein apna janm-sthal ka scope reference rakhta hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>JS mein (classes ke <code>#private</code> se pehle) <strong>data privacy ka ek hi tareeka tha — closure</strong>. Aur async programming ka toh foundation hi hai: jab <code>setTimeout</code>/<code>subscribe</code> ka callback 5 second baad chalta hai, tab tak outer function stack se hat chuka hota hai — callback ko variables <em>closure ki wajah se</em> milte hain. Bina closure ke async JS kaam hi nahi karta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>State without globals</strong> — counter, cache, config kisi function ke andar band, bahar se sirf controlled access.</li>
+<li><strong>Callbacks ko context dena</strong> — async callback ko pata hai kis request/user/component ke liye chal raha hai.</li>
+<li><strong>Function factories</strong> — <code>multiplyBy(3)</code> jaise specialized functions banana.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p>Section 1 se yaad karo: har scope ka ek <strong>Lexical Environment</strong> hota hai. Jab function <em>create</em> hota hai (call nahi — create!), engine us function object ke hidden <code>[[Environment]]</code> slot mein <em>current</em> lexical environment ka reference daal deta hai. Baad mein jab function call hota hai, uska naya environment isi saved reference ko apna <em>outer</em> banata hai.</p>
+<p><strong>Key insight:</strong> normally function return hone pe uska environment garbage collect ho jaata hai. Lekin agar koi inner function us environment ko <code>[[Environment]]</code> se pakde hue hai aur wo inner function khud reachable hai — toh <em>environment zinda rehta hai</em>. GC use collect nahi kar sakta. Yahi closure ka "memory" hai — aur yahi memory leak ka source bhi (Section 8).</p>
+<div class="dg-title">Diagram — Closure ka memory graph</div>
+<pre class="diagram">
+  function makeCounter() {          HEAP:
+    let count = 0;                  ┌────────────────────────┐
+    return () => ++count;          │ Env(makeCounter call)  │◄──┐
+  }                                 │   count: 0 → 1 → 2     │   │
+  const c = makeCounter();          └────────────────────────┘   │
+                                                                 │
+  makeCounter ka stack frame        ┌────────────────────────┐   │
+  KHATAM ho gaya, lekin...          │ arrow fn object        │───┘
+                                    │ [[Environment]] ───────┘
+  c() → 1, c() → 2                  └────────────────────────
+  'count' zinda hai kyunki arrow fn use pakde hai.
+  Dusra makeCounter() call = BILKUL NAYA env = independent counter.
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+  makeCounter() call
+    │ naya Env banao {count: 0}
+    │ arrow fn banao, uske [[Environment]] = ye Env
+    │ arrow return karo
+    ▼
+  makeCounter ka context stack se pop  (Env heap pe survive karta hai — referenced!)
+    ▼
+  c() call
+    │ arrow ka naya env, outer = saved [[Environment]]
+    │ count lookup: local nahi → outer mein mila → ++count
+    ▼
+  1 return
+</pre>
+
+<h3 class="part">6. Architecture — Module Pattern (closure ka OG use)</h3>
+<pre><code><span class="kw">const</span> cartStore = (<span class="kw">function</span>() {          <span class="cm">// IIFE — turant chala</span>
+  <span class="kw">let</span> items = [];                          <span class="cm">// PRIVATE — bahar se koi access nahi</span>
+  <span class="kw">return</span> {
+    <span class="fn">add</span>(item)  { items.<span class="fn">push</span>(item); },
+    <span class="fn">total</span>()    { <span class="kw">return</span> items.<span class="fn">reduce</span>((s, i) =&gt; s + i.price, <span class="st">0</span>); },
+    <span class="fn">count</span>: ()  =&gt; items.length
+  };
+})();</code></pre>
+<p class="mut">ES modules aane se pehle poora frontend isi pattern pe chalta tha. Aaj bhi RxJS operators aur Angular ke factory providers internally yahi karte hain.</p>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// Factory provider — closure se config capture</span>
+<span class="kw">export function</span> <span class="fn">loggerFactory</span>(env: Environment) {
+  <span class="kw">const</span> prefix = <span class="st">`[${env.appName}]`</span>;      <span class="cm">// closure mein band</span>
+  <span class="kw">return</span> (msg: <span class="nm">string</span>) =&gt; console.<span class="fn">log</span>(prefix, msg);
+}
+
+providers: [{
+  provide: <span class="nm">LOGGER</span>,
+  useFactory: loggerFactory,
+  deps: [<span class="nm">ENVIRONMENT</span>]
+}]</code></pre>
+<p>Aur RxJS ka har custom operator closure hai: <code>debounceTime(300)</code> call karte hi 300 wali value ek closure mein band ho jaati hai, jo har subscription pe use hoti hai.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">function</span> <span class="fn">makeGreeter</span>(name) {
+  <span class="kw">return function</span>() {
+    console.<span class="fn">log</span>(<span class="st">`Hello ${name}!`</span>);
+  };
+}
+<span class="kw">const</span> greetKaran = <span class="fn">makeGreeter</span>(<span class="st">'Karan'</span>);
+<span class="kw">const</span> greetDev   = <span class="fn">makeGreeter</span>(<span class="st">'Dev'</span>);
+<span class="fn">greetKaran</span>(); <span class="cm">// Hello Karan!  — apna name yaad hai</span>
+<span class="fn">greetDev</span>();   <span class="cm">// Hello Dev!    — dono independent</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Debounce (interview + production dono ka king)</h3>
+<pre><code><span class="kw">function</span> <span class="fn">debounce</span>(fn, delay) {                    <span class="cm">// L1</span>
+  <span class="kw">let</span> timerId = <span class="st">null</span>;                             <span class="cm">// L2</span>
+  <span class="kw">return function</span>(...args) {                      <span class="cm">// L3</span>
+    <span class="fn">clearTimeout</span>(timerId);                        <span class="cm">// L4</span>
+    timerId = <span class="fn">setTimeout</span>(() =&gt; {                  <span class="cm">// L5</span>
+      fn.<span class="fn">apply</span>(<span class="kw">this</span>, args);                       <span class="cm">// L6</span>
+    }, delay);
+  };
+}
+<span class="cm">// Usage: search input pe API spam rokna</span>
+searchBox.<span class="fn">addEventListener</span>(<span class="st">'input'</span>, <span class="fn">debounce</span>(e =&gt; <span class="fn">callSearchApi</span>(e.target.value), <span class="st">300</span>));</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1–L2:</strong> <code>debounce</code> call hote hi <code>timerId</code> closure environment mein ban gaya. Ye <em>saari future calls</em> mein shared rahega — yahi shared state debouncing possible banati hai.</li>
+<li><strong>L3:</strong> Returned function <em>normal</em> hai, arrow nahi — jaan-boojh ke, taaki caller ka <code>this</code> mile (event listener mein <code>this</code> = element).</li>
+<li><strong>L4:</strong> Har nayi call pichla pending timer cancel karti hai. Closure ki wajah se <code>timerId</code> calls ke beech survive karta hai.</li>
+<li><strong>L5–L6:</strong> Naya timer set. Andar arrow use kiya taaki L3 wale function ka <code>this</code> aur <code>args</code> lexically milen — Section 2 ka concept yahan closure se mila. Do concepts, ek pattern.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Ye sochna ki closure <em>value copy</em> karta hai. Nahi — <strong>live reference</strong> hai environment ka. Loop wala 3,3,3 bug (Section 1) isi ka proof hai.</li>
+<li>Har render/call pe naya closure banake use listeners mein register karna aur <em>remove kabhi na karna</em> — leak.</li>
+<li>Closure ke andar bade objects (poora component, DOM tree) capture karna jab sirf ek field chahiye thi — GC us poore object ko nahi chhod paata.</li>
+<li>Debounced function ko har jagah dobara <code>debounce(fn, 300)</code> karke banana — har call ka apna <code>timerId</code>, debouncing hui hi nahi. Ek baar banao, reuse karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Closure mein <em>minimum</em> capture karo: <code>const id = user.id</code> nikaal ke sirf <code>id</code> use karo, poora <code>user</code> nahi.</li>
+<li>Long-lived closures (subscriptions, listeners, intervals) ka lifecycle manage karo — Angular mein <code>takeUntilDestroyed()</code>.</li>
+<li>Private state chahiye toh pehle class <code>#field</code> ya module scope socho; closure tab jab function factory pattern ho.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Closure creation sasta hai, lekin <strong>retention</strong> mehenga ho sakta hai. V8 ek optimization karta hai: agar inner function outer ke kisi variable ko use hi nahi karta, toh wo variable environment mein retain nahi hota. <em>Lekin</em> ek hi scope ke multiple closures <strong>ek shared Context object</strong> use karte hain — agar ek closure bada object capture karta hai, toh usi scope ka dusra chhota closure bhi use zinda rakh sakta hai (famous V8 "context sharing" leak). Fix: scopes ko todo, ya heavy data ko null karo use ke baad.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li>Closure <code>let</code> loop variable ko per-iteration capture karta hai, <code>var</code> ko shared (Section 1 cross-ref).</li>
+<li><code>eval</code> aur <code>with</code> closures ke static analysis ko tod dete hain — V8 optimization off; kabhi use mat karo.</li>
+<li>Closure sirf <em>variables</em> capture karta hai, <code>this</code>/<code>arguments</code> normal functions mein per-call hote hain — arrow use karo agar wo bhi chahiye.</li>
+<li>DevTools mein closure variables dekh sakte ho: breakpoint → Scope panel → Closure section. Debugging ka superpower.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Closure ko ek line mein define karo aur ek use-case batao.</summary><div class="ans"><p>"Function bundled with its lexical environment" — function apne define hone wali jagah ke variables ko function ke bahar chalne ke baad bhi access kar sakta hai. Use-case: debounce/throttle, private state, function factories.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Kya har function closure hota hai?</summary><div class="ans"><p>Technically haan — har function ke paas <code>[[Environment]]</code> hota hai. Practically hum "closure" tab kehte hain jab function outer scope ke variables ko outer ke lifetime ke baad use karta hai. Interview mein dono batao — nuance impress karta hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Closure value capture karta hai ya reference? Prove karo.</summary><div class="ans"><p>Reference (binding capture hoti hai, value nahi):</p><pre><code><span class="kw">let</span> x = <span class="st">1</span>;
+<span class="kw">const</span> <span class="fn">get</span> = () =&gt; x;
+x = <span class="st">99</span>;
+<span class="fn">get</span>(); <span class="cm">// 99 — snapshot hota toh 1 milta</span></code></pre></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Do alag counters banao ek hi factory se — aur explain karo memory mein kya hua.</summary><div class="ans"><p><code>const a = makeCounter(); const b = makeCounter();</code> — har call ne <em>naya</em> lexical environment banaya heap pe. <code>a</code> aur <code>b</code> ke <code>[[Environment]]</code> alag objects point karte hain, isliye counts independent. Ye samjha diya toh "closures share state?" wale confusion ka jawab bhi de diya: same call ke closures share karte hain, alag calls ke nahi.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> V8 context-sharing leak explain karo — ek scope ka unused bada object kaise leak hota hai?</summary><div class="ans"><p>V8 ek function scope ke liye <em>ek</em> Context object banata hai jisme wo saare variables hote hain jo <em>kisi bhi</em> inner closure ne use kiye. Agar closure A ne <code>bigData</code> use kiya aur closure B ne sirf <code>id</code>, dono <em>same Context</em> share karte hain. Ab agar sirf B long-lived hai (e.g., listener), toh bhi <code>bigData</code> retain rahega kyunki B ka Context use hold karta hai. Fix: <code>bigData = null</code> after use, ya A/B ko alag function scopes mein banao.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Tumhare Angular app mein ek page se navigate karne ke baad bhi purane component ka data memory mein dikh raha hai (DevTools heap snapshot). Suspect list aur debugging approach batao.</summary><div class="ans"><p>Suspect list (sab closure-retention ke roop): (1) unsubscribed RxJS subscriptions jinke callbacks component capture karte hain, (2) <code>setInterval</code>/<code>setTimeout</code> jo clear nahi hue, (3) global/singleton service pe register kiya listener jisme component method pass hua, (4) third-party lib (chart/map) destroy nahi kiya. Debugging: heap snapshot → component class name search → Retainers panel mein dekho kaun pakde hai — usually chain kisi closure → Context → listener tak jayegi. Fix: <code>ngOnDestroy</code>/<code>DestroyRef</code> + <code>takeUntilDestroyed()</code>, listeners remove, lib <code>.destroy()</code>.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Closure = fn + <code>[[Environment]]</code> (creation time pe set, call time pe nahi).</li>
+<li>Capture = live binding reference, snapshot nahi.</li>
+<li>Env tab tak zinda jab tak koi reachable fn use pakde hai — async callbacks isi se kaam karte hain.</li>
+<li>Leaks = long-lived closure × bada captured data. V8 context sharing se unused data bhi phas sakta hai.</li>
+<li>Patterns: module (IIFE), factory, debounce/throttle, memoize.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-3.1 · throttle(fn, ms)</div><p>Debounce ka bhai — fn max ek baar per <code>ms</code> chale, chahe kitni bhi calls aayein. Leading + trailing edge options bonus. (Ye Razorpay-tier machine round ka regular hai.)</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-3.2 · memoize(fn)</div><p>Pure function ke results cache karo closure Map mein. Multi-argument keys handle karo. Bonus: LRU eviction with max size.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-3.3 · createBankAccount(initial)</div><p>Closure-only private balance ke saath <code>deposit</code>, <code>withdraw</code>, <code>getBalance</code> return karo. Balance ko bahar se mutate karna <em>impossible</em> hona chahiye — prove karo kyun.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-3.4 · counter with limit + reset</div><p><code>createCounter({start, step, max})</code> — max pe error throw kare, <code>reset()</code> ho, aur do counters independent hon. Interviewer ko memory diagram bana ke samjhao.</p><div class="lvl">LEVEL: EASY</div></div>
+</section>
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Objects, Arrays, Destructuring, Spread &amp; Rest</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>References vs values · Property descriptors · Shallow/deep copy · Destructuring · Spread/Rest · Immutability (OnPush ka foundation!)</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Object = key-value pairs ka dynamic collection (heap pe). Array = special object jiska <code>length</code> auto-manage hota hai aur keys numeric hain. <strong>Destructuring</strong> = object/array se values <em>nikaalne</em> ka syntax. <strong>Spread</strong> (<code>...</code> RHS pe) = values ko <em>failana</em>. <strong>Rest</strong> (<code>...</code> LHS pe) = bachi values ko <em>samet-na</em>. Same symbol, opposite kaam — position decide karti hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Angular ka <strong>OnPush change detection</strong> aur <strong>Signals</strong> dono ek hi cheez pe chalte hain: <em>reference equality</em> (<code>===</code>). Naya data = naya reference, warna Angular maanta hai "kuch nahi badla". Spread se immutable updates isi liye Angular dev ki daily bread hai. Ye section skip kiya toh OnPush kabhi samajh nahi aayega.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Mutation bugs</strong> — do jagah same object reference, ek ne badla, dusra bhi "badal gaya" bina bataye. Immutable updates ye class of bugs khatam karte hain.</li>
+<li><strong>Cheap change detection</strong> — deep comparison (har field check) O(n) hai; reference check O(1). Immutability O(1) wala option unlock karti hai.</li>
+<li><strong>Verbose extraction</strong> — <code>const name = user.name; const age = user.age;</code> → <code>const {name, age} = user;</code></li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p><strong>Stack vs Heap:</strong> primitives (number, string, boolean...) value ke roop mein copy hote hain. Objects/arrays heap pe bante hain, variable mein sirf <em>reference</em> (address) hota hai. <code>const b = a</code> object ke liye = address copy, data copy <strong>nahi</strong>.</p>
+<p><strong>V8 Hidden Classes (Shapes):</strong> V8 same structure wale objects ke liye ek shared "hidden class" banata hai — property access phir direct memory offset se hota hai (C++ struct jitna fast). Property <em>add/delete</em> karne se object nayi hidden class pe migrate hota hai; dynamic shapes engine ko "megamorphic" slow path pe dhakel deti hain.</p>
+<p><strong>Spread internals:</strong> <code>{...obj}</code> own enumerable properties ko iterate karke naye object pe copy karta hai — <strong>shallow!</strong> Nested objects ke sirf references copy hote hain. <code>[...arr]</code> iterator protocol use karta hai (isi liye Set/Map/string bhi spread hote hain).</p>
+<div class="dg-title">Diagram — Shallow copy ka sach</div>
+<pre class="diagram">
+  const user = { name:'Karan', address:{ city:'Delhi' } };
+  const copy = { ...user };
+
+  STACK              HEAP
+  user ──────────►  ┌───────────────────┐
+                    │ name: 'Karan'     │      ┌───────────────┐
+                    │ address: ─────────┼────► │ city: 'Delhi' │
+                    └───────────────────┘  ┌─► └───────────────┘
+  copy ──────────►  ┌───────────────────┐  │        ▲
+                    │ name: 'Karan'     │  │   EK HI object!
+                    │ address: ─────────┼──┘   copy.address.city = 'NCR'
+                    └───────────────────┘      → user bhi badal gaya 💥
+</pre>
+
+<h3 class="part">5. Execution Flow — Immutable update</h3>
+<pre class="diagram">
+  Purana state ─┐
+                ├─► spread se naya object/array (naya reference)
+  Naya change ──┘         │
+                          ▼
+        state signal / @Input ko naya reference assign
+                          │
+                          ▼
+        Angular: oldRef === newRef?  NO → re-render ✅
+        (mutate kiya hota → YES → kuch nahi hota ❌)
+</pre>
+
+<h3 class="part">6. Architecture — Update patterns cheat-map</h3>
+<table>
+<tr><th>Operation</th><th>❌ Mutating</th><th>✅ Immutable</th></tr>
+<tr><td>Item add</td><td><code>arr.push(x)</code></td><td><code>[...arr, x]</code></td></tr>
+<tr><td>Item remove</td><td><code>arr.splice(i,1)</code></td><td><code>arr.filter(it =&gt; it.id !== id)</code></td></tr>
+<tr><td>Item update</td><td><code>arr[i].done = true</code></td><td><code>arr.map(it =&gt; it.id===id ? {...it, done:true} : it)</code></td></tr>
+<tr><td>Field update</td><td><code>obj.x = 1</code></td><td><code>{...obj, x: 1}</code></td></tr>
+<tr><td>Nested update</td><td><code>obj.a.b = 1</code></td><td><code>{...obj, a: {...obj.a, b: 1}}</code></td></tr>
+<tr><td>Sort</td><td><code>arr.sort()</code></td><td><code>arr.toSorted()</code> (ES2023)</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="kw">@Component</span>({ changeDetection: ChangeDetectionStrategy.<span class="nm">OnPush</span>, ... })
+<span class="kw">export class</span> <span class="fn">CartComponent</span> {
+  items = <span class="fn">signal</span>&lt;CartItem[]&gt;([]);
+
+  <span class="fn">addItem</span>(item: CartItem) {
+    <span class="cm">// ❌ this.items().push(item)  → signal ko pata hi nahi chalega</span>
+    <span class="kw">this</span>.items.<span class="fn">update</span>(list =&gt; [...list, item]);   <span class="cm">// ✅ naya reference</span>
+  }
+
+  <span class="fn">toggleDone</span>(id: <span class="nm">number</span>) {
+    <span class="kw">this</span>.items.<span class="fn">update</span>(list =&gt;
+      list.<span class="fn">map</span>(it =&gt; it.id === id ? { ...it, done: !it.done } : it)
+    );
+  }
+}</code></pre>
+<p class="mut">Yahi pattern NgRx reducers mein bhi hai — reducer <em>hamesha</em> naya state object return karta hai. Ab tum jaante ho kyun: store reference-compare karta hai.</p>
+
+<h3 class="part">8. Beginner Example — Destructuring buffet</h3>
+<pre><code><span class="kw">const</span> user = { id: <span class="st">7</span>, name: <span class="st">'Karan'</span>, role: <span class="st">'SDE'</span>, city: <span class="st">'Delhi'</span> };
+
+<span class="kw">const</span> { name, role } = user;                    <span class="cm">// basic</span>
+<span class="kw">const</span> { name: userName } = user;                <span class="cm">// rename</span>
+<span class="kw">const</span> { plan = <span class="st">'free'</span> } = user;                 <span class="cm">// default (sirf undefined pe lagta hai)</span>
+<span class="kw">const</span> { id, ...rest } = user;                   <span class="cm">// rest → {name, role, city}</span>
+
+<span class="kw">const</span> [first, , third] = [<span class="st">10</span>, <span class="st">20</span>, <span class="st">30</span>];          <span class="cm">// array + hole skip</span>
+<span class="kw">const</span> [a = <span class="st">1</span>, b = <span class="st">2</span>] = [<span class="st">5</span>];                     <span class="cm">// a=5, b=2</span>
+[x, y] = [y, x];                                 <span class="cm">// swap — classic one-liner</span>
+
+<span class="cm">// function params mein — Angular services mein roz dikhega</span>
+<span class="kw">function</span> <span class="fn">fetchPage</span>({ page = <span class="st">1</span>, size = <span class="st">20</span> } = {}) { ... }
+<span class="fn">fetchPage</span>();               <span class="cm">// dono defaults</span>
+<span class="fn">fetchPage</span>({ page: <span class="st">3</span> });    <span class="cm">// size = 20</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Deep clone decision + structuredClone</h3>
+<pre><code><span class="kw">const</span> order = {
+  id: <span class="st">101</span>,
+  customer: { name: <span class="st">'Karan'</span>, address: { city: <span class="st">'Delhi'</span> } },
+  items: [{ sku: <span class="st">'A1'</span>, qty: <span class="st">2</span> }],
+  placedAt: <span class="kw">new</span> <span class="fn">Date</span>()
+};
+
+<span class="kw">const</span> c1 = { ...order };                          <span class="cm">// L1: shallow — nested shared</span>
+<span class="kw">const</span> c2 = <span class="nm">JSON</span>.<span class="fn">parse</span>(<span class="nm">JSON</span>.<span class="fn">stringify</span>(order));   <span class="cm">// L2: deep, PAR lossy</span>
+<span class="kw">const</span> c3 = <span class="fn">structuredClone</span>(order);               <span class="cm">// L3: deep + types safe</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Top-level fields naye, lekin <code>c1.customer === order.customer</code> → <code>true</code>. Ek level ki hi nayi copy bani.</li>
+<li><strong>L2:</strong> Poora deep, <em>lekin</em>: <code>Date</code> → string ban gaya, <code>undefined</code>/functions/Symbol keys <em>gayab</em>, <code>Map/Set</code> → <code>{}</code>, circular reference → throw. Interview mein ye 4 losses ratta maar lo.</li>
+<li><strong>L3:</strong> Browser-native deep clone: Date, Map, Set, ArrayBuffer, circular refs sab handle. Nahi karta: functions, DOM nodes, class prototype chain (plain object ban jaata hai). Modern default yahi hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Spread ko deep copy samajhna — #1 production bug source. Nested update = nested spread.</li>
+<li>OnPush component mein <code>@Input</code> object ko parent mein mutate karna, phir "UI update nahi ho raha" ka ticket banana.</li>
+<li><code>arr.sort()</code>/<code>reverse()</code>/<code>splice()</code> ko non-mutating samajhna. ES2023 ke <code>toSorted/toReversed/toSpliced/with</code> non-mutating versions hain.</li>
+<li>Destructuring defaults <code>null</code> pe lagne ki umeed: <code>const {x = 5} = {x: null}</code> → <code>x = null</code>! Default sirf <code>undefined</code> pe.</li>
+<li>Bade arrays pe har chhoti update pe deep clone — O(n) × har keystroke = janky UI.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>State updates: sirf changed path pe naye objects (structural sharing) — baaki branches ka reference reuse. Perf + correctness dono.</li>
+<li>Function options ke liye object param + destructuring + defaults — positional args 3 se zyada hue toh refactor.</li>
+<li>Readonly types lagao: <code>ReadonlyArray&lt;T&gt;</code>, <code>Readonly&lt;T&gt;</code> — TypeScript compile pe hi mutation pakad lega.</li>
+<li>Deep clone chahiye toh <code>structuredClone</code>; JSON trick sirf JSON-safe data pe.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<ul>
+<li>Spread/copy O(n) hai — 10k items ki list pe har update full copy tolerable hai, per-frame animation loop mein nahi.</li>
+<li>Structural sharing yaad rakho: <code>list.map(...)</code> mein unchanged items ka <em>same reference</em> return karo — <code>@for</code> + <code>track</code> tab DOM reuse kar payega.</li>
+<li>Hidden classes: objects ko same shape mein initialize karo (constructor mein saari properties), <code>delete</code> avoid karo — V8 fast path pe rahega.</li>
+<li>Array holes (<code>[1,,3]</code>) V8 ko slow "holey" mode mein daal dete hain — avoid.</li>
+</ul>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>{...null}</code> aur <code>{...undefined}</code> → <code>{}</code> (no error). <code>[...null]</code> → TypeError (iterator chahiye).</li>
+<li>Spread sirf <em>own enumerable</em> properties copy karta hai — getters <em>evaluate</em> ho jaate hain (value ban jaate hain), prototype chain ignore.</li>
+<li><code>const {a, b} = arr</code> array pe bhi chalta hai (index properties), aur <code>const {length} = 'hello'</code> → 5.</li>
+<li>Rest element destructuring mein last hi ho sakta hai: <code>const [a, ...rest, b]</code> → SyntaxError.</li>
+<li>Already-declared variables pe object destructuring ko parens chahiye: <code>({x} = obj);</code> warna <code>{</code> block samjha jaata hai.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Spread aur Rest mein difference — same symbol, kaise pehchanoge?</summary><div class="ans"><p>Position se: assignment/call ke RHS pe ya arguments mein = spread (failao); function params ya destructuring LHS pe = rest (sameto). <code>fn(...arr)</code> spread; <code>function fn(...args)</code> rest.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> <code>const a = [1,2]; const b = a; b.push(3);</code> — <code>a</code> kya hai aur kyun?</summary><div class="ans"><p><code>[1,2,3]</code> — <code>b = a</code> ne reference copy kiya, heap pe array ek hi hai. Isi liye immutable updates mein naya array banate hain.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> JSON.parse(JSON.stringify()) deep clone ke 4 failure modes batao.</summary><div class="ans"><p>(1) <code>Date</code> → ISO string, (2) <code>undefined</code>, functions, Symbol-keyed props silently drop, (3) <code>Map/Set/RegExp</code> → <code>{}</code>, (4) circular references → TypeError throw. Plus <code>NaN/Infinity</code> → <code>null</code>. Modern answer: <code>structuredClone</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> OnPush component ka @Input update kyun nahi dikh raha jab parent ne object mutate kiya? Fix?</summary><div class="ans"><p>OnPush input change ko <code>===</code> se detect karta hai. Mutation = same reference = "no change" = no re-render. Fix: parent immutably update kare (<code>this.user = {...this.user, name}</code>), ya signals use karo, ya (last resort) <code>ChangeDetectorRef.markForCheck()</code>. Best answer wo hai jo root cause (mutation) fix kare, symptom nahi.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> V8 hidden classes kya hain aur unka object design pe kya effect hai?</summary><div class="ans"><p>V8 har object shape (property names + order) ke liye ek hidden class (Map/Shape) banata hai. Same shape = shared hidden class = property access inline-cache se direct offset pe (monomorphic, fastest). Alag orders/shapes mein properties add karo toh transition trees phatte hain, call-sites polymorphic/megamorphic ho jaate hain → dictionary-mode lookup, 10–100x slow. Rules: constructor mein sab props same order mein init, <code>delete</code> nahi (usko <code>undefined</code> set karo ya Map use karo), types consistent rakho.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> 5000-row table hai, ek row ka ek field update hota hai, poora table re-render ho raha hai. Data-layer fixes batao (component optimization nahi).</summary><div class="ans"><p>(1) Update ko structural-sharing map se karo — sirf changed row ka naya object, baaki 4999 ka same reference; (2) <code>@for (row of rows; track row.id)</code> — Angular unchanged references ke DOM nodes reuse karega; (3) row-level components OnPush pe — unchanged rows ka change detection hi skip; (4) agar normalize kar sakte ho toh state ko <code>{ids: [], entities: {}}</code> shape mein rakho (NgRx entity pattern) taaki row update O(1) ho. Ye jawab data-structure thinking dikhata hai — SDE-3 signal.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Primitives by value, objects by reference. Copy ≠ clone.</li>
+<li>Spread = shallow, 1 level. Nested = nested spread ya <code>structuredClone</code>.</li>
+<li>Default values sirf <code>undefined</code> pe. Rest last position pe.</li>
+<li>Immutability → naya reference → OnPush/signals/NgRx sab isi pe.</li>
+<li>Mutators: push/pop/shift/unshift/splice/sort/reverse/fill. Non-mutating ES2023: toSorted/toReversed/toSpliced/with.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-4.1 · deepClone(obj)</div><p>Khud ka recursive deep clone — objects, arrays, Date, Map, Set, aur circular references (WeakMap se) handle karo. Phir structuredClone se diff karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-4.2 · setIn(obj, path, value)</div><p>Immutable nested update: <code>setIn(state, ['user','address','city'], 'NCR')</code> — sirf path pe naye objects bane, baaki references same. Test likho jo reference-reuse verify kare.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-4.3 · deepEqual(a, b)</div><p>Structural equality — nested objects/arrays, NaN, +0/-0 decisions document karo. Phir batao production mein iski jagah reference equality kyun prefer hoti hai.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-4.4 · groupBy(arr, keyFn)</div><p><code>groupBy(users, u =&gt; u.city)</code> → <code>{Delhi: [...], Pune: [...]}</code>. Reduce se karo, phir Object.groupBy (ES2024) se compare karo.</p><div class="lvl">LEVEL: EASY</div></div>
+</section>
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Prototype, Prototypal Inheritance &amp; Classes</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>[[Prototype]] · __proto__ vs prototype · Prototype chain · new operator · class syntax internals · super · #private fields</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Har JS object ke paas ek hidden link hota hai — <code>[[Prototype]]</code> — jo kisi dusre object ko point karta hai. Property nahi mili toh engine is link pe chala jaata hai, phir uske link pe... jab tak <code>null</code> na mile. Isi chain-walk ko <strong>prototypal inheritance</strong> kehte hain. <strong>Class</strong> isi machinery ke upar ek saaf syntax hai — naya inheritance model <em>nahi</em> hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p><strong>Memory sharing.</strong> 1000 user objects banao — agar har object ke paas apna <code>greet</code> function ho toh 1000 function copies. Prototype pe rakho toh <em>ek</em> copy, sab share karte hain. Java se aane wale devs ke liye: prototype ≈ class ka method table, bas ye <em>runtime pe live object</em> hai jise modify kiya ja sakta hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Method duplication</strong> — shared behavior ek jagah, instances lightweight.</li>
+<li><strong>Extensibility</strong> — built-ins ko polyfill karna (<code>Array.prototype.flat</code> purane browsers mein) isi se possible hua.</li>
+<li><strong>Classes ne developer-experience problem solve ki</strong> — constructor functions + manual prototype wiring error-prone tha; <code>class</code>/<code>extends</code>/<code>super</code> ne use declarative bana diya.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p>Teen naam, teen alag cheezein — interview mein confusion yahi hota hai:</p>
+<table>
+<tr><th>Term</th><th>Kya hai</th><th>Kis pe hota hai</th></tr>
+<tr><td><code>[[Prototype]]</code></td><td>Hidden internal slot — asli link</td><td>Har object pe</td></tr>
+<tr><td><code>__proto__</code></td><td><code>[[Prototype]]</code> ka legacy getter/setter. Modern: <code>Object.getPrototypeOf()</code></td><td>Accessor (Object.prototype pe defined)</td></tr>
+<tr><td><code>prototype</code></td><td>Normal property — sirf batati hai ki <code>new</code> se bane objects ka <code>[[Prototype]]</code> kya hoga</td><td>Sirf functions/classes pe</td></tr>
+</table>
+<p><strong><code>new Fn()</code> ke 4 steps (ratta nahi, samjho):</strong></p>
+<ol>
+<li>Naya khali object banao.</li>
+<li>Uska <code>[[Prototype]]</code> = <code>Fn.prototype</code> set karo.</li>
+<li><code>Fn</code> ko call karo, <code>this</code> = naya object (Section 2 ka new binding!).</li>
+<li>Agar <code>Fn</code> ne explicitly object return kiya toh wo, warna naya object return.</li>
+</ol>
+<div class="dg-title">Diagram — Prototype chain lookup</div>
+<pre class="diagram">
+  const e = new Employee('Karan');
+  e.report();
+
+  e { name:'Karan' }                    ── report? ❌
+    │ [[Prototype]]
+    ▼
+  Employee.prototype { report() }       ── report? ✅ mil gaya, this = e
+    │ [[Prototype]]
+    ▼
+  Person.prototype { greet() }          (extends se linked)
+    │ [[Prototype]]
+    ▼
+  Object.prototype { toString, ... }
+    │ [[Prototype]]
+    ▼
+  null  ← chain ka end. Yahan tak nahi mila = undefined (call kiya toh TypeError)
+</pre>
+
+<h3 class="part">5. Execution Flow — <code>class</code> desugared</h3>
+<pre><code><span class="cm">// Ye class...</span>
+<span class="kw">class</span> <span class="fn">Person</span> {
+  <span class="fn">constructor</span>(name) { <span class="kw">this</span>.name = name; }
+  <span class="fn">greet</span>() { <span class="kw">return</span> <span class="st">`Hi ${</span><span class="kw">this</span>.name<span class="st">}`</span>; }
+  <span class="kw">static</span> <span class="fn">species</span>() { <span class="kw">return</span> <span class="st">'human'</span>; }
+}
+
+<span class="cm">// ...roughly ye hai andar se:</span>
+<span class="kw">function</span> <span class="fn">Person</span>(name) { <span class="kw">this</span>.name = name; }
+Person.prototype.greet = <span class="kw">function</span>() { <span class="kw">return</span> <span class="st">`Hi ${</span><span class="kw">this</span>.name<span class="st">}`</span>; };
+Person.species = <span class="kw">function</span>() { <span class="kw">return</span> <span class="st">'human'</span>; };  <span class="cm">// static = fn object pe direct</span></code></pre>
+<p>Farak sirf sugar ka nahi — class mein: (1) body strict mode, (2) bina <code>new</code> call → TypeError, (3) methods non-enumerable, (4) TDZ hota hai (hoisted but uninitialized), (5) <code>extends</code> <em>dono</em> chains wire karta hai — <code>Child.prototype → Parent.prototype</code> (instance methods) <strong>aur</strong> <code>Child → Parent</code> (statics inherit hone ke liye).</p>
+
+<h3 class="part">6. Architecture — extends ka double chain</h3>
+<pre class="diagram">
+  class Employee extends Person {}
+
+  STATIC SIDE                    INSTANCE SIDE
+  Employee ────[[Proto]]──►      Employee.prototype ──[[Proto]]──►
+  Person   ────[[Proto]]──►      Person.prototype   ──[[Proto]]──►
+  Function.prototype             Object.prototype ──► null
+
+  super.method() = HomeObject ke [[Prototype]] pe lookup,
+  this WAHI current instance rehta hai.
+</pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// Base class pattern — real codebases mein common (with care!)</span>
+<span class="kw">export abstract class</span> <span class="fn">BaseListComponent</span>&lt;T&gt; {
+  items: T[] = [];
+  loading = <span class="st">false</span>;
+  <span class="kw">abstract</span> <span class="fn">fetch</span>(): Observable&lt;T[]&gt;;
+
+  <span class="fn">load</span>() {
+    <span class="kw">this</span>.loading = <span class="st">true</span>;
+    <span class="kw">this</span>.<span class="fn">fetch</span>().<span class="fn">subscribe</span>(d =&gt; { <span class="kw">this</span>.items = d; <span class="kw">this</span>.loading = <span class="st">false</span>; });
+  }
+}
+
+<span class="kw">@Component</span>({...})
+<span class="kw">export class</span> <span class="fn">OrdersComponent</span> <span class="kw">extends</span> <span class="fn">BaseListComponent</span>&lt;Order&gt; {
+  <span class="kw">private</span> api = <span class="fn">inject</span>(OrderApi);
+  <span class="fn">fetch</span>() { <span class="kw">return this</span>.api.<span class="fn">getOrders</span>(); }
+}</code></pre>
+<p class="mut"><code>load()</code> <code>OrdersComponent</code> pe nahi hai — prototype chain se milta hai, aur <code>this</code> instance hi rehta hai isliye <code>this.fetch()</code> child ka override call karta hai. Note: modern Angular mein composition (services, <code>inject()</code>, directives) inheritance se prefer hoti hai — base classes DI aur lifecycle hooks ke saath fragile ho jaati hain. Interview mein ye trade-off bolna hi SDE-3 answer hai.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">class</span> <span class="fn">Animal</span> {
+  <span class="fn">constructor</span>(name) { <span class="kw">this</span>.name = name; }
+  <span class="fn">speak</span>() { <span class="kw">return</span> <span class="st">`${</span><span class="kw">this</span>.name<span class="st">} makes a sound`</span>; }
+}
+<span class="kw">class</span> <span class="fn">Dog</span> <span class="kw">extends</span> <span class="fn">Animal</span> {
+  <span class="fn">speak</span>() { <span class="kw">return</span> <span class="st">`${</span><span class="kw">super</span>.<span class="fn">speak</span>()<span class="st">} — woof!`</span>; }
+}
+<span class="kw">const</span> d = <span class="kw">new</span> <span class="fn">Dog</span>(<span class="st">'Rex'</span>);
+d.<span class="fn">speak</span>();                        <span class="cm">// "Rex makes a sound — woof!"</span>
+d.<span class="fn">hasOwnProperty</span>(<span class="st">'speak'</span>);        <span class="cm">// false — prototype pe hai, instance pe nahi</span>
+Object.<span class="fn">getPrototypeOf</span>(d) === Dog.prototype;  <span class="cm">// true</span></code></pre>
+
+<h3 class="part">9. Advanced Example — #private + static + getter</h3>
+<pre><code><span class="kw">class</span> <span class="fn">TokenStore</span> {
+  <span class="kw">static</span> #instance = <span class="st">null</span>;                       <span class="cm">// L1</span>
+  #token = <span class="st">null</span>;                                  <span class="cm">// L2</span>
+
+  <span class="kw">static</span> <span class="fn">getInstance</span>() {                          <span class="cm">// L3</span>
+    <span class="kw">return</span> TokenStore.#instance ??= <span class="kw">new</span> <span class="fn">TokenStore</span>();
+  }
+  <span class="kw">set</span> <span class="fn">token</span>(v) {                                  <span class="cm">// L4</span>
+    <span class="kw">if</span> (!v?.<span class="fn">startsWith</span>(<span class="st">'Bearer '</span>)) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="st">'Invalid'</span>);
+    <span class="kw">this</span>.#token = v;
+  }
+  <span class="kw">get</span> <span class="fn">masked</span>() {                                  <span class="cm">// L5</span>
+    <span class="kw">return this</span>.#token ? <span class="kw">this</span>.#token.<span class="fn">slice</span>(<span class="st">0</span>, <span class="st">10</span>) + <span class="st">'…'</span> : <span class="st">null</span>;
+  }
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> <code>static #instance</code> — class object pe private field. Singleton state instances ke paas nahi, class ke paas hai.</li>
+<li><strong>L2:</strong> <code>#token</code> hard-private hai — closure jaisa nahi, <em>language-level</em>. Bahar se <code>ts.#token</code> → SyntaxError (runtime error bhi nahi, parse hi nahi hota). TypeScript ka <code>private</code> sirf compile-time hai; JS <code>#</code> runtime pe bhi enforce hota hai — ye difference interview gold hai.</li>
+<li><strong>L3:</strong> <code>??=</code> — nullish assignment; pehli call pe hi banata hai. (Note: DI wale frameworks mein singleton container se lo, manual nahi — pattern samajhne ke liye hai.)</li>
+<li><strong>L4–L5:</strong> Accessor properties prototype pe defined hoti hain (data nahi, get/set functions). Validation setter mein — invariant object ke <em>andar</em> enforce hota hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li><code>prototype</code> aur <code>[[Prototype]]</code> ko same samajhna. <code>Dog.prototype</code> ≠ <code>Dog</code> ka apna prototype. <code>Dog</code> khud function hai, uska <code>[[Prototype]]</code> = <code>Function.prototype</code> (ya extends mein Parent).</li>
+<li>Arrow function ko prototype method banana — <code>this</code> lexical ho jayega, instance nahi milega.</li>
+<li>Derived class constructor mein <code>this</code> ko <code>super()</code> se <em>pehle</em> touch karna → ReferenceError. Kyun: <code>this</code> base constructor banata hai, derived ko wo super() se milta hai.</li>
+<li>Built-in prototypes ko production mein modify karna (monkey-patching) — collisions + future spec breakage (smooshgate yaad hai?).</li>
+<li>Class fields (<code>x = 1</code>) instance pe bante hain, methods prototype pe — <code>save = () =&gt; {}</code> field hai, har instance pe nayi copy. 1000 instances = 1000 functions. Jaan ke use karo (event handlers), anjaane mein nahi.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Composition &gt; inheritance — Angular mein khaaskar. 1 level base class theek, 3-level hierarchy = design smell.</li>
+<li>Privacy: JS runtime privacy chahiye toh <code>#field</code>; team-convention kaafi hai toh TS <code>private</code>.</li>
+<li>Prototype check: <code>instanceof</code> for classes, <code>Object.getPrototypeOf</code> for introspection, <code>in</code> vs <code>hasOwnProperty</code> jaan ke choose karo (chain include karna hai ya nahi).</li>
+<li><code>Object.create(null)</code> for pure dictionaries — no inherited keys, no prototype-pollution surface.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Prototype chain lookup V8 inline caches se practically free hai — <em>agar</em> shapes stable hain (Section 4 cross-ref). Lambi chains (5+) IC misses pe hi cost karti hain. <code>Object.setPrototypeOf</code> existing object pe = performance killer (saare ICs invalidate) — prototype creation time pe set karo (<code>Object.create</code>/<code>new</code>), baad mein kabhi nahi. Methods prototype pe rakhna memory win hai; per-instance arrows sirf jahan <code>this</code>-binding chahiye.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>instanceof</code> prototype chain check karta hai, constructor nahi: <code>Object.setPrototypeOf(x, Dog.prototype)</code> ke baad <code>x instanceof Dog</code> → true, bina Dog constructor chale.</li>
+<li><code>class</code> methods mein <code>super</code> ka <code>[[HomeObject]]</code> <em>static</em> bind hota hai definition pe — method ko copy karke dusre object pe rakho, <code>super</code> phir bhi purani chain use karega.</li>
+<li><code>Object.create(null)</code> wale object pe <code>toString</code>/<code>hasOwnProperty</code> nahi hote — <code>Object.hasOwn(obj, key)</code> (ES2022) use karo.</li>
+<li>Derived class mein constructor omit karo toh implicit <code>constructor(...args){ super(...args) }</code> milta hai.</li>
+<li>Getters/setters spread mein <em>values</em> ban jaate hain — accessor copy nahi hota (Section 4 cross-ref).</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> __proto__ aur prototype mein kya farak hai?</summary><div class="ans"><p><code>prototype</code> sirf functions pe hoti hai — batati hai <code>new</code> se bane instances ka <code>[[Prototype]]</code> kya hoga. <code>__proto__</code> har object ka apna link accessor hai. Relation: <code>obj.__proto__ === Constructor.prototype</code>.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> new keyword kya karta hai — 4 steps?</summary><div class="ans"><p>(1) naya object, (2) <code>[[Prototype]]</code> = <code>Fn.prototype</code>, (3) <code>Fn.call(newObj, args)</code>, (4) explicit object return ho toh wo, warna naya object. Follow-up ready rakho: primitive return kiya toh ignore hota hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Class methods aur class fields mein memory-level difference?</summary><div class="ans"><p>Method (<code>greet(){}</code>) prototype pe — ek copy, sab instances share. Field (<code>greet = () =&gt; {}</code>) constructor mein har instance pe — n instances, n copies. Field-arrow tab justify hota hai jab detached callback chahiye (event handlers) — this-binding memory se khareed rahe ho.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> super() derived constructor mein pehle kyun call karna padta hai?</summary><div class="ans"><p>Derived class ka <code>this</code> TDZ mein hota hai jab tak base constructor object bana ke return na kare — spec mein derived constructor khud object <em>nahi</em> banata, allocation base tak delegate hoti hai (isse base apni initialization guarantee kar paata hai, jaise <code>Array</code> subclass karne pe exotic array hi mile). <code>super()</code> = "base, object bana ke de" — usse pehle <code>this</code> exist hi nahi karta.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Prototype pollution attack kya hai aur defend kaise karoge?</summary><div class="ans"><p>Attacker input se <code>Object.prototype</code> pe properties inject karta hai — e.g., deep-merge utility <code>merge(target, JSON.parse(userInput))</code> mein input <code>{"__proto__": {"isAdmin": true}}</code> ho toh <em>har object</em> pe <code>isAdmin</code> dikhega. Defense: merge/set utilities mein <code>__proto__</code>/<code>constructor</code>/<code>prototype</code> keys reject karo, <code>Object.create(null)</code> dictionaries, <code>Object.freeze(Object.prototype)</code> (aggressive), aur lodash jaise libs ke patched versions. Angular apps mein query-param/JSON parsing paths pe ye sochna security-aware SDE-3 ka sign hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Team ne 4-level component inheritance banayi hai (Base → List → FilterableList → OrdersList) aur ab lifecycle bugs + DI issues aa rahe hain. Refactor strategy?</summary><div class="ans"><p>Problems name karo: constructor DI chains fragile (har level super ko deps forward karta hai), lifecycle hooks silently override, testing mein poora tower mock hota hai. Strategy: behaviors ko composition mein todo — (1) shared logic → injectable services, (2) shared template behavior → directives (hostDirectives!), (3) shared state pattern → signal-based store ya base <em>functions</em> (not classes), (4) migration incremental: leaf classes se start, base ko dheere-dheere hollow karo. Trade-off batao: inheritance one-shot reuse mein fast tha, par axis-of-change multiple hone pe composition jeet-ti hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Lookup: own → <code>[[Prototype]]</code> chain → <code>null</code> → undefined.</li>
+<li><code>fn.prototype</code> = future instances ka blueprint link; <code>__proto__</code> = mera apna link.</li>
+<li><code>new</code>: create → link → call(this) → return.</li>
+<li><code>class</code> = prototype sugar + strict + TDZ + non-enumerable + new-only. <code>extends</code> = double chain (static + instance).</li>
+<li>Methods prototype pe (shared), fields instance pe (per-object). <code>#</code> = runtime privacy, TS <code>private</code> = compile-time only.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-5.1 · myNew(Fn, ...args)</div><p><code>new</code> operator implement karo bina <code>new</code> use kiye (hint: <code>Object.create</code> + <code>apply</code> + return-value rule). Primitive vs object return dono test karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-5.2 · myInstanceOf(obj, Fn)</div><p><code>instanceof</code> implement karo chain walk se. Edge cases: primitives, <code>Object.create(null)</code>, mid-chain match.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-5.3 · ES5 inheritance</div><p><code>class Dog extends Animal</code> wala poora behavior sirf constructor functions + <code>Object.create</code> se recreate karo — including static inheritance aur super-call. Phir class version se instanceof/own-property parity test karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-5.4 · EventEmitter class</div><p><code>on/off/once/emit</code> — listeners Map mein, <code>once</code> self-removing wrapper (closure!), emit ke dauraan off hone wale listeners ka edge case handle karo. (Machine round classic.)</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Event Loop — Call Stack, Web APIs, Microtasks &amp; Macrotasks</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>Call Stack · Web APIs · Task (Macrotask) Queue · Microtask Queue · Rendering pipeline · Zone.js connection</b></p>
+
+<div class="panel why"><div class="ptitle">🎯 Angular ke liye sabse important section</div>
+<p>Zone.js <em>exactly</em> in queues ko patch karke Angular ko batata hai "async kaam khatam hua, ab change detection chalao". Event loop samjhe bina Zone.js, <code>runOutsideAngular</code>, zoneless Angular, ya "ExpressionChangedAfterItHasBeenChecked" — kuch bhi first-principles se samajh nahi aayega.</p></div>
+
+<h3 class="part">1. What is it?</h3>
+<p>JavaScript <strong>single-threaded</strong> hai — ek time pe ek hi kaam. Event Loop wo orchestrator hai jo decide karta hai: stack khali hua, ab <em>kaunsa pending kaam</em> chale. Components: <strong>Call Stack</strong> (abhi kya chal raha hai), <strong>Web APIs</strong> (browser ke background workers — timer, network, DOM events), <strong>Task/Macrotask Queue</strong>, aur <strong>Microtask Queue</strong> (VIP line).</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Single thread pe agar <code>fetch</code> ka wait bhi thread block karta, toh 2-second API call = 2 second frozen UI — no clicks, no scroll, no render. Event loop model se JS <em>delegate</em> karta hai: "browser, tu network sambhal, result aaye toh callback queue mein daal dena, main tab tak aur kaam karta hoon." Concurrency without threads (aur without locks/race conditions ka dard jo Java devs jaante hain).</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Non-blocking I/O</strong> — network/timers/disk UI freeze nahi karte.</li>
+<li><strong>Ordering guarantees</strong> — microtask vs macrotask priority se predictable execution order milta hai (Promise chains hamesha timers se pehle).</li>
+<li><strong>Frameworks ko hook point</strong> — Zone.js/React scheduler isi model ke gaps mein apna kaam ghusate hain.</li>
+</ul>
+
+<h3 class="part">4. Internal Working — Poora model</h3>
+<div class="dg-title">Diagram — Browser runtime architecture</div>
+<pre class="diagram">
+ ┌─────────────────────────┐      ┌──────────────────────────┐
+ │      CALL STACK         │      │        WEB APIs          │
+ │  (JS engine - V8)       │      │  (browser threads)       │
+ │  ┌───────────────────┐  │ ───► │  setTimeout / fetch /    │
+ │  │ current function  │  │ call │  DOM events / observers  │
+ │  └───────────────────┘  │      └───────────┬──────────────┘
+ └──────────▲──────────────┘          done!   │ callback ready
+            │                                 ▼
+            │              ┌──────────────────────────────────┐
+            │              │  MICROTASK QUEUE  (VIP)          │
+            │              │  Promise.then / queueMicrotask / │
+   EVENT    │              │  MutationObserver                │
+   LOOP ────┤              ├──────────────────────────────────┤
+   picks    │              │  MACROTASK QUEUE  (normal line)  │
+   next     │              │  setTimeout / setInterval /      │
+            └───────────── │  message events / I/O / UI events│
+                           └──────────────────────────────────┘
+</pre>
+<p><strong>Loop ka ek cycle (simplified spec):</strong></p>
+<ol>
+<li>Macrotask queue se <em>ek</em> task uthao, run karo (stack khali hone tak).</li>
+<li><strong>Microtask checkpoint:</strong> microtask queue ko <em>poora drain</em> karo — aur jo microtasks is dauraan naye bane, unhe bhi! (Isi se infinite microtask loop page hang kar sakta hai.)</li>
+<li>Agar render ka time hai (~16.6ms pe): style → layout → paint. <code>requestAnimationFrame</code> callbacks render se theek pehle.</li>
+<li>Repeat.</li>
+</ol>
+<p><strong>Golden rule:</strong> <em>Har ek</em> macrotask ke baad <em>saare</em> microtasks. Ratio 1 : all.</p>
+
+<h3 class="part">5. Execution Flow — The interview classic</h3>
+<pre><code>console.<span class="fn">log</span>(<span class="st">'1'</span>);                                      <span class="cm">// L1</span>
+<span class="fn">setTimeout</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'2'</span>), <span class="st">0</span>);                 <span class="cm">// L2</span>
+Promise.<span class="fn">resolve</span>().<span class="fn">then</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'3'</span>));        <span class="cm">// L3</span>
+Promise.<span class="fn">resolve</span>().<span class="fn">then</span>(() =&gt; {
+  console.<span class="fn">log</span>(<span class="st">'4'</span>);
+  <span class="fn">setTimeout</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'5'</span>), <span class="st">0</span>);               <span class="cm">// L4</span>
+});
+console.<span class="fn">log</span>(<span class="st">'6'</span>);                                      <span class="cm">// L5</span>
+<span class="cm">// Output: 1 6 3 4 2 5</span></code></pre>
+<pre class="diagram">
+  Sync phase (current macrotask = script itself):
+    L1 → '1'   L2 → timer register (macro)   L3, L4 → micro queue mein
+    L5 → '6'   script khatam, stack khali
+  Microtask drain:
+    '3' → '4' (iske andar naya timer '5' register hua — macro mein gaya)
+  Macrotask 1: '2'   → micro drain (khali)
+  Macrotask 2: '5'
+</pre>
+
+<h3 class="part">6. Architecture — Zone.js yahin baitha hai</h3>
+<p>Zone.js <strong>monkey-patches</strong> karta hai saare async entry points ko: <code>setTimeout</code>, <code>Promise.then</code>, <code>addEventListener</code>, <code>fetch</code>/XHR... Har patched callback ke aage-peeche hooks lagte hain. Jab microtask queue drain ho jaati hai aur koi pending tracked task nahi bachta, NgZone <code>onMicrotaskEmpty</code> event fire karta hai — <em>tab</em> Angular <code>ApplicationRef.tick()</code> chalata hai = change detection.</p>
+<pre class="diagram">
+  button click
+    → Zone-patched listener chala (tumhara handler)
+    → handler ke andar ke Promise.then bhi zone mein tracked
+    → sab async kaam settle... microtask queue empty
+    → NgZone.onMicrotaskEmpty ✦
+    → ApplicationRef.tick() → change detection → DOM update
+</pre>
+<p class="mut">Isi liye <code>runOutsideAngular()</code> perf trick hai: mousemove jaise high-frequency events ko zone ke bahar chalao, CD har event pe trigger nahi hogi. Aur zoneless Angular (signals-based) ye poora patching hata deta hai — change notification signals se aati hai, event loop spying se nahi. Ye paragraph Chapter "Change Detection" ka trailer hai.</p>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="kw">export class</span> <span class="fn">ChartComponent</span> {
+  <span class="kw">private</span> zone = <span class="fn">inject</span>(NgZone);
+
+  <span class="fn">ngAfterViewInit</span>() {
+    <span class="cm">// High-frequency events zone ke BAHAR — warna har mousemove pe CD</span>
+    <span class="kw">this</span>.zone.<span class="fn">runOutsideAngular</span>(() =&gt; {
+      <span class="kw">this</span>.canvas.<span class="fn">addEventListener</span>(<span class="st">'mousemove'</span>, e =&gt; <span class="kw">this</span>.<span class="fn">drawCrosshair</span>(e));
+    });
+  }
+
+  <span class="fn">onDataPointSelect</span>(point: DataPoint) {
+    <span class="cm">// State change UI mein dikhna hai → wapas zone ke andar</span>
+    <span class="kw">this</span>.zone.<span class="fn">run</span>(() =&gt; <span class="kw">this</span>.selected = point);
+  }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — Stack blocking dikhao</h3>
+<pre><code><span class="fn">setTimeout</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'timer done'</span>), <span class="st">100</span>);
+
+<span class="kw">const</span> start = Date.<span class="fn">now</span>();
+<span class="kw">while</span> (Date.<span class="fn">now</span>() - start &lt; <span class="st">2000</span>) {}   <span class="cm">// 2 sec ka sync block</span>
+
+console.<span class="fn">log</span>(<span class="st">'loop done'</span>);
+<span class="cm">// Output: 'loop done' → phir 'timer done' (~2000ms pe, 100 pe NAHI!)
+// Timer ne 100ms pe callback queue mein daal diya tha,
+// par event loop stack khali hone ka wait karta raha.
+// setTimeout(fn, 100) = "MINIMUM 100ms baad", guarantee nahi.</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Microtask starvation vs task chunking</h3>
+<pre><code><span class="cm">// ❌ Ye page HANG kar dega — render kabhi nahi hoga</span>
+<span class="kw">function</span> <span class="fn">starve</span>() {
+  Promise.<span class="fn">resolve</span>().<span class="fn">then</span>(starve);   <span class="cm">// L1: microtask → naya microtask → ...</span>
+}
+
+<span class="cm">// ✅ Ye page responsive rakhega — heavy kaam chunks mein</span>
+<span class="kw">async function</span> <span class="fn">processLargeList</span>(items) {
+  <span class="kw">const</span> <span class="nm">CHUNK</span> = <span class="st">500</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="st">0</span>; i &lt; items.length; i += <span class="nm">CHUNK</span>) {  <span class="cm">// L2</span>
+    items.<span class="fn">slice</span>(i, i + <span class="nm">CHUNK</span>).<span class="fn">forEach</span>(processItem);  <span class="cm">// L3</span>
+    <span class="kw">await new</span> Promise(r =&gt; <span class="fn">setTimeout</span>(r, <span class="st">0</span>));         <span class="cm">// L4: yield to event loop!</span>
+  }
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Microtask checkpoint queue ko <em>tab tak</em> drain karta hai jab tak khali na ho — aur har drain ek naya microtask add karta hai. Loop kabhi step 3 (render) tak pahunchta hi nahi. Same code <code>setTimeout(starve, 0)</code> se hota toh page responsive rehta — har iteration ke beech render window milti.</li>
+<li><strong>L2–L3:</strong> 500 items sync process — chhota, ~ek frame budget ke andar.</li>
+<li><strong>L4:</strong> Trick ka dil: <code>setTimeout(r, 0)</code> ek <em>macrotask</em> hai. <code>await</code> yahan function ko suspend karta hai, current task khatam hota hai, browser ko render + user events ka mauka milta hai, phir agla chunk. Agar yahan <code>await Promise.resolve()</code> hota (microtask), toh render ka mauka <em>nahi</em> milta — micro vs macro ka practical difference yahi hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li><code>setTimeout(fn, 0)</code> ko "immediately" samajhna — minimum delay hai; stack + pehle ke tasks ke baad. (Nested timers 5+ level pe browsers 4ms clamp bhi lagate hain.)</li>
+<li>Promise callback ko macrotask bolna interview mein — <code>.then</code> microtask hai. Ye galti screening round mein hi filter kar deti hai.</li>
+<li>"Async code parallel chalta hai" — JS mein <em>concurrent</em> hota hai (interleaved), parallel nahi (Web Workers ko chhod ke). Web APIs ka kaam (network, timer) browser threads pe hota hai, <em>tumhara callback</em> hamesha main thread pe.</li>
+<li>Heavy sync loop ko async function mein daal ke sochna ki non-blocking ho gaya — <code>async</code> keyword thread nahi banata; andar ka sync code utna hi blocking hai.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Long tasks (&gt;50ms) todo: chunking + macrotask yield, ya <code>requestIdleCallback</code>, ya Web Worker mein bhejo (serialization cost tol ke).</li>
+<li>DOM read/write batching: visual updates <code>requestAnimationFrame</code> mein — render se theek pehle, layout thrashing se bachaav.</li>
+<li>Angular: high-frequency listeners <code>runOutsideAngular</code>; state settle hone pe <code>zone.run</code> se wapas.</li>
+<li>Ordering pe depend karna hai toh explicit karo (await chains) — "ye timer usse pehle chalega" wali implicit assumptions PR mein flag karo.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Frame budget = <strong>16.6ms</strong> (60fps). Ek macrotask + uske microtasks + render sab isme fit hone chahiye warna dropped frames = jank. DevTools Performance tab mein "Long Tasks" (red triangles) yahi dikhate hain. Microtasks sasta scheduling hai (no queue round-trip) par render block karte hain; macrotasks render window dete hain par ~ms-level latency. Choose accordingly: DOM-flush ke baad kaam = microtask; heavy batch = macrotask chunks.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>queueMicrotask(fn)</code> — direct microtask API, Promise allocate kiye bina.</li>
+<li>UI event handlers ke beech bhi microtasks drain hote hain: do click listeners ho toh pehle listener ke <code>.then</code> dusre listener se <em>pehle</em> chal jaate hain — lekin <code>el.click()</code> programmatically call karo toh dono listeners sync chain mein chalte hain, microtasks baad mein. (Jake Archibald ka classic example.)</li>
+<li>Node.js ka model alag hai: phases (timers → poll → check), <code>setImmediate</code>, <code>process.nextTick</code> (microtask se bhi pehle). Browser answer ko Node pe blindly apply mat karo.</li>
+<li><code>await</code> ke baad ka code microtask mein resume hota hai — matlab <code>async</code> function ke pehle sync hisse aur baad ke hisse ke beech doosra code ghus sakta hai (interleaving). Race conditions single thread pe bhi possible hain!</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> JS single-threaded hai toh async kaise handle karta hai?</summary><div class="ans"><p>JS engine single-threaded hai, par browser nahi. Async kaam (timers, network) Web APIs ko delegate hota hai jo apne threads pe chalte hain; completion pe callback queue mein aata hai; event loop stack khali hone pe use stack pe daalta hai. Callbacks hamesha main thread pe hi chalte hain.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Microtask aur Macrotask — 3 examples each + priority rule.</summary><div class="ans"><p>Micro: <code>Promise.then/catch/finally</code>, <code>queueMicrotask</code>, <code>MutationObserver</code>. Macro: <code>setTimeout/setInterval</code>, UI events, <code>postMessage</code>/network callbacks. Rule: har macrotask ke baad poori microtask queue drain hoti hai, phir render opportunity, phir agla macrotask.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Output order batao: async function ke andar await se pehle wala code kab chalta hai?</summary><div class="ans"><pre><code><span class="kw">async function</span> <span class="fn">f</span>() { console.<span class="fn">log</span>(<span class="st">'A'</span>); <span class="kw">await</span> <span class="st">null</span>; console.<span class="fn">log</span>(<span class="st">'B'</span>); }
+console.<span class="fn">log</span>(<span class="st">'1'</span>); <span class="fn">f</span>(); console.<span class="fn">log</span>(<span class="st">'2'</span>);
+<span class="cm">// 1, A, 2, B</span></code></pre><p>Async function call pe <em>synchronously</em> chalta hai pehle <code>await</code> tak ('A'). <code>await</code> pe suspend + baaki function microtask ke roop mein schedule. Isliye '2' pehle, 'B' baad mein. Ye samajh gaye toh aadhe output-prediction questions free hain.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Angular change detection event loop se kaise juda hai?</summary><div class="ans"><p>Zone.js async APIs patch karta hai; har tracked async operation complete hone pe count karta hai. Jab microtask queue empty hoti hai (koi pending micro nahi), NgZone <code>onMicrotaskEmpty</code> emit karta hai jise subscribe karke <code>ApplicationRef.tick()</code> chalta hai. Isliye: zone ke bahar ka async (patched nahi) CD trigger nahi karta; aur ek event ke saare Promises settle hone ke <em>baad</em> ek hi CD pass hota hai — per-promise nahi.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> requestAnimationFrame event loop mein exactly kahan fit hota hai, aur setTimeout(fn, 16) se animation ke liye better kyun hai?</summary><div class="ans"><p>rAF callbacks render steps ka part hain — style/layout/paint se theek pehle, us frame ke saath synced. setTimeout(16): (1) frame boundary se aligned nahi — drift + do callbacks ek frame mein ya frame miss, (2) background tabs mein bhi fire hota rehta hai (rAF pause), (3) timer clamping. rAF ek frame mein exactly ek baar, vsync ke saath. Follow-up ready: rAF ke andar layout read + write mat mix karo — thrash hota hai; reads pehle, writes baad.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Dashboard mein WebSocket 200 messages/sec bhej raha hai aur UI lag kar rahi hai. Event-loop-level diagnosis + fixes?</summary><div class="ans"><p>Diagnosis: har message → zone-patched handler → CD pass → 200 CD/sec + render pressure. Performance tab mein long tasks aur "Recalculate style" storms dikhenge. Fixes ladder: (1) messages ko buffer karo — RxJS <code>bufferTime(100)</code> ya manual queue + rAF flush → UI max 10-60 updates/sec; (2) socket handling <code>runOutsideAngular</code>, sirf flush pe <code>zone.run</code>; (3) OnPush + immutable batch updates taaki CD scoped rahe; (4) parsing heavy ho toh Web Worker mein; (5) DOM list virtualized (CDK virtual scroll). Numbers ke saath bolo — "200/sec ko 10/sec visual updates mein collapse karna" — ye SDE-3 framing hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Loop cycle: 1 macrotask → ALL microtasks → (maybe) render → repeat.</li>
+<li>Micro: then/queueMicrotask/MutationObserver. Macro: timers/events/IO. rAF: render se pehle.</li>
+<li><code>setTimeout(fn,0)</code> = minimum delay. Sync block sab kuch rokta hai — async keyword bhi nahi bachata.</li>
+<li>Async fn: await tak sync, baaki microtask mein resume.</li>
+<li>Zone.js = async APIs patched → microtask empty → tick() → CD. <code>runOutsideAngular</code> = is pipeline se bahar.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-6.1 · Output prediction set</div><p>10 snippets banao (khud!) jisme setTimeout, Promise chains, async/await, queueMicrotask mix hon. Pehle paper pe output likho, phir run karo. 10/10 hone tak repeat — ye skill screening rounds mein directly poochi jaati hai.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-6.2 · processInChunks(items, fn, chunkSize)</div><p>Non-blocking batch processor jo progress callback de aur cancel() support kare. Bonus: chunk size ko frame time (performance.now) ke hisaab se adaptive banao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-6.3 · Mini task scheduler</div><p><code>schedule(fn, priority)</code> — 'micro' | 'macro' | 'frame' priorities, internally queueMicrotask/setTimeout/rAF pe map ho. flush() aur ordering tests likho.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-6.4 · Event loop visualizer (mini project)</div><p>HTML page banao jisme buttons se tasks add hon aur stack/micro/macro queues ki animated state dikhe. (Tumhare YouTube channel ke liye perfect demo bhi ban jayega.)</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Promise &amp; Async/Await</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>Promise states · then chaining internals · Error propagation · Combinators (all/allSettled/race/any) · async/await desugaring · Angular APP_INITIALIZER/resolvers</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Promise = <strong>future value ka placeholder object</strong>. Ek aisa dabba jisme value <em>abhi</em> nahi hai, par aane wali hai (ya error aayega). Teen states: <code>pending</code> → <code>fulfilled</code> (value ke saath) ya <code>rejected</code> (reason ke saath). Fulfilled/rejected dono ko <em>settled</em> kehte hain — aur settled state <strong>immutable</strong> hai, ek baar set toh hamesha wahi. <code>async/await</code> isi Promise machinery ke upar syntax hai jo async code ko sync jaisa dikhata hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Promises se pehle callbacks the — aur unke saath <strong>callback hell</strong>: nested pyramids, error handling har level pe manually, aur <em>inversion of control</em> ka trust issue (callback kisi third-party fn ko diya — wo use 0 baar bhi call kar sakta hai, 5 baar bhi). Promise ne contract diya: <em>exactly once settle hoga, state immutable hogi, aur error chain se neeche automatically flow karegi.</em></p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Pyramid of doom</strong> → flat <code>.then</code> chains → aur bhi flat <code>async/await</code>.</li>
+<li><strong>Error handling ka duplication</strong> → ek <code>.catch</code>/ek <code>try/catch</code> poori chain cover karta hai.</li>
+<li><strong>Trust problem</strong> → resolve/reject sirf ek baar effective; baad ke calls silently ignore.</li>
+<li><strong>Composition</strong> → parallel (<code>all</code>), race, partial failure (<code>allSettled</code>) — callbacks se ye likhna nightmare tha.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p>Promise object ke andar (spec ke internal slots):</p>
+<ul>
+<li><code>[[PromiseState]]</code> — pending / fulfilled / rejected</li>
+<li><code>[[PromiseResult]]</code> — value ya rejection reason</li>
+<li><code>[[PromiseFulfillReactions]]</code> / <code>[[PromiseRejectReactions]]</code> — pending state mein registered <code>.then</code> callbacks ki lists</li>
+</ul>
+<p><strong>Settle hone pe kya hota hai:</strong> reactions ko <em>microtask queue</em> mein daala jaata hai (Section 6 direct connection). Agar promise <em>pehle se settled</em> hai aur tum <code>.then</code> lagao — callback phir bhi <strong>sync nahi</strong> chalta, microtask mein hi jaata hai. Ye guarantee ("always async") race conditions ki poori category khatam karti hai.</p>
+<p><strong><code>.then</code> ka asli magic:</strong> har <code>.then</code> ek <em>naya</em> promise return karta hai. Us naye promise ki fate tumhare callback ke return pe depend karti hai:</p>
+<table>
+<tr><th>Callback ne kya kiya</th><th>Naya promise</th></tr>
+<tr><td>Value return ki</td><td>Us value se fulfilled</td></tr>
+<tr><td>Throw kiya</td><td>Us error se rejected</td></tr>
+<tr><td><strong>Promise/thenable return kiya</strong></td><td>Us promise mein <em>ghul jaata hai</em> (uski fate adopt karta hai) — isi ko flattening/resolution kehte hain</td></tr>
+</table>
+<div class="dg-title">Diagram — Chain = naye promises ki ladi</div>
+<pre class="diagram">
+  fetch(url)          .then(r => r.json())        .then(data => data.id)
+     │                       │                            │
+     ▼                       ▼                            ▼
+   P1 (network)      P2 (naya! r.json() ke        P3 (naya! id se
+                      promise mein ghula)          fulfilled)
+
+  P1 !== P2 !== P3 — teen alag objects.
+  Error kahin bhi aaye → neeche pehle .catch tak SKIP karta hua girta hai.
+</pre>
+
+<h3 class="part">5. Execution Flow — async/await desugared</h3>
+<p><code>async/await</code> generator + promise state machine ka sugar hai. Engine tumhare function ko suspend/resume points pe todta hai:</p>
+<pre><code><span class="cm">// Tumne likha:</span>
+<span class="kw">async function</span> <span class="fn">getUser</span>(id) {
+  <span class="kw">const</span> res  = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="st">`/api/users/${id}`</span>);
+  <span class="kw">const</span> user = <span class="kw">await</span> res.<span class="fn">json</span>();
+  <span class="kw">return</span> user.name;
+}
+
+<span class="cm">// Engine ne conceptually ye samjha:</span>
+<span class="kw">function</span> <span class="fn">getUser</span>(id) {
+  <span class="kw">return</span> <span class="fn">fetch</span>(<span class="st">`/api/users/${id}`</span>)      <span class="cm">// await #1 = .then boundary</span>
+    .<span class="fn">then</span>(res =&gt; res.<span class="fn">json</span>())             <span class="cm">// await #2 = agla .then</span>
+    .<span class="fn">then</span>(user =&gt; user.name);           <span class="cm">// return = final fulfillment value</span>
+}</code></pre>
+<pre class="diagram">
+  getUser(7) call
+    │ sync chalega pehle await tak (fetch fire hua)
+    │ AWAIT → function SUSPEND, caller ko turant pending promise wapas
+    ▼
+  ...event loop apna kaam karta rahega (UI zinda!)...
+    ▼
+  fetch settle → resume-callback MICROTASK mein
+    │ function wahi se resume, res mila
+    │ agla await → phir suspend...
+    ▼
+  return user.name → getUser ka promise fulfilled
+</pre>
+<p><strong>Rules jo isse nikalte hain:</strong> (1) <code>async</code> function <em>hamesha</em> promise return karta hai — <code>return 5</code> bhi <code>Promise.resolve(5)</code> ban jaata hai; (2) <code>throw</code> = rejected promise; (3) <code>await</code> sirf current function suspend karta hai, thread nahi — caller aage badh jaata hai.</p>
+
+<h3 class="part">6. Architecture — Combinators decision map</h3>
+<table>
+<tr><th>Combinator</th><th>Resolve kab</th><th>Reject kab</th><th>Use case</th></tr>
+<tr><td><code>Promise.all</code></td><td>SAB fulfilled (values array, order preserved)</td><td>Pehla reject aate hi (fail-fast)</td><td>Sab data zaroori hai — dashboard ke 3 APIs</td></tr>
+<tr><td><code>Promise.allSettled</code></td><td>Sab settle hone pe, hamesha fulfilled (<code>{status, value/reason}</code> array)</td><td>Kabhi nahi</td><td>Partial failure OK — 10 widgets, jo aaye dikhao</td></tr>
+<tr><td><code>Promise.race</code></td><td>Pehla settle jo bhi ho</td><td>Pehla settle reject ho toh</td><td>Timeout pattern, fastest source</td></tr>
+<tr><td><code>Promise.any</code></td><td>Pehla FULFILLED</td><td>Sab reject (AggregateError)</td><td>Fallback mirrors — koi ek chal jaye</td></tr>
+</table>
+<div class="panel warn-p"><div class="ptitle">⚠ all ka hidden gotcha</div><p><code>Promise.all</code> reject hone pe baaki promises <strong>cancel nahi hote</strong> — wo background mein chalte rehte hain, sirf unke results ignore hote hain. JS promises mein cancellation hai hi nahi — yahi wo jagah hai jahan RxJS Observables (unsubscribe = teardown) fundamentally jeet-te hain. Angular <code>HttpClient</code> Observable isi liye return karta hai: route change pe pending request <em>actually abort</em> ho sakti hai (<code>switchMap</code> ka superpower).</p></div>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// 1) App start hone se PEHLE config load — provideAppInitializer promise ka wait karta hai</span>
+<span class="kw">export const</span> appConfig: ApplicationConfig = {
+  providers: [
+    <span class="fn">provideAppInitializer</span>(() =&gt; {
+      <span class="kw">const</span> cfg = <span class="fn">inject</span>(ConfigService);
+      <span class="kw">return</span> cfg.<span class="fn">load</span>();   <span class="cm">// Promise return karo — Angular bootstrap rukega</span>
+    })
+  ]
+};
+
+<span class="cm">// 2) Parallel independent calls — dashboard pattern</span>
+<span class="kw">async</span> <span class="fn">loadDashboard</span>() {
+  <span class="kw">const</span> [user, orders, stats] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+    <span class="fn">firstValueFrom</span>(<span class="kw">this</span>.api.<span class="fn">getUser</span>()),
+    <span class="fn">firstValueFrom</span>(<span class="kw">this</span>.api.<span class="fn">getOrders</span>()),
+    <span class="fn">firstValueFrom</span>(<span class="kw">this</span>.api.<span class="fn">getStats</span>()),
+  ]);
+}</code></pre>
+<p class="mut"><code>firstValueFrom</code> Observable→Promise bridge hai. Rule of thumb: one-shot value (config, single fetch in guard/initializer) = promise theek; streams, cancellation, retry logic = Observable mein raho.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">const</span> p = <span class="kw">new</span> Promise((resolve, reject) =&gt; {
+  <span class="fn">setTimeout</span>(() =&gt; {
+    Math.<span class="fn">random</span>() &gt; <span class="st">0.5</span> ? <span class="fn">resolve</span>(<span class="st">'✅ data'</span>) : <span class="fn">reject</span>(<span class="kw">new</span> <span class="fn">Error</span>(<span class="st">'❌ fail'</span>));
+  }, <span class="st">1000</span>);
+});
+
+p.<span class="fn">then</span>(data =&gt; console.<span class="fn">log</span>(data))
+ .<span class="fn">catch</span>(err =&gt; console.<span class="fn">error</span>(err.message))
+ .<span class="fn">finally</span>(() =&gt; console.<span class="fn">log</span>(<span class="st">'done either way'</span>));
+
+<span class="cm">// Same cheez async/await mein:</span>
+<span class="kw">try</span> {
+  <span class="kw">const</span> data = <span class="kw">await</span> p;
+  console.<span class="fn">log</span>(data);
+} <span class="kw">catch</span> (err) {
+  console.<span class="fn">error</span>(err.message);
+} <span class="kw">finally</span> {
+  console.<span class="fn">log</span>(<span class="st">'done either way'</span>);
+}</code></pre>
+
+<h3 class="part">9. Advanced Example — retry with exponential backoff + timeout</h3>
+<pre><code><span class="kw">function</span> <span class="fn">withTimeout</span>(promise, ms) {                              <span class="cm">// L1</span>
+  <span class="kw">return</span> Promise.<span class="fn">race</span>([
+    promise,
+    <span class="kw">new</span> Promise((_, reject) =&gt;
+      <span class="fn">setTimeout</span>(() =&gt; <span class="fn">reject</span>(<span class="kw">new</span> <span class="fn">Error</span>(<span class="st">'Timeout'</span>)), ms))    <span class="cm">// L2</span>
+  ]);
+}
+
+<span class="kw">async function</span> <span class="fn">retryFetch</span>(url, { retries = <span class="st">3</span>, baseDelay = <span class="st">300</span> } = {}) {
+  <span class="kw">for</span> (<span class="kw">let</span> attempt = <span class="st">0</span>; attempt &lt;= retries; attempt++) {       <span class="cm">// L3</span>
+    <span class="kw">try</span> {
+      <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">withTimeout</span>(<span class="fn">fetch</span>(url), <span class="st">5000</span>);         <span class="cm">// L4</span>
+      <span class="kw">if</span> (!res.ok) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="st">`HTTP ${res.status}`</span>);      <span class="cm">// L5</span>
+      <span class="kw">return await</span> res.<span class="fn">json</span>();                                  <span class="cm">// L6</span>
+    } <span class="kw">catch</span> (err) {
+      <span class="kw">if</span> (attempt === retries) <span class="kw">throw</span> err;                       <span class="cm">// L7</span>
+      <span class="kw">const</span> delay = baseDelay * <span class="st">2</span> ** attempt;                   <span class="cm">// L8</span>
+      <span class="kw">await new</span> Promise(r =&gt; <span class="fn">setTimeout</span>(r, delay));             <span class="cm">// L9</span>
+    }
+  }
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1–L2:</strong> <code>race</code> — jo pehle settle ho, wahi jeete. Timeout promise reject karta hai <code>ms</code> pe. Note: original fetch <em>abort nahi</em> hota — race sirf result ignore karta hai (Section 6 ka lesson). Production mein <code>AbortController</code> + <code>fetch(url, {signal})</code> se actual cancellation add karte hain.</li>
+<li><strong>L3:</strong> Loop-based retry — recursion se cleaner, stack safe.</li>
+<li><strong>L4:</strong> <code>await</code> = yahan reject hua toh seedha <code>catch</code> mein — try/catch async errors ko sync jaisa handle karta hai.</li>
+<li><strong>L5:</strong> Fetch ka famous gotcha: 404/500 pe reject <em>nahi</em> hota (sirf network failure pe hota hai). HTTP errors manually throw karne padte hain. Interview mein ye zaroor bolo.</li>
+<li><strong>L6:</strong> <code>return await</code> — normally redundant, <em>lekin try block ke andar zaroori hai</em>: bina await ke <code>res.json()</code> ka rejection is catch mein nahi aayega (function return ho chuka hoga). Subtle, senior-level detail.</li>
+<li><strong>L7–L9:</strong> Last attempt fail = error upar propagate. Warna exponential delay (300, 600, 1200ms) — "promisified setTimeout" pattern se await-able sleep.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li><strong>Sequential await jab parallel possible tha:</strong> <code>const a = await f1(); const b = await f2();</code> — independent calls, phir bhi total = t1 + t2. Fix: pehle fire karo, phir await: <code>const [a, b] = await Promise.all([f1(), f2()])</code>.</li>
+<li><strong>Floating promises:</strong> <code>this.save()</code> (async) call kiya, na await, na catch — error silently unhandledrejection mein gaya. ESLint <code>no-floating-promises</code> lagao.</li>
+<li><strong><code>forEach</code> + async:</strong> <code>items.forEach(async x =&gt; await save(x))</code> — forEach promises ka wait <em>nahi</em> karta; loop "khatam" pehle, saves baad mein. Sequential chahiye toh <code>for...of</code>, parallel toh <code>map</code> + <code>Promise.all</code>.</li>
+<li><code>.then(fn).catch(fn)</code> vs <code>.then(fn, fn)</code> confuse karna — dusre form mein <em>usi then ke</em> fn ka error catch nahi hota.</li>
+<li>Constructor executor mein async function dena: <code>new Promise(async (res, rej) =&gt; ...)</code> — executor ke throw silently kho jaate hain (rejected promise return hota hai jise koi nahi sunta).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Independent async work = <code>Promise.all</code>; user-facing partial UIs = <code>allSettled</code>.</li>
+<li>Har await-chain ka error owner ho — component boundary pe try/catch ya global handler, beech mein swallow mat karo.</li>
+<li>Angular mein HTTP ke liye Observables default; promise-bridge sirf boundaries pe (<code>firstValueFrom</code> in guards/initializers).</li>
+<li>Cancellation chahiye toh <code>AbortController</code> design mein day-1 se — retrofit painful hai.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Har <code>.then</code>/<code>await</code> boundary = minimum ek microtask hop — nano-level cost, ignore karo. Asli costs: (1) <strong>sequential-vs-parallel</strong> — sabse bada real-world perf bug, network waterfall DevTools mein saaf dikhta hai; (2) unbounded <code>Promise.all(10_000 fetches)</code> — browser per-origin ~6 connections queue karega + server DDoS feel karega; concurrency-limited pool banao (MC-7.3); (3) <code>async</code> functions ka transpiled ES5 output (generators + regenerator) bloated hota tha — modern targets (ES2017+) native async use karte hain, build config check karo.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>Promise.resolve(thenable)</code> — thenable (koi bhi object jisme <code>.then</code> method ho) ko asli promise mein unwrap karta hai. Interop ka mechanism yahi hai.</li>
+<li><code>await</code> non-promise pe bhi lagta hai: <code>await 5</code> → microtask hop + 5. Matlab <code>await</code> hamesha async boundary banata hai, value promise ho ya na ho.</li>
+<li><code>.finally(fn)</code> — fn ko value/reason <em>nahi</em> milta, aur uska return value chain ko change nahi karta (throw karega toh zaroor rejection banega).</li>
+<li>Ek promise pe multiple <code>.then</code> lagao (chain nahi, branch): sab callbacks chalenge, registration order mein — promise multicast hai.</li>
+<li><code>unhandledrejection</code> window event — production error tracking (Sentry-style) mein isko listen karna standard hai.</li>
+<li>Top-level await ES modules mein allowed hai — par wo module graph ke dependents ko block karta hai; entry points pe soch ke use karo.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Promise ki states batao aur "settled ke baad immutable" ka matlab?</summary><div class="ans"><p>pending → fulfilled(value) / rejected(reason). Settle hone ke baad state aur result kabhi nahi badalte; resolve/reject ke extra calls silently ignore. Isi guarantee se "callback do baar chal gaya" class of bugs khatam hoti hai.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> async function hamesha kya return karta hai?</summary><div class="ans"><p>Promise — chahe tum <code>return 5</code> karo (→ fulfilled with 5), kuch na karo (→ fulfilled with undefined), ya <code>throw</code> karo (→ rejected). Caller ke liye async function ek promise-factory hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> .then(onFulfilled, onRejected) aur .then(onFulfilled).catch(onRejected) same nahi hain — kyun?</summary><div class="ans"><p>Do-argument form mein <code>onRejected</code> sirf <em>upstream</em> rejection pakadta hai — agar <code>onFulfilled</code> khud throw kare toh wo isi handler se miss ho jaata hai (agle level pe jaata hai). <code>.catch</code> chain mein <em>neeche</em> hai, toh upar ka sab kuch — including then ka callback — cover karta hai. Default: <code>.catch</code> form.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Promise.all vs allSettled vs race vs any — kab kya? Ek real scenario per combinator.</summary><div class="ans"><p><code>all</code>: checkout page — user + cart + payment methods, ek bhi fail toh page fail (fail-fast sahi hai). <code>allSettled</code>: dashboard widgets — 8 mein se 2 fail, baaki 6 dikhao. <code>race</code>: kisi bhi promise pe 5s timeout wrapper. <code>any</code>: CDN mirrors — jo pehle succeed kare. Bonus point: all reject hone pe baaki promises cancel nahi hote — cancellation ke liye AbortController/Observables.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> await ke neeche kya hai — engine function ko kaise suspend karta hai?</summary><div class="ans"><p>Async function internally generator-like state machine hai. Har <code>await</code> pe: (1) operand ko <code>Promise.resolve()</code>-wrap karo, (2) us promise pe resume-continuation (function ka bacha hua code + saved local state) reactions mein register karo, (3) function ka execution context stack se pop — caller ko pending promise milta hai. Settle pe continuation <em>microtask</em> mein chalti hai, saved context restore hota hai, execution wahi se resume. Isliye: await tak sync, uske baad microtask semantics — Section 6 ke output-order questions isi se solve hote hain.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Search-as-you-type feature promises se banaya — teen problems batao jo aayengi, aur Angular ka idiomatic solution.</summary><div class="ans"><p>Problems: (1) <strong>race condition / out-of-order responses</strong> — "del" ka response "delhi" ke response ke <em>baad</em> aaya, stale results overwrite; promises pe ordering ka koi control nahi. (2) <strong>no cancellation</strong> — har keystroke ka request network pe chalta rahega. (3) <strong>no built-in debounce/dedup</strong> — manually likhna padega (closure section ka debounce). Idiomatic Angular: <code>input$.pipe(debounceTime(300), distinctUntilChanged(), switchMap(q =&gt; this.api.search(q)))</code> — switchMap pichla inner observable <em>unsubscribe</em> karta hai = HTTP abort + stale results impossible. Ye answer promises ki limits + RxJS ka justification dono dikhata hai — exactly wahi jo interviewer sunna chahta hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>3 states; settled = immutable; reactions microtask mein — hamesha, even if already settled.</li>
+<li><code>.then</code> = naya promise. Return value → fulfill; throw → reject; promise → adopt (flatten).</li>
+<li>async fn = promise factory; await tak sync, baad mein microtask resume; <code>await x</code> non-promise pe bhi hop.</li>
+<li>all = fail-fast, allSettled = never rejects, race = first settled, any = first fulfilled.</li>
+<li>Fetch: HTTP errors pe reject nahi hota. try mein <code>return await</code>. forEach + async = trap.</li>
+<li>Promise = no cancellation → Observables/AbortController.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-7.1 · Promise polyfill (MyPromise)</div><p>then/catch/finally + chaining + flattening + "always async" (queueMicrotask) ke saath Promises/A+ compliant MyPromise class. Ye THE machine coding question hai — 2 baar khud se likho.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-7.2 · promiseAll + promiseAllSettled polyfills</div><p>Empty array, non-promise values, order preservation, fail-fast — sab handle karo. Phir race aur any bhi.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-7.3 · pLimit(concurrency)</div><p>Concurrency-limited executor: <code>const limit = pLimit(3); urls.map(u =&gt; limit(() =&gt; fetch(u)))</code> — max 3 ek saath, baaki queue mein. (Product companies ka favourite.)</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-7.4 · sleep + retry + timeout toolkit</div><p><code>sleep(ms)</code>, <code>withTimeout(p, ms)</code> (AbortController version!), <code>retry(fn, {retries, backoff, shouldRetry})</code> — teeno compose karke ek resilient <code>fetchJson</code> banao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Modules, Memory Management &amp; Garbage Collection</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>ESM vs CommonJS · Live bindings · Tree shaking · Stack vs Heap · Mark-and-Sweep · Generational GC · SPA memory leaks · WeakMap/WeakRef</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p><strong>Module</strong> = apne scope wali file jo explicitly batati hai kya export karti hai aur kya import karti hai. <strong>Memory management</strong> = allocation (values banana) + retention (kaun kise zinda rakh raha hai) + release. JS mein release automatic hai — <strong>Garbage Collector</strong> wo values free karta hai jo <em>unreachable</em> ho gayi hain. Key word: unreachable, <em>unused nahi</em>. GC ko nahi pata tum kya use karoge — use sirf ye pata hai kis tak <em>pahuncha</em> ja sakta hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Modules ke bina: script tags ka order-dependent jenga, global namespace ki dharmshala, aur "kaun kis pe depend karta hai" ka koi record nahi. Memory management ke bina: C/C++ wala manual <code>free()</code> — use-after-free, double-free, leaks. JS ne dono automate kiye — <em>lekin</em> SPA era mein automatic GC ka matlab "leak-proof" nahi hai. Angular app ghanton open rehti hai; ek chhota retention bug × hours = crashed tab. Isliye ye section sirf theory nahi, production survival hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>ESM</strong>: dependency graph <em>static</em> hai (imports top pe, strings compile-time known) → bundler poora graph bana ke <strong>tree shaking</strong> kar sakta hai — unused exports final bundle se bahar. Angular ka <code>providedIn: 'root'</code> isi liye design hua: service kahin inject nahi hui toh shake out ho jaati hai.</li>
+<li><strong>GC</strong>: memory safety by default — dangling pointers ki poori category nonexistent.</li>
+<li><strong>Weak collections</strong> (WeakMap/WeakSet/WeakRef): "cache rakho par zinda mat rakho" problem solve karte hain.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<h4>A) ESM vs CommonJS — asli differences</h4>
+<table>
+<tr><th>Aspect</th><th>ESM (<code>import/export</code>)</th><th>CommonJS (<code>require</code>)</th></tr>
+<tr><td>Resolution</td><td>Static — parse time pe graph ready</td><td>Dynamic — runtime pe, kahin bhi, conditionally</td></tr>
+<tr><td>Bindings</td><td><strong>Live</strong> — export badla toh importer ko naya dikhega</td><td>Value copy at require time</td></tr>
+<tr><td>Loading</td><td>Async-capable, browser native</td><td>Sync (Node ka original)</td></tr>
+<tr><td>Tree shaking</td><td>✅ possible</td><td>❌ practically nahi</td></tr>
+<tr><td>this at top level</td><td><code>undefined</code> (strict)</td><td><code>module.exports</code></td></tr>
+</table>
+<p>Module lifecycle: <strong>Construction</strong> (fetch + parse, exports discover) → <strong>Instantiation</strong> (memory allocate, import↔export <em>same memory location</em> se wire — yahi live binding hai) → <strong>Evaluation</strong> (code run, values fill). Har module <strong>ek hi baar evaluate</strong> hota hai — singleton by design. Isi liye module-level <code>const cache = new Map()</code> app-wide shared hota hai.</p>
+<h4>B) Memory — Stack vs Heap</h4>
+<pre class="diagram">
+  STACK (fast, LIFO, chhota)          HEAP (bada, GC-managed)
+  ┌──────────────────────┐            ┌─────────────────────────┐
+  │ frame: fn call       │            │  objects, arrays,       │
+  │  primitives, refs ───┼──────────► │  functions, closures'   │
+  │ frame: caller        │            │  environments, strings  │
+  └──────────────────────┘            └─────────────────────────┘
+  fn return = frame pop = free        GC decide karta hai kab free
+</pre>
+<h4>C) GC — Mark and Sweep + Generational (V8)</h4>
+<p>Algorithm ka core: <strong>roots</strong> se start karo (global object, current stack, active closures ke environments) → har reachable reference follow karke objects <strong>mark</strong> karo → jo unmarked bacha, wo garbage → <strong>sweep</strong> (free). Circular references isse solve ho jaate hain: A↔B ek dusre ko point karein par root se koi rasta na ho, dono collect. (Purana reference counting yahi fail karta tha.)</p>
+<p>V8 ise <strong>generational</strong> banata hai — observation: "zyada tar objects jawan hi marte hain" (temporary objects). Isliye:</p>
+<pre class="diagram">
+  NEW SPACE (nursery, ~1-8MB)          OLD SPACE
+  ┌─────────────────────────┐          ┌──────────────────────────┐
+  │ naye objects yahan      │ 2 minor  │ survivors promote hote   │
+  │ Minor GC (Scavenger):   │ GCs      │ hain. Major GC:          │
+  │ fast, frequent, chhota  │ bache──► │ Mark-Sweep-Compact,      │
+  │ area — survivors copy   │          │ mostly PARALLEL +        │
+  └─────────────────────────┘          │ INCREMENTAL + CONCURRENT │
+                                       └──────────────────────────┘
+  Matlab: short-lived garbage sasta hai; LONG-LIVED garbage (leak) mehenga —
+  wo old space mein baithta hai aur har major GC ko slow karta hai.
+</pre>
+
+<h3 class="part">5. Execution Flow — Ek leak ki zindagi</h3>
+<pre class="diagram">
+  Component create
+    → subscribe() kiya, callback ne `this` (component) capture kiya [closure!]
+    → subscription kisi long-lived Subject (root service) ke listeners mein gayi
+  User navigate away → Angular ne component destroy kiya, DOM hata
+    → LEKIN: root service → subscription → callback → [[Environment]] → component
+    → component ROOT SE REACHABLE hai. GC: "ye garbage nahi hai."
+  Har visit pe naya component + naya retained ghost
+    → old space badhta jaata hai → major GCs lambe → jank → tab crash
+</pre>
+<p>Notice karo: ye Section 3 (closures) + Section 4 (references) + is section ka GC — teeno ek hi story mein mil gaye. Yahi first-principles ka fayda hai.</p>
+
+<h3 class="part">6. Architecture — SPA leak sources (The Big Five)</h3>
+<table>
+<tr><th>#</th><th>Source</th><th>Retention chain</th><th>Fix</th></tr>
+<tr><td>1</td><td>RxJS subscriptions</td><td>Subject → subscriber list → closure → component</td><td><code>takeUntilDestroyed()</code> / async pipe</td></tr>
+<tr><td>2</td><td>Timers</td><td>setInterval registry → callback → component</td><td><code>clearInterval</code> in destroy</td></tr>
+<tr><td>3</td><td>Global listeners</td><td>window/document → listener → component</td><td>remove listener / Renderer2 ka unlisten / signal-based host bindings</td></tr>
+<tr><td>4</td><td>Detached DOM</td><td>JS variable → removed DOM node (+ node → poora subtree)</td><td>references null karo; caches WeakMap mein</td></tr>
+<tr><td>5</td><td>Third-party libs</td><td>chart/map instance internal registries</td><td>documented <code>.destroy()</code> call karo</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="kw">@Component</span>({...})
+<span class="kw">export class</span> <span class="fn">LiveOrdersComponent</span> {
+  <span class="kw">private</span> ws = <span class="fn">inject</span>(OrdersSocketService);
+
+  <span class="cm">// ❌ LEAK: root-scoped service ka stream, unsubscribe kahin nahi</span>
+  <span class="cm">// this.ws.orders$.subscribe(o => this.orders.push(o));</span>
+
+  <span class="cm">// ✅ Component destroy pe auto-teardown</span>
+  orders = <span class="fn">toSignal</span>(<span class="kw">this</span>.ws.orders$, { initialValue: [] });
+  <span class="cm">// ya: this.ws.orders$.pipe(takeUntilDestroyed()).subscribe(...)</span>
+}</code></pre>
+<p class="mut">Aur build side pe: Angular CLI (esbuild) ESM static graph se tree-shake karta hai. Lazy routes (<code>loadComponent: () =&gt; import('./admin/...')</code>) dynamic <code>import()</code> se alag chunks bante hain — module system ka direct production impact: initial bundle chhota, TTI fast.</p>
+
+<h3 class="part">8. Beginner Example — Live bindings dekho</h3>
+<pre><code><span class="cm">// counter.js</span>
+<span class="kw">export let</span> count = <span class="st">0</span>;
+<span class="kw">export function</span> <span class="fn">increment</span>() { count++; }
+
+<span class="cm">// main.js</span>
+<span class="kw">import</span> { count, increment } <span class="kw">from</span> <span class="st">'./counter.js'</span>;
+console.<span class="fn">log</span>(count); <span class="cm">// 0</span>
+<span class="fn">increment</span>();
+console.<span class="fn">log</span>(count); <span class="cm">// 1  ← LIVE binding! CommonJS hota toh 0 hi rehta</span>
+count++;             <span class="cm">// ❌ TypeError — import binding read-only hai</span></code></pre>
+
+<h3 class="part">9. Advanced Example — WeakMap cache (leak-proof metadata)</h3>
+<pre><code><span class="cm">// DOM nodes ke against computed data cache karna hai —
+// par node DOM se hate toh cache entry bhi apne aap jaani chahiye.</span>
+
+<span class="kw">const</span> measurements = <span class="kw">new</span> <span class="fn">WeakMap</span>();               <span class="cm">// L1</span>
+
+<span class="kw">function</span> <span class="fn">getMeasurement</span>(node) {
+  <span class="kw">if</span> (!measurements.<span class="fn">has</span>(node)) {                   <span class="cm">// L2</span>
+    measurements.<span class="fn">set</span>(node, <span class="fn">expensiveMeasure</span>(node)); <span class="cm">// L3</span>
+  }
+  <span class="kw">return</span> measurements.<span class="fn">get</span>(node);
+}
+<span class="cm">// Node unreachable → entry AUTO-collected. Map hota toh:
+// cache khud hi Big Five #4 (detached DOM) leak ban jaata.</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> WeakMap keys <em>weakly held</em> hain — GC reachability count mein WeakMap ka reference ginta hi nahi. Sirf objects keys ban sakte hain (primitives nahi), aur isi wajah se WeakMap <em>iterate nahi ho sakta</em>: entries kabhi bhi gayab ho sakti hain, iteration ka koi consistent snapshot possible nahi.</li>
+<li><strong>L2–L3:</strong> Memoization pattern (Section 3 ka memoize, ab leak-safe version). Node DOM + tumhare code dono se unreachable hua → GC node collect karega → WeakMap entry saath mein.</li>
+<li>Related tools: <code>WeakSet</code> ("is object ko maine process kiya?" marking), <code>WeakRef</code> + <code>FinalizationRegistry</code> (advanced caches; unpredictable, rarely needed — interview mein naam + caution dono bolo).</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>"GC hai toh leak impossible" — GC <em>unreachable</em> free karta hai; tumhara bhoola hua reference use reachable rakhta hai. Leaks = tumhari retention, GC ki failure nahi.</li>
+<li>Barrel files (<code>index.ts</code> jo sab re-export kare) careless use karna — circular imports + tree shaking ko mushkil banate hain; ek import poora barrel evaluate karva sakta hai (side-effectful modules ke saath khaas-kar).</li>
+<li>Module-level mutable state ko "harmless" samajhna — singleton hai, SSR mein toh <em>requests ke beech</em> shared — cross-user data leak ka security bug ban sakta hai.</li>
+<li>Circular imports mein import-time pe value use karna — ESM live bindings ki wajah se TDZ/undefined milega. Functions ke andar use karo (deferred) ya cycle todo.</li>
+<li>Har cache Map mein banana — eviction policy ke bina Map = intentional leak. Bounded LRU ya WeakMap.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Ownership rule: <em>jo subscribe/listen/schedule karta hai, wahi teardown ka owner hai</em> — Angular mein <code>DestroyRef</code>/<code>takeUntilDestroyed</code> se declarative banao.</li>
+<li><code>package.json</code> mein <code>"sideEffects": false</code> (ya precise list) — bundler ko aggressive shaking ki permission.</li>
+<li>Object-keyed caches = WeakMap default; string-keyed = bounded LRU.</li>
+<li>Release ritual: har feature ship se pehle ek baar route pe 5x aao-jao + heap snapshot diff. 10 minute ka kaam, production incident se sasta.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>GC pauses: minor GC sub-millisecond se few ms (nursery chhota hai); major GC V8 mein incremental/concurrent hai par bada retained heap = lambi total pause budget. <strong>Allocation rate bhi cost hai</strong>: hot path (scroll handler, rAF loop) mein har frame naye objects/arrays banana = minor GC storms = jank. Fixes: object reuse/pooling <em>sirf</em> proven hot paths pe (premature pooling code ko ganda karta hai), spread-chains ko batch karo, DevTools → Performance → Memory checkbox se sawtooth pattern padhna seekho: healthy sawtooth = normal churn; <em>baseline upar ki taraf creep</em> = leak.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>import()</code> (dynamic) promise return karta hai aur <em>kahin bhi</em> allowed hai — code splitting ka tool; static analysis ke liye string literal path do, computed strings chunking tod dete hain.</li>
+<li><code>import type</code> (TS) runtime pe poora erase — type-only imports cycles mein safe hain.</li>
+<li>Module evaluate hone ke baad cache mein hai; dobara import = same instance. Tests mein fresh state chahiye toh module registry reset (test runner feature) ya state ko factory se banao.</li>
+<li>Closures ka V8 context-sharing (Section 3) — heap snapshot mein "context" retainer dikhe toh yahi hai.</li>
+<li><code>console.log(obj)</code> DevTools <em>khud</em> object retain karta hai (inspect ke liye) — memory debugging karte waqt logs hata ke snapshot lo, warna ghost leak chase karoge.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> ESM aur CommonJS ke 3 practical differences?</summary><div class="ans"><p>(1) Static vs dynamic resolution — isi se ESM tree-shakable hai; (2) live bindings vs value copy; (3) ESM browser-native + async-capable, top-level await allowed. Bonus: ESM strict mode by default.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Garbage collector kab kisi object ko free karta hai?</summary><div class="ans"><p>Jab wo roots (globals, active stack, live closures) se <em>unreachable</em> ho jaye. Unused hona kaafi nahi — koi bhi ek reference (Map entry, listener, closure) use zinda rakhta hai. Circular refs unreachable hon toh collect ho jaate hain (mark-and-sweep).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Tree shaking kaise kaam karta hai aur kya cheezein use tod deti hain?</summary><div class="ans"><p>Bundler ESM static graph se har export ka usage trace karta hai; unreferenced exports drop. Todne wale: (1) CommonJS/dynamic require, (2) module-level side effects (import karte hi kuch execute — bundler safe-side pe rakh leta hai), (3) computed dynamic imports, (4) <code>sideEffects</code> flag galat hona. Angular angle: <code>providedIn:'root'</code> services isi liye shakable hain — reference tabhi banta hai jab inject ho.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Map vs WeakMap — kab kaunsa, aur WeakMap iterate kyun nahi hota?</summary><div class="ans"><p>Map: koi bhi key, iterable, size — par keys ko strongly hold karta hai (cache = potential leak). WeakMap: sirf object keys, weakly held — key unreachable toh entry auto-gone; metadata/DOM-associated caches ke liye. Iterate isliye nahi: entries GC ke saath nondeterministically gayab hoti hain, iteration expose karna GC timing ko observable bana deta — spec ne jaan ke band rakha.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> V8 ka generational GC explain karo — aur iska tumhare coding style pe kya implication hai?</summary><div class="ans"><p>Do generations: new space (nursery) mein allocation; Minor GC (Scavenger) frequent + fast — live objects ko copy karta hai, dead ko ignore (cost ∝ survivors, garbage free hai!). Do minor GCs survive kiya toh old space mein promotion; wahan Major GC = mark-sweep-compact, incremental/concurrent. Implications: (1) short-lived objects practically free hain — readable code likho, temporaries se mat daro; (2) asli cost = objects ko <em>galti se long-lived banana</em> (leaks old space bloat karte hain); (3) hot loops mein allocation churn minor-GC jank de sakta hai — wahan (sirf wahan) reuse karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Support ticket: "App 2 ghante use karne ke baad slow ho jaati hai, tab reload karna padta hai." Step-by-step investigation plan batao.</summary><div class="ans"><p>(1) Reproduce + measure: DevTools Performance monitor — JS heap size + DOM node count time ke saath; upward creep confirm karo. (2) Suspect narrowing: heaviest-used routes pe 5x navigate-away-return, har cycle ke baad manual GC (bin icon) + heap snapshot; snapshots ka comparison view — kaunsi class ke instances badh rahe (apne component names search karo — destroyed components dikhe = smoking gun). (3) Retainers trace: instance → Retainers panel → chain padho (Subject listeners? interval? detached DOM? lib registry?) — Big Five checklist. (4) Fix by ownership rule + regression guard: leak-prone flows pe automated memory test (Puppeteer + heap metrics) CI mein. (5) Interim mitigation agar fix bada hai: worst offender lazy route ko unload pe hard-cleanup. Structure + tooling fluency = SDE-3 hire signal.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>ESM: static graph, live bindings, singleton evaluation, tree-shakable. <code>import()</code> = code splitting.</li>
+<li>GC frees <em>unreachable</em>, not unused. Roots → mark → sweep. Circulars OK.</li>
+<li>V8: nursery (minor, fast) → old space (major). Leaks old space mein baithte hain.</li>
+<li>Big Five leaks: subscriptions, timers, global listeners, detached DOM, lib instances. Ownership rule se fix.</li>
+<li>WeakMap = weakly-held object keys, no iteration — leak-proof metadata cache.</li>
+<li>Heap snapshot 3-snapshot technique + Retainers panel = debugging superpower.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-8.1 · LRU Cache (capacity-bounded)</div><p>Map ki insertion-order property se O(1) get/put LRU banao. Phir discuss karo: WeakMap se LRU kyun NAHI ban sakta? (DSA + JS internals ka crossover — tumhare dono tracks ek saath.)</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-8.2 · Leak lab</div><p>Ek chhota HTML app banao jisme jaan-boojh ke Big Five mein se 3 leaks daalo. Heap snapshots se teeno ko dhundo, retainer chains screenshot karo, phir fix karke before/after graph compare karo. (Ye exercise 10 blog-posts se zyada sikhayegi.)</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-8.3 · Mini module loader</div><p><code>define(name, deps, factory)</code> + <code>use(name)</code> — dependency resolution, single evaluation (caching), circular dependency detection with clear error. ESM semantics ko appreciate karne ka best tareeka.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-8.4 · createSubscriptionBag()</div><p>Ek utility jo <code>add(teardownFn)</code> collect kare aur <code>dispose()</code> pe sab reverse order mein chalaye, double-dispose safe ho. Phir map karo ki Angular ka DestroyRef isi idea ka framework version kaise hai.</p><div class="lvl">LEVEL: EASY</div></div>
+</section>
+
+<div class="footer-note">
+Chapter 1 complete hua. Agla padav: <b>Chapter 2 — TypeScript for Angular</b> (types, generics, decorators, utility types) ya seedha <b>Change Detection deep dive</b> — Section 6 ki Zone.js story wahin poori hogi.<br>
+<b>Soch ka Safar</b> · Ratta nahi, reasoning. 🚀
+</div>
+
+
+</div>
+
+<script>
+(function(){
+  var KEY='js_ch1_progress_v1';
+  var state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){
+    b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

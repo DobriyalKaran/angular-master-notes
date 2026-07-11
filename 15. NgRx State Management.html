@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 15 — NgRx State Management | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 10 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 15 — <span>NgRx</span> State Management</h1>
+  <p class="subtitle">Jab app badi hoti hai — state multiple components mein share hoti, async flows tangle hote, "kaun-si component ne kya badla" trace karna mushkil ho jaata — tab NgRx aata hai. Ye ek <em>predictable, unidirectional state container</em> hai (Redux pattern Angular ke liye). Is chapter mein <em>WHY-first</em>: pehle problem (prop-drilling, scattered state), phir classic Store family (Actions → Reducers → Effects → Selectors → Entity), phir modern <strong>Signal Store</strong> aur <strong>Component Store</strong>, aur aakhir mein architecture + folder structure jo interviews mein sabse zyada poocha jaata.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">NgRx: <b>v18 → v20</b> · Angular <b>v17→v20+</b></span>
+    <span class="chip">Sections: <b>10</b> · Topics: <b>11+</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">NgRx — Overview &amp; Redux Pattern</a><div class="sub">the family · unidirectional flow · when to use / when NOT · single source of truth</div></li>
+    <li><a href="#s2">Store</a><div class="sub">state container · provideStore · provideState · dispatch · select · state shape</div></li>
+    <li><a href="#s3">Actions</a><div class="sub">createAction · props · createActionGroup · emptyProps · action hygiene · source/event naming</div></li>
+    <li><a href="#s4">Reducers</a><div class="sub">createReducer · on() · pure functions · immutability · createFeature · auto-selectors</div></li>
+    <li><a href="#s5">Effects</a><div class="sub">createEffect · functional effects · ofType · RxJS · switchMap · error handling · non-dispatching</div></li>
+    <li><a href="#s6">Selectors</a><div class="sub">createSelector · createFeatureSelector · memoization · composition · view-model selectors</div></li>
+    <li><a href="#s7">Entity</a><div class="sub">@ngrx/entity · createEntityAdapter · EntityState · CRUD updaters · getSelectors · normalized</div></li>
+    <li><a href="#s8">Signal Store</a><div class="sub">@ngrx/signals · withState · withComputed · withMethods · patchState · rxMethod · vs classic</div></li>
+    <li><a href="#s9">Component Store</a><div class="sub">@ngrx/component-store · local state · select · updater · effect · tapResponse</div></li>
+    <li><a href="#s10">Architecture &amp; Folder Structure</a><div class="sub">data flow · when to use what · feature-based folders · facade · naming conventions</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>NgRx — Overview &amp; Redux Pattern</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>the NgRx family · Redux/Flux pattern · unidirectional data flow · single source of truth · when to use / when NOT · pros &amp; cons</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>NgRx Angular ke liye reactive state-management libraries ka ek <strong>family</strong> hai. Core: <code>@ngrx/store</code> (Redux-style global store), plus <code>@ngrx/effects</code>, <code>@ngrx/entity</code>, <code>@ngrx/signals</code> (SignalStore), <code>@ngrx/component-store</code>. Idea: app ki state ko ek <strong>single, predictable, immutable</strong> container mein rakho jahan changes ek fixed, unidirectional flow se hote hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Chhoti app mein state components/services mein bikhri chal jaati. Par jaise app badhti hai: same data multiple components mein chahiye, prop-drilling (parent→child→grandchild) shuru hoti, "kis component ne state badli" trace karna mushkil, async flows (load/success/error) tangle hote. NgRx state ko centralize karke, changes ko explicit (actions) aur traceable banata.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Bina state-management ka dard</div>
+<ul style="margin-bottom:0">
+<li><strong>Prop-drilling</strong> — data ko layers ke through pass karna.</li>
+<li><strong>Scattered state</strong> — same data ki multiple copies, sync issues.</li>
+<li><strong>Untraceable changes</strong> — kis ne kab kya badla? Debug hard.</li>
+<li><strong>Tangled async</strong> — loading/error flags har jagah.</li>
+</ul></div>
+<div class="panel good-p"><div class="ptitle">NgRx</div><p>Single source of truth · unidirectional predictable flow · explicit traceable changes (actions + DevTools time-travel) · centralized async (effects).</p></div>
+
+<h3 class="part">4. Internal Working — the unidirectional loop</h3>
+<div class="panel why"><div class="ptitle">Redux pattern: one-way data flow</div><p>Data ek circle mein flow karta hai, hamesha ek hi direction: <strong>Component dispatch karta ek Action → Reducer (pure function) us action + current state se naya state banata → Store update hota → Selectors se derived slices → Component (template) react karta</strong>. Side-effects (HTTP) <strong>Effects</strong> handle karte: action sunte, async karte, naya action dispatch karte. Ye strict one-way flow predictability deta — koi bhi state change ek action se hi hota, isliye traceable + testable + time-travel debuggable.</p></div>
+
+<div class="dg-title">Diagram — the NgRx loop</div>
+<pre class="diagram">
+   Component ──dispatch(Action)──▶ Reducer ──▶ Store (state)
+       ▲                             ▲              │
+       │                             │              │ select
+       │                          (new action)      ▼
+       └───────── Selector ◀──────────────────── derived state
+                                     ▲
+                Effects ──(HTTP/async)┘  listen to action → dispatch result action
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ user clicks ─▶ dispatch(loadUsers) ─▶ Effect: HTTP ─▶ dispatch(loadUsersSuccess({users}))
+   ─▶ Reducer: state = {...state, users, loading:false} ─▶ Store updated
+   ─▶ Selector(selectUsers) ─▶ template {{ users$ | async }} re-renders
+</pre>
+
+<h3 class="part">6. Architecture — the NgRx family</h3>
+<table>
+<tr><td><code>@ngrx/store</code></td><td>Classic Redux-style global store (Actions/Reducers/Selectors).</td></tr>
+<tr><td><code>@ngrx/effects</code></td><td>Side-effects (HTTP, async) as RxJS streams reacting to actions.</td></tr>
+<tr><td><code>@ngrx/entity</code></td><td>Normalized collections (CRUD adapters) — less boilerplate for lists.</td></tr>
+<tr><td><code>@ngrx/signals</code></td><td>SignalStore — modern, signal-native, less boilerplate. (S-08)</td></tr>
+<tr><td><code>@ngrx/component-store</code></td><td>Local, component-scoped reactive state. (S-09)</td></tr>
+<tr><td><code>@ngrx/store-devtools</code></td><td>Redux DevTools — time-travel debugging.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — when NgRx fits</h3>
+<div class="panel info-p"><div class="ptitle">Use NgRx when</div>
+<ul style="margin-bottom:0">
+<li>State shared across many components / features.</li>
+<li>Complex async flows (load/cache/optimistic updates).</li>
+<li>State must persist beyond a component's lifecycle.</li>
+<li>Team needs structure, traceability, testability at scale.</li>
+</ul></div>
+<div class="panel warn-p"><div class="ptitle">DON'T use NgRx when</div>
+<ul style="margin-bottom:0">
+<li>Small app / mostly local state — plain signals ya services kaafi.</li>
+<li>Simple parent-child data — <code>input()</code>/<code>output()</code>.</li>
+<li>You'd add boilerplate without real shared-state complexity.</li>
+</ul></div>
+
+<h3 class="part">8. Beginner Example — the mental model</h3>
+<div class="code-label">the 3 questions NgRx answers</div>
+<pre><code>// 1. WHAT happened?   → Action    (loadUsers, loadUsersSuccess)
+// 2. HOW does state change? → Reducer  (pure: (state, action) =&gt; newState)
+// 3. WHERE do side-effects go? → Effect  (HTTP, then dispatch result)
+// + WHAT do components read? → Selector  (memoized derived state)</code></pre>
+
+<h3 class="part">9. Advanced Example — classic vs signal-era</h3>
+<div class="code-label">two eras of NgRx</div>
+<pre><code>// CLASSIC (Redux): @ngrx/store — Actions + Reducers + Effects + Selectors
+//   verbose but max structure/traceability; RxJS-based; best for large enterprise.
+
+// SIGNAL-ERA: @ngrx/signals SignalStore — withState/withComputed/withMethods
+//   signal-native, far less boilerplate; the modern default for most apps.
+
+// LOCAL: @ngrx/component-store — component-scoped reactive state.</code></pre>
+
+<h3 class="part">10. Code Explanation — the loop pieces</h3>
+<ol>
+<li><strong>Action</strong> — ek event ("kya hua"): <code>loadUsers</code>.</li>
+<li><strong>Reducer</strong> — pure fn ("state kaise badle"): <code>(state, action) =&gt; newState</code>.</li>
+<li><strong>Effect</strong> — side-effect ("async kahan"): action sunо → HTTP → naya action.</li>
+<li><strong>Selector</strong> — derived read ("component kya padhe"): memoized slice.</li>
+<li>Sab immutable + unidirectional — isliye predictable + debuggable.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>NgRx ko har chhoti app mein daalna — over-engineering; boilerplate without benefit.</li>
+<li>Local UI state (dropdown open/close) ko global store mein rakhna — local state local rahe.</li>
+<li>Store ko directly mutate karna — immutability + unidirectional flow todta.</li>
+<li>Business logic reducers mein daalna — reducers pure; logic effects mein.</li>
+<li>Classic Store choose karna jab SignalStore kaafi + simpler hota (modern default).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>NgRx tabhi jab genuine shared-state complexity ho — warna signals/services.</li>
+<li>Modern apps: <strong>SignalStore</strong> default; classic Store for large/strict-unidirectional needs.</li>
+<li>Unidirectional flow respect karo — state sirf actions/methods se badle.</li>
+<li>DevTools use karo — time-travel se debugging superpower.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>NgRx khud lightweight; perf mostly selectors ki memoization + <code>OnPush</code> change detection se aati (derived state stable references). Galat use (bahut granular actions, non-memoized selectors) overhead deta. SignalStore fine-grained CD (signals) se aur efficient. Immutability precise change detection enable karti.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Server state vs client state</td><td>Server cache (TanStack Query) alag concern ho sakta — sab store mein mat thoso.</td></tr>
+<tr><td>Feature vs root state</td><td>Root (app-wide) + lazy feature state (route-scoped) — modular.</td></tr>
+<tr><td>Migration</td><td>Classic → SignalStore incrementally; Events plugin unidirectional flow rakhta.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> NgRx kya hai aur kab use karte ho?</summary><div class="ans"><p>Angular ke liye Redux-pattern state-management libraries ka family. State ko ek single, predictable, immutable container mein rakhta with unidirectional flow. Use jab: state multiple components mein shared ho, complex async flows hon, state component-lifecycle se beyond persist kare, ya team ko scale pe structure/traceability chahiye. Chhoti/local state ke liye overkill.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Unidirectional data flow ka matlab aur fayda?</summary><div class="ans"><p>Data ek hi direction mein: Component → dispatch Action → Reducer → Store → Selector → Component. State kabhi directly mutate nahi hoti, sirf actions se. Fayda: har change traceable (kaun-si action ne badla), predictable (same action+state = same result), testable (pure reducers), aur DevTools time-travel debugging.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> NgRx family mein kaunse packages, kis ke liye?</summary><div class="ans"><p><code>@ngrx/store</code> (global Redux store), <code>@ngrx/effects</code> (side-effects), <code>@ngrx/entity</code> (normalized collections), <code>@ngrx/signals</code> (SignalStore — modern signal-native), <code>@ngrx/component-store</code> (local component state), <code>@ngrx/store-devtools</code> (time-travel). Modern default: SignalStore; classic Store for large enterprise.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Team NgRx daalna chahti hai ek 5-page app mein jismein mostly form state hai. Tumhari advice?</summary><div class="ans"><p>Probably over-engineering. Agar state mostly local/form hai aur genuine cross-component shared complexity nahi, toh NgRx boilerplate justify nahi karta. Suggest: plain signals + services, ya zyada-se-zyada ek lightweight SignalStore shared state ke liye. NgRx tab laao jab shared-state/async complexity real ho — tool ko problem match karo, hype ko nahi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>NgRx = Redux for Angular. Single source of truth + unidirectional flow (Component→Action→Reducer→Store→Selector).</li>
+<li>Family: store, effects, entity, signals (SignalStore), component-store, devtools.</li>
+<li>Use for real shared-state/async complexity; NOT for small/local. Modern default = SignalStore.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.1 · Decide the tool</div><p>3 scenarios likho (small todo app, large multi-team dashboard, single component with local async). Har ek ke liye choose karo: plain signals / SignalStore / classic Store / ComponentStore — aur justify karo.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-15.2 · Draw the loop</div><p>Ek "load users" feature ke liye poora unidirectional loop diagram banao (action → effect → success action → reducer → selector → component). Har arrow label karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Store</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>state container · provideStore · provideState · root vs feature state · dispatch · select · state shape · immutability · devtools</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Store NgRx ka central <strong>state container</strong> hai — ek single immutable object (state tree) jismein poori app ki (ya feature ki) state rehti. Components isse do tarike se interact karte: <code>dispatch(action)</code> (change trigger) aur <code>select(selector)</code> (state padho, as Observable ya signal).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Ek hi jagah state rakhne se single source of truth milta — koi duplicate/out-of-sync copies nahi. Store observable/signal-based hai, toh state change automatically consumers ko flow karta. Aur ye immutable + centralized hai, toh predictable + debuggable.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>State ki scattered copies aur manual sync. Store single tree deta jahan se sab derive hota, aur dispatch/select ka clean contract deta — components ko nahi pata state kaise change hoti (bas action dispatch), sirf padhte hain (select).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">State tree + observable/signal</div><p>Store ek single immutable state object hold karta — top level pe feature-wise slices (<code>{ users: {...}, cart: {...}, ... }</code>). Jab tum <code>dispatch(action)</code> karte ho, store us action ko saare reducers ko bhejta; reducers naya state object banate (purana untouched); store naya state set karta aur consumers (selectors → components) ko notify karta. <code>select</code> ek slice ka Observable (ya <code>selectSignal</code> se signal) deta jo us slice ke badalne pe emit karta. Immutability critical hai — naya reference se change detection precise + time-travel possible.</p></div>
+
+<div class="dg-title">Diagram — store as single tree</div>
+<pre class="diagram">
+ AppState = {
+   users:  { entities: {...}, loading: false },   ← feature slice
+   cart:   { items: [...] },                       ← feature slice
+   router: {...},                                   ← router-store
+ }
+ dispatch(action) ─▶ reducers ─▶ NEW AppState ─▶ notify selects
+ select(selectUsers) ─▶ Observable&lt;UsersState&gt; (emits on change)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ provideStore() + provideState(feature) ─▶ store built
+ component: store.dispatch(loadUsers()) ─▶ reducer/effect ─▶ state updated
+ component: users$ = store.select(selectUsers) ─▶ template | async
+ (or) users = store.selectSignal(selectUsers)  ─▶ template {{ users() }}
+</pre>
+
+<h3 class="part">6. Architecture — registration &amp; access</h3>
+<table>
+<tr><td><code>provideStore()</code></td><td>Root store (app.config). Replaces <code>StoreModule.forRoot()</code>.</td></tr>
+<tr><td><code>provideState(feature)</code></td><td>Feature state (lazy/route-scoped). Replaces <code>forFeature()</code>.</td></tr>
+<tr><td><code>provideStoreDevtools()</code></td><td>Redux DevTools (time-travel).</td></tr>
+<tr><td><code>store.dispatch(action)</code></td><td>Trigger a state change.</td></tr>
+<tr><td><code>store.select(selector)</code> / <code>selectSignal</code></td><td>Read slice as Observable / signal.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">app.config.ts — standalone registration</div>
+<pre><code>import { provideStore, provideState } from '@ngrx/store';
+import { provideEffects } from '@ngrx/effects';
+import { provideStoreDevtools } from '@ngrx/store-devtools';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideStore(),                       // root store
+    provideState(usersFeature),           // feature state (createFeature)
+    provideEffects([UsersEffects]),
+    provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
+  ],
+};</code></pre>
+<div class="code-label">component — dispatch + select</div>
+<pre><code>export class UsersComponent {
+  private store = inject(Store);
+  users = this.store.selectSignal(usersFeature.selectUsers);  // signal read
+
+  ngOnInit() { this.store.dispatch(UsersActions.loadUsers()); }
+  // template: @for (u of users(); track u.id) { ... }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const store = inject(Store);
+store.dispatch(increment());                 // trigger change
+const count$ = store.select(selectCount);    // read as Observable
+// template: {{ count$ | async }}</code></pre>
+
+<h3 class="part">9. Advanced Example — feature (lazy) state</h3>
+<div class="code-label">lazy route with own state</div>
+<pre><code>// admin.routes.ts — state provided only when this route loads
+export const ADMIN_ROUTES: Routes = [{
+  path: '',
+  providers: [
+    provideState(adminFeature),        // feature-scoped state
+    provideEffects([AdminEffects]),    // feature effects
+  ],
+  children: [/* ... */],
+}];
+// state lazy-loaded with the feature — modular, tree-shakable</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>provideStore()</code> — root store banata (empty root reducer).</li>
+<li><code>provideState(feature)</code> — ek feature slice register (createFeature se).</li>
+<li><code>store.dispatch(action)</code> — change trigger; koi return nahi (fire-and-forget).</li>
+<li><code>selectSignal(selector)</code> — slice ko signal ke roop mein (modern, no <code>| async</code>).</li>
+<li>Lazy: <code>provideState</code> route providers mein → state feature ke saath load.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Store se mil raha state ko directly mutate karna — immutable; sirf reducers naya banate.</li>
+<li><code>select</code> ki jagah poora state subscribe karke manually filter — selectors use karo (memoized).</li>
+<li>Sab kuch root state mein — feature state (lazy) se modular rakho.</li>
+<li>Legacy <code>StoreModule.forRoot/forFeature</code> naye standalone apps mein — <code>provideStore/provideState</code>.</li>
+<li>Dispatch ke turant baad state read karke sync result expect karna — flow async ho sakta (effects).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Standalone providers (<code>provideStore</code>/<code>provideState</code>/<code>provideEffects</code>).</li>
+<li>State ko feature slices mein organize karo; lazy features apni state khud laayein.</li>
+<li>Read via selectors (<code>select</code>/<code>selectSignal</code>), na ki raw state.</li>
+<li>DevTools enable karo (dev mode) — time-travel debugging.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Store perf mostly selector memoization + <code>OnPush</code> se — stable derived references unnecessary re-renders rokti. <code>selectSignal</code> fine-grained CD deta. Bade state trees mein deep nesting avoid; feature-split lazy state initial bundle chhota rakhta. Immutability precise change detection enable karti.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multiple feature registration</td><td>Standalone mein <code>provideState</code> per-feature; ordering root pe.</td></tr>
+<tr><td>selectSignal timing</td><td>Signal always current — no initial <code>undefined</code> issues jaise raw observable.</td></tr>
+<tr><td>Router state</td><td><code>@ngrx/router-store</code> se router state store mein — route-driven selectors.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Store ke saath component kaise interact karta?</summary><div class="ans"><p>Do tarike: <code>store.dispatch(action)</code> — ek change trigger karta (kya hua batata). <code>store.select(selector)</code> (Observable) ya <code>store.selectSignal(selector)</code> (signal) — state slice padhta. Component ko nahi pata state kaise badalti (bas dispatch), sirf derived state padhta (select).</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Modern standalone app mein store kaise register karte ho?</summary><div class="ans"><p><code>provideStore()</code> (root) + <code>provideState(feature)</code> (feature slices) + <code>provideEffects([...])</code> + <code>provideStoreDevtools(...)</code> — app.config ke providers mein. Ye legacy <code>StoreModule.forRoot/forFeature</code> aur <code>EffectsModule</code> ko replace karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Root state vs feature state?</summary><div class="ans"><p>Root state (<code>provideStore</code>) app-wide, bootstrap pe available. Feature state (<code>provideState</code> in lazy route providers) route/feature-scoped — us feature ke load hone pe hi state register hoti, tree-shakable + modular. Bade apps mein feature-based lazy state initial bundle chhota + organization behtar.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> State store se select kiya, mutate kar diya seedhe, ab weird bugs. Kyun?</summary><div class="ans"><p>Store ka state <strong>immutable</strong> hai — <code>select</code> se mila reference ko mutate karna (<code>users.push(...)</code>) store ke internal state ko corrupt karta, change detection + DevTools time-travel todta, aur unpredictable behavior deta. State sirf actions dispatch karke, reducers ke through (naya object banakar) badle. Read-only treat karo.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Store = single immutable state tree (feature slices). Interact via <code>dispatch(action)</code> + <code>select(selector)</code>.</li>
+<li>Register: <code>provideStore()</code> (root) + <code>provideState(feature)</code> (lazy) + <code>provideEffects</code> + devtools.</li>
+<li><code>selectSignal</code> for signal read (no <code>| async</code>). Never mutate selected state — read-only.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.3 · Wire up a store</div><p>Standalone app mein <code>provideStore</code> + <code>provideState</code> + devtools set karo. Ek component se <code>dispatch</code> + <code>selectSignal</code> karke state read/write dikhao (bina <code>| async</code>).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-15.4 · Lazy feature state</div><p>Ek lazy route banao jiske <code>providers</code> mein <code>provideState</code>+<code>provideEffects</code> ho. Prove karo state sirf us route load hone pe register hoti (DevTools mein).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Actions</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>createAction · props · type strings · createActionGroup · emptyProps · action hygiene · event-driven naming · dispatch</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Action ek plain object hai jo describe karta hai ki <strong>kya hua</strong> — ek event. Har action ka ek unique <code>type</code> string aur optionally payload (<code>props</code>) hoti. <code>createAction('[Users Page] Load Users')</code>. Components inhe <code>dispatch</code> karke state change trigger karte.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>NgRx mein state directly nahi badalti — har change ek explicit "event" (action) se hota. Ye traceability deta: DevTools mein har action dikhta ("kya hua, kab"). Aur ye decouples: component sirf batata "ye event hua"; reducers/effects decide karte state kaise react kare.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Untraceable, implicit state changes. Actions har change ko named, explicit event bana dete — audit trail (DevTools), decoupling (dispatcher ko nahi pata handler kaun), aur clear intent ("[Login Page] Login Clicked" self-documenting).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Action = { type, ...payload }</div><p><code>createAction</code> ek <em>action creator</em> function return karta — call karne pe ek action object banta <code>{ type: '[Users Page] Load Users', ...props }</code>. <code>type</code> unique identifier hai (convention: <code>'[Source] Event'</code>). Jab dispatch hota, ye object store ke through saare reducers + effects ko broadcast hota; jo iska <code>type</code> handle karte, react karte. Payload <code>props&lt;{...}&gt;()</code> se type-safe. <code>createActionGroup</code> related actions ka group ek jagah banata (boilerplate kam).</p></div>
+
+<div class="dg-title">Diagram — action flow</div>
+<pre class="diagram">
+ createAction('[Users] Load', props&lt;{page}&gt;()) ─▶ creator fn
+     dispatch(loadUsers({page:1}))
+         ─▶ { type:'[Users] Load', page:1 }  (broadcast)
+             ├─▶ reducers matching this type react
+             └─▶ effects with ofType(loadUsers) react
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ define action ─▶ component dispatch(action(payload)) ─▶ action object created
+   ─▶ store broadcasts ─▶ reducers (on) + effects (ofType) receive ─▶ react
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>createAction(type)</code></td><td>No-payload action. <code>createAction('[App] Init')</code>.</td></tr>
+<tr><td><code>createAction(type, props&lt;T&gt;())</code></td><td>With typed payload.</td></tr>
+<tr><td><code>createActionGroup({source, events})</code></td><td>Group of related actions (v14+). Less boilerplate.</td></tr>
+<tr><td><code>emptyProps()</code></td><td>Explicit "no payload" in a group.</td></tr>
+<tr><td>Type convention</td><td><code>'[Source] Event'</code> — <code>[Users Page] Load Users</code>. Source = where; Event = what.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">users.actions.ts — createActionGroup (modern)</div>
+<pre><code>import { createActionGroup, emptyProps, props } from '@ngrx/store';
+import { User } from './user.model';
+
+export const UsersActions = createActionGroup({
+  source: 'Users Page',
+  events: {
+    'Load Users': emptyProps(),
+    'Add User': props&lt;{ user: User }&gt;(),
+    'Delete User': props&lt;{ id: number }&gt;(),
+  },
+});
+
+export const UsersApiActions = createActionGroup({
+  source: 'Users API',
+  events: {
+    'Load Success': props&lt;{ users: User[] }&gt;(),
+    'Load Failure': props&lt;{ error: string }&gt;(),
+  },
+});
+// dispatch: this.store.dispatch(UsersActions.loadUsers());</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { createAction, props } from '@ngrx/store';
+
+export const increment = createAction('[Counter] Increment');
+export const addBy = createAction('[Counter] Add By', props&lt;{ amount: number }&gt;());
+
+// dispatch
+store.dispatch(increment());
+store.dispatch(addBy({ amount: 5 }));</code></pre>
+
+<h3 class="part">9. Advanced Example — action hygiene (events, not commands)</h3>
+<div class="code-label">good vs bad naming</div>
+<pre><code>// ❌ command-style, reused across sources (unclear origin)
+createAction('[Users] Set Loading');           // who? when?
+
+// ✅ event-style, unique per source — "what happened, where"
+UsersActions:    'Load Users'      // user intent (page)
+UsersApiActions: 'Load Success'    // API result
+UsersApiActions: 'Load Failure'    // API error
+// one action per real event — traceable in DevTools</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>createActionGroup({ source, events })</code> — ek source ke related actions.</li>
+<li>Event keys → camelCased creators (<code>'Load Users'</code> → <code>loadUsers</code>).</li>
+<li><code>props&lt;{...}&gt;()</code> — type-safe payload; <code>emptyProps()</code> — no payload.</li>
+<li>Type auto: <code>'[Users Page] Load Users'</code>.</li>
+<li>Separate groups for page-events vs API-results — clear flow.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Ek generic action ko multiple jagah reuse karna (<code>setLoading</code>) — origin trace nahi hota. One event = one action.</li>
+<li>Command-style naming (<code>setUsers</code>) instead of event-style (<code>loadUsersSuccess</code>) — actions "kya hua" describe karte, "kya karo" nahi.</li>
+<li>Type strings mein source-prefix na dena — DevTools mein confusing.</li>
+<li>Payload ko untyped (<code>props&lt;any&gt;</code>) — type-safety lose.</li>
+<li>Bahut zyada actions (har micro-step) — noise; meaningful events pe rakho.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li><code>createActionGroup</code> for related actions — kam boilerplate.</li>
+<li>Event-style naming: <code>'[Source] What Happened'</code> (unique per source).</li>
+<li>Ek real event = ek action; reuse avoid (traceability).</li>
+<li>Payload hamesha typed (<code>props&lt;T&gt;()</code>).</li>
+<li>Separate source groups: Page (intent), API (result), etc.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Actions khud negligible (plain objects). Perf indirectly: bahut granular actions zyada dispatch/reduce cycles = overhead. Meaningful events pe rakho. Action creators tree-shakable. DevTools mein bahut noise slow debugging.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Shared action, many reducers</td><td>Ek action ko multiple reducers/effects handle kar sakte (fan-out) — valid pattern.</td></tr>
+<tr><td>Title-case events</td><td><code>createActionGroup</code> title-case ko camelCase creator banata — rename pe find-usages tricky.</td></tr>
+<tr><td>No-payload</td><td><code>emptyProps()</code> (group) ya no 2nd arg (createAction).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Action kya hai?</summary><div class="ans"><p>Ek plain object jo describe karta hai "kya hua" — ek event, with unique <code>type</code> string aur optional payload. <code>createAction('[Users Page] Load Users', props&lt;{...}&gt;())</code>. Components dispatch karke state change trigger karte; reducers/effects react karte. Har change ek explicit action se → traceable.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Actions "events" honi chahiye ya "commands"? Kyun?</summary><div class="ans"><p>Events — "kya hua" (<code>loadUsersSuccess</code>), na ki "kya karo" (<code>setUsers</code>). Event-style ek real occurrence describe karta jise multiple reducers/effects independently handle kar sakte. Command-style state ko couple karta aur reuse se origin blur hota. Convention: <code>'[Source] What Happened'</code> — source unique origin, event clear intent.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>createActionGroup</code> ka fayda?</summary><div class="ans"><p>Related actions (same source) ko ek jagah declare karta — boilerplate drastically kam (har action alag <code>createAction</code> line nahi). Type auto-generate (<code>'[Users API] Load Success'</code>), creators camelCased. Downside: title-case event names pe IDE find-usages/rename thoda tricky, par actions rarely rename hoti.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek "load" flow mein tumhare paas ek hi <code>setUsers</code> action hai jo page aur API dono use karte. DevTools mein confusing. Better?</summary><div class="ans"><p>Alag events banao: <code>UsersActions.loadUsers()</code> (page intent), <code>UsersApiActions.loadSuccess({users})</code> (API result), <code>UsersApiActions.loadFailure({error})</code>. Ek action reuse karne se origin/flow blur hota. Distinct source-prefixed events se DevTools mein poora flow clearly trace hota — kaun trigger, kya result.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Action = event object <code>{ type, ...payload }</code>. <code>createAction(type, props&lt;T&gt;())</code>.</li>
+<li><code>createActionGroup({ source, events })</code> for related actions (less boilerplate). <code>emptyProps()</code> = no payload.</li>
+<li>Event-style naming <code>'[Source] What Happened'</code>. One event = one action (traceable).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.5 · Action groups</div><p>Ek CRUD feature ke liye do <code>createActionGroup</code> banao: page-actions (load/add/delete intents) aur API-actions (success/failure). Event-style naming + typed props use karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Reducers</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>createReducer · on() · pure functions · immutability · initial state · createFeature · auto-generated selectors · no business logic</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Reducer ek <strong>pure function</strong> hai jo current state + ek action leke <strong>naya state</strong> return karta hai: <code>(state, action) =&gt; newState</code>. Ye batata hai state har action pe kaise badle. <code>createReducer(initialState, on(action, handler), ...)</code>.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>State change ka logic ek predictable, testable jagah chahiye. Reducers pure hain — same (state, action) hamesha same newState dete, koi side-effect nahi. Isse state transitions deterministic, unit-testable, aur time-travel-able bante.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Unpredictable, scattered state mutations. Reducers state-change logic ko ek jagah, pure + immutable form mein rakhte — predictability, testability, aur DevTools time-travel (kyunki har state pichle + action se derivable hai).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Pure + immutable</div><p>Dispatch pe store har reducer ko <code>(currentState, action)</code> deta. Reducer <code>on(action, (state, props) =&gt; newState)</code> handlers check karta — jo action match kare, uska handler chalta aur <strong>naya</strong> state object return karta (spread <code>{...state, ...changes}</code> se — purana kabhi mutate nahi). Agar koi handler match na kare, state as-is return. <strong>Pure</strong> ka matlab: no HTTP, no <code>Date.now()</code>/random, no mutation — sirf input se output. Yehi purity time-travel + predictability enable karti.</p></div>
+
+<div class="dg-title">Diagram — reducer purity</div>
+<pre class="diagram">
+ (state, action) ─▶ reducer ─▶ newState     [PURE: same in → same out]
+
+ on(loadSuccess, (state, {users}) =&gt; ({
+   ...state,          ← copy old (immutable)
+   users,             ← override changed
+   loading: false,
+ }))
+ ❌ state.users = users   (mutation — forbidden)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ action dispatched ─▶ reducer checks on() handlers ─▶ matching handler runs
+   ─▶ returns NEW state (spread) ─▶ store updates ─▶ selectors notify
+   (no match → state returned unchanged)
+</pre>
+
+<h3 class="part">6. Architecture — createReducer &amp; createFeature</h3>
+<table>
+<tr><td><code>createReducer(init, ...ons)</code></td><td>Builds reducer from initial state + <code>on()</code> handlers.</td></tr>
+<tr><td><code>on(action, handler)</code></td><td>Maps an action to a state-transition fn.</td></tr>
+<tr><td>Immutable update</td><td>Always <code>{ ...state, ...changes }</code> — never mutate.</td></tr>
+<tr><td><code>createFeature({name, reducer})</code></td><td>Bundles reducer + <strong>auto-generates</strong> feature selector + per-property selectors.</td></tr>
+<tr><td><code>extraSelectors</code></td><td>Add custom selectors to the feature.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — createFeature (modern, less boilerplate)</h3>
+<div class="code-label">users.feature.ts</div>
+<pre><code>import { createFeature, createReducer, on } from '@ngrx/store';
+import { UsersActions, UsersApiActions } from './users.actions';
+
+interface UsersState { users: User[]; loading: boolean; error: string | null; }
+const initialState: UsersState = { users: [], loading: false, error: null };
+
+export const usersFeature = createFeature({
+  name: 'users',
+  reducer: createReducer(
+    initialState,
+    on(UsersActions.loadUsers, (state) =&gt; ({ ...state, loading: true })),
+    on(UsersApiActions.loadSuccess, (state, { users }) =&gt; ({ ...state, users, loading: false })),
+    on(UsersApiActions.loadFailure, (state, { error }) =&gt; ({ ...state, error, loading: false })),
+  ),
+});
+// auto-generated: usersFeature.selectUsers, selectLoading, selectError, selectUsersState</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const counterReducer = createReducer(
+  { count: 0 },
+  on(increment, (state) =&gt; ({ ...state, count: state.count + 1 })),
+  on(addBy, (state, { amount }) =&gt; ({ ...state, count: state.count + amount })),
+  on(reset, () =&gt; ({ count: 0 })),
+);</code></pre>
+
+<h3 class="part">9. Advanced Example — immutable nested update</h3>
+<div class="code-label">typescript</div>
+<pre><code>on(updateUserName, (state, { id, name }) =&gt; ({
+  ...state,
+  users: state.users.map(u =&gt;          // new array
+    u.id === id ? { ...u, name } : u   // new object for changed one
+  ),
+}))
+// nested immutability: copy every level you touch (spread/map) — never mutate</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>createReducer(initial, ...on())</code> — initial state + action handlers.</li>
+<li><code>on(action, (state, props) =&gt; ({...state, ...}))</code> — pure transition.</li>
+<li>Spread <code>{...state}</code> — immutability (naya object).</li>
+<li>Nested: <code>.map</code>/spread har touched level pe — deep immutability.</li>
+<li><code>createFeature</code> — reducer + auto selectors (per state property).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>State ko mutate karna (<code>state.users.push()</code>) — immutable rule breaks CD + time-travel.</li>
+<li>Reducer mein side-effects (HTTP, <code>console.log</code>, <code>Date.now()</code>) — reducer PURE hona chahiye; async → effects.</li>
+<li>Business logic reducers mein — reducers sirf state-shape change; logic effects/services mein.</li>
+<li>Nested update mein sirf top-level spread, andar mutate — deep immutability chahiye.</li>
+<li>Manual boilerplate jab <code>createFeature</code> auto-selectors de sakta.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Reducers PURE + immutable rakho — spread har touched level.</li>
+<li><code>createFeature</code> use karo — reducer + auto-selectors, kam boilerplate.</li>
+<li>Business logic reducers se bahar (effects/services); reducers sirf state transitions.</li>
+<li>Chhote focused handlers; loading/error flags consistently.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Immutable updates (naye references) selectors + <code>OnPush</code> ko precise change detection dete — sirf badle slices re-render. Deep-clone (poora state har baar) avoid; sirf touched paths copy. Pure reducers fast + predictable. <code>createFeature</code> selectors memoized aate.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>No default case</td><td><code>createReducer</code> unmatched action pe state as-is return (koi default handler nahi).</td></tr>
+<tr><td>Multiple actions, one handler</td><td><code>on(a, b, (state) =&gt; ...)</code> — ek handler multiple actions ke liye.</td></tr>
+<tr><td>Deeply nested state</td><td>Immutable deep-update verbose — consider entity adapter (S-07) or flatter shape.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Reducer kya hai aur "pure" kyun hona chahiye?</summary><div class="ans"><p>Ek pure function <code>(state, action) =&gt; newState</code> jo batata hai state action pe kaise badle. Pure = same input hamesha same output, koi side-effect (HTTP/random/mutation) nahi. Purity se state transitions deterministic, unit-testable, aur time-travel-debuggable bante. Side-effects effects mein jaate.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Reducer mein immutability kyun aur kaise?</summary><div class="ans"><p>State ko mutate na karke naya object banate (<code>{...state, changed}</code>). Naye reference se change detection (OnPush) + selectors + DevTools time-travel sahi kaam karte — mutation same reference deti, changes miss ho jaate. Nested pe har touched level copy (<code>.map</code>/spread) — deep immutability.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>createFeature</code> ka fayda?</summary><div class="ans"><p>Reducer ko ek feature object mein wrap karta aur <strong>automatically selectors generate</strong> karta — feature selector + har state property ka selector (<code>selectUsers</code>, <code>selectLoading</code>). Manual <code>createFeatureSelector</code> + per-property <code>createSelector</code> boilerplate hataya. <code>provideState(feature)</code> se register. <code>extraSelectors</code> se custom add.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Reducer mein tumne HTTP call daal di taaki data load ho. Ye galat kyun aur kahan jaana chahiye?</summary><div class="ans"><p>Reducer PURE hona chahiye — HTTP ek side-effect (async, non-deterministic) hai, jo purity todta: same input alag output, time-travel + testability break. HTTP <strong>effects</strong> mein jaana chahiye: effect <code>loadUsers</code> action sune → HTTP kare → <code>loadSuccess</code>/<code>loadFailure</code> dispatch kare → reducer un actions pe pure state update kare.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Reducer = PURE <code>(state, action) =&gt; newState</code>. <code>createReducer(init, on(action, handler))</code>.</li>
+<li>IMMUTABLE — <code>{...state, ...changes}</code>, spread every touched level. No side-effects/logic.</li>
+<li><code>createFeature({name, reducer})</code> = reducer + auto-generated selectors (less boilerplate).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.6 · Feature reducer</div><p><code>createFeature</code> se ek users feature banao (loading/success/failure handlers, immutable). Auto-generated selectors ko component mein use karo. Prove karo state mutate nahi hoti.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-15.7 · Deep immutable update</div><p>Ek nested state (users array of objects) mein ek user ka field update karo purely immutably (<code>.map</code> + spread). Mutation version se bug reproduce karke difference dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Effects</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>createEffect · functional effects · ofType · Actions stream · switchMap · error handling (catchError) · dispatch result action · non-dispatching · concatLatestFrom</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Effects <strong>side-effects</strong> (HTTP, WebSocket, localStorage, navigation) ko handle karte — reducers pure hote hain, toh async/impure kaam kahin aur chahiye. Ek effect ek RxJS stream hai jo actions ko <em>sunta</em> hai, side-effect karta, aur (usually) ek naya action <em>dispatch</em> karta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Reducers pure — HTTP/async wahan nahi. Effects ye gap bharte: <code>loadUsers</code> action suno → API call karo → result se <code>loadSuccess</code>/<code>loadFailure</code> dispatch karo. Async logic ek isolated, testable, RxJS-powered jagah — components se decoupled.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Side-effects ko unidirectional flow mein integrate karna, cleanly. Component sirf intent dispatch karta (<code>loadUsers</code>); effect async handle karke result action deta; reducer state update karta. Isse async logic centralized, RxJS operators (switchMap/retry) available, aur components thin rehte.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Actions stream → filter → side-effect → new action</div><p>NgRx ek <code>Actions</code> Observable expose karta — <em>har</em> dispatched action ka stream. Effect is stream ko <code>ofType(someAction)</code> se filter karta (sirf woh action), phir ek flattening operator (usually <code>switchMap</code>) se side-effect (HTTP) chalata, aur result ko <code>map</code> se ek naye action mein badalta jo <strong>automatically dispatch</strong> ho jaata. Errors ko <strong>inner</strong> <code>catchError</code> (switchMap ke andar) se handle karna zaroori — warna effect stream mar jaata (aur phir woh action kabhi handle nahi hota). Non-dispatching effects (<code>{ dispatch: false }</code>) side-effect karte par action return nahi (jaise logging/navigation).</p></div>
+
+<div class="dg-title">Diagram — effect pipeline</div>
+<pre class="diagram">
+ Actions$ ─▶ ofType(loadUsers) ─▶ switchMap(() =&gt;
+                api.getUsers().pipe(
+                  map(users =&gt; loadSuccess({users})),   ← dispatched
+                  catchError(e =&gt; of(loadFailure({error})))  ← inner! stream survives
+                ))
+           ─▶ result action auto-dispatched ─▶ reducer
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ dispatch(loadUsers) ─▶ effect: ofType matches ─▶ switchMap(HTTP)
+   success ─▶ map ─▶ loadSuccess({users}) ─▶ (auto-dispatch) ─▶ reducer
+   error   ─▶ inner catchError ─▶ loadFailure({error}) ─▶ (auto-dispatch) ─▶ reducer
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>createEffect(() =&gt; ...)</code></td><td>Class-based effect (in an <code>@Injectable</code> effects class).</td></tr>
+<tr><td><code>createEffect(..., {functional:true})</code></td><td>Functional effect (v15+) — no class needed.</td></tr>
+<tr><td><code>ofType(action)</code></td><td>Filter the Actions stream to specific action(s).</td></tr>
+<tr><td>Flattening operator</td><td><code>switchMap</code> (cancel), <code>concatMap</code> (queue), <code>exhaustMap</code> (ignore), <code>mergeMap</code> (parallel).</td></tr>
+<tr><td><code>{ dispatch: false }</code></td><td>Non-dispatching (logging, navigation, toast).</td></tr>
+<tr><td><code>concatLatestFrom</code> / <code>tapResponse</code></td><td>Combine with store slice / safe response handling (<code>@ngrx/operators</code>).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">users.effects.ts</div>
+<pre><code>import { inject } from '@angular/core';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { switchMap, map, catchError, of } from 'rxjs';
+
+export const loadUsers$ = createEffect(
+  (actions$ = inject(Actions), api = inject(UsersApi)) =&gt;
+    actions$.pipe(
+      ofType(UsersActions.loadUsers),
+      switchMap(() =&gt;
+        api.getUsers().pipe(
+          map(users =&gt; UsersApiActions.loadSuccess({ users })),
+          catchError(err =&gt; of(UsersApiActions.loadFailure({ error: err.message }))),
+        )
+      ),
+    ),
+  { functional: true }   // functional effect — no class
+);</code></pre>
+
+<h3 class="part">8. Beginner Example — class-based effect</h3>
+<div class="code-label">typescript</div>
+<pre><code>@Injectable()
+export class UsersEffects {
+  private actions$ = inject(Actions);
+  private api = inject(UsersApi);
+
+  load$ = createEffect(() =&gt; this.actions$.pipe(
+    ofType(UsersActions.loadUsers),
+    switchMap(() =&gt; this.api.getUsers().pipe(
+      map(users =&gt; UsersApiActions.loadSuccess({ users })),
+      catchError(e =&gt; of(UsersApiActions.loadFailure({ error: e.message }))),
+    )),
+  ));
+}</code></pre>
+
+<h3 class="part">9. Advanced Example — non-dispatching + operator choice</h3>
+<div class="code-label">typescript</div>
+<pre><code>// non-dispatching: navigate after success (no new action)
+navigateOnSave$ = createEffect(() =&gt; this.actions$.pipe(
+  ofType(UsersApiActions.saveSuccess),
+  tap(() =&gt; this.router.navigate(['/users'])),
+), { dispatch: false });
+
+// operator choice matters:
+//  search  → switchMap  (cancel stale)
+//  saves   → concatMap  (ordered, don't drop)
+//  submit  → exhaustMap (ignore double-click)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>actions$</code> — every dispatched action ka stream.</li>
+<li><code>ofType(loadUsers)</code> — sirf woh action.</li>
+<li><code>switchMap(() =&gt; api...)</code> — side-effect; naye action pe purani HTTP cancel.</li>
+<li><code>map(users =&gt; loadSuccess(...))</code> — result → action (auto-dispatched).</li>
+<li><code>catchError</code> <strong>inner</strong> (switchMap ke andar) — effect stream alive rehti.</li>
+<li><code>{ dispatch: false }</code> — side-effect only (navigation/logging).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>catchError</code> ko <strong>outer</strong> (switchMap ke bahar) rakhna → ek error effect stream ko permanently maar deta (aage koi loadUsers handle nahi hoga). Inner catch!</li>
+<li>Galat flattening operator — search pe concatMap (stale), saves pe switchMap (dropped). Intent match karo.</li>
+<li>Effect se koi action return na karna (dispatch true hote hue) → undefined dispatch error. <code>{dispatch:false}</code> ya action return.</li>
+<li>Effect mein state update karne ki koshish — effect action dispatch karta, reducer state badalta.</li>
+<li>Ek effect mein multiple unrelated concerns — ek effect = ek responsibility.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Error handling hamesha <strong>inner</strong> (flattening operator ke andar) — effect stream resilient.</li>
+<li>Flattening operator intent se: search→switchMap, saves→concatMap, submit→exhaustMap.</li>
+<li>Ek effect = ek responsibility. Functional effects for less boilerplate.</li>
+<li>Non-dispatching (<code>dispatch:false</code>) for navigation/logging/toast.</li>
+<li><code>tapResponse</code>/<code>concatLatestFrom</code> (<code>@ngrx/operators</code>) for cleaner patterns.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Operator choice = concurrency/perf: <code>switchMap</code> stale requests cancel karke bandwidth bachata (search); <code>concatMap</code> ordered but backlog risk; <code>exhaustMap</code> double-submit prevent. Inner catchError se effect resilient (no re-subscribe overhead on error). Effects thin rakho — heavy sync work stream slow karta.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Effect ordering</td><td>Multiple effects ek action pe react kar sakte (fan-out) — independent streams.</td></tr>
+<tr><td><code>concatLatestFrom</code></td><td>Action ke saath store slice chahiye (lazy) — <code>withLatestFrom</code> ka lazy version.</td></tr>
+<tr><td>Effect init</td><td><code>{dispatch}</code> aur init actions — app-init effects (<code>ROOT_EFFECTS_INIT</code>).</td></tr>
+<tr><td>Testing</td><td><code>provideMockActions</code> se effects test — marble/observable.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Effects kis liye hain?</summary><div class="ans"><p>Side-effects (HTTP, WebSocket, navigation, localStorage) handle karne ke liye — kyunki reducers pure hote hain (async wahan nahi ja sakta). Effect Actions stream sunta hai (<code>ofType</code>), side-effect karta hai, aur usually result se ek naya action dispatch karta (<code>loadSuccess</code>/<code>loadFailure</code>).</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Effect mein <code>catchError</code> inner vs outer — kya farak?</summary><div class="ans"><p><strong>Inner</strong> (switchMap ke andar, HTTP pe): sirf us request ka error handle hota, effect stream (Actions$) alive rehti — aage ke <code>loadUsers</code> normally handle hote. <strong>Outer</strong> (switchMap ke bahar): error poore effect stream ko complete/kill kar deta — us action ke baad kabhi ye effect trigger nahi hoga (silent dead effect). Hamesha inner catch karo.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Effect mein kaunsa flattening operator kab?</summary><div class="ans"><p>Intent pe: <strong>switchMap</strong> — search/latest-wins (purani cancel). <strong>concatMap</strong> — ordered mutations (sequential saves, drop nahi). <strong>exhaustMap</strong> — double-submit prevent (busy pe ignore). <strong>mergeMap</strong> — independent parallel (order irrelevant). Galat choice = race conditions ya dropped operations.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek save-effect kabhi-kabhi kaam karna band kar deta hai ek failed save ke baad. Kya galat?</summary><div class="ans"><p><code>catchError</code> outer (switchMap ke bahar) hai — ek save fail hua toh error poore effect stream ko complete/kill kar deta, aage ke save actions kabhi handle nahi hote (dead effect). Fix: error ko inner catch karo — <code>concatMap(() =&gt; api.save().pipe(catchError(() =&gt; of(saveFailure(...)))))</code> — ab ek fail sirf us save ko affect karta, effect chalti rehti.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Effects = side-effects (HTTP/nav). <code>Actions$ → ofType(action) → switchMap(sideEffect) → map(resultAction)</code>.</li>
+<li><code>catchError</code> INNER (inside flattening op) or effect stream dies. Operator by intent (switch/concat/exhaust).</li>
+<li>Functional effects (<code>{functional:true}</code>). <code>{dispatch:false}</code> for nav/logging. Result action auto-dispatched.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.8 · Load effect</div><p>Ek functional effect banao: <code>loadUsers</code> → HTTP → <code>loadSuccess</code>/<code>loadFailure</code>. Error ko inner catchError se handle karo. Prove karo (fail endpoint) effect ek error ke baad bhi kaam karti rehti.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-15.9 · Non-dispatching + operator</div><p>Ek non-dispatching effect (<code>dispatch:false</code>) banao jo save-success pe navigate kare. Ek save-effect mein <code>concatMap</code> use karke ordered saves ensure karo aur justify karo (switchMap kyun galat).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Selectors</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>createSelector · createFeatureSelector · memoization · composition · derived state · view-model selectors · parameterized · OnPush</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Selectors <strong>pure functions</strong> hain jo store se specific state slices padhte aur derive karte hain. <code>createSelector</code> se banate; ye <strong>memoized</strong> hain — inputs unchanged toh cached result. Components selectors se state read karte (<code>store.select(selector)</code>).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Components ko poora state tree nahi, specific derived slices chahiye ("active users count", "filtered cart"). Selectors ye derivation ek reusable, memoized jagah rakhte — components decoupled from state shape, aur memoization se redundant recomputation + unnecessary re-renders rukte.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>State-shape coupling aur redundant computation. Selectors ek "read layer" dete: component sirf selector jaanta (state shape nahi — shape badle toh sirf selector update). Memoization derived values ko cache karke <code>OnPush</code> ke saath efficient rendering deti.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Memoization + composition</div><p><code>createSelector(...inputSelectors, projector)</code> input selectors ke results ko project karta. <strong>Memoization</strong>: agar input selectors ke results <em>referentially</em> unchanged hain (===), projector dobara nahi chalta — cached result return hota. Isliye immutability important (naya reference = recompute, same = cached). Selectors <strong>composable</strong> hain — ek selector doosre ko input le sakta, ek dependency graph banake. <code>createFeatureSelector</code> ek feature ka top-level slice pick karta (starting point).</p></div>
+
+<div class="dg-title">Diagram — memoized composition</div>
+<pre class="diagram">
+ createFeatureSelector('users') ─▶ selectUsersState
+        │
+ createSelector(selectUsersState, s =&gt; s.users)   ─▶ selectUsers
+        │
+ createSelector(selectUsers, u =&gt; u.filter(active)) ─▶ selectActiveUsers
+        │  (memoized: inputs unchanged → cached, projector skipped)
+        ▼
+ store.select(selectActiveUsers) ─▶ Observable (emits only on real change)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ state change ─▶ input selectors re-evaluate
+   inputs === previous ─▶ cached result (projector NOT run)
+   inputs changed      ─▶ projector runs ─▶ new result ─▶ emit to component
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>createFeatureSelector&lt;T&gt;('key')</code></td><td>Pick a feature's top-level slice.</td></tr>
+<tr><td><code>createSelector(...inputs, projector)</code></td><td>Derive from input selectors; memoized.</td></tr>
+<tr><td>Composition</td><td>Selectors as inputs to other selectors — layered.</td></tr>
+<tr><td>View-model selector</td><td>Combine multiple slices into one object for a component.</td></tr>
+<tr><td><code>createFeature</code> auto-selectors</td><td>Per-property selectors auto-generated (S-04).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — view-model selector</h3>
+<div class="code-label">users.selectors.ts</div>
+<pre><code>import { createSelector } from '@ngrx/store';
+import { usersFeature } from './users.feature';
+
+// feature gives: selectUsers, selectLoading, selectError (auto)
+export const selectActiveUsers = createSelector(
+  usersFeature.selectUsers,
+  (users) =&gt; users.filter(u =&gt; u.active),
+);
+
+// view-model: one selector → everything the component needs
+export const selectUsersVm = createSelector(
+  usersFeature.selectUsers,
+  usersFeature.selectLoading,
+  selectActiveUsers,
+  (users, loading, active) =&gt; ({ users, loading, activeCount: active.length }),
+);
+// component: vm = store.selectSignal(selectUsersVm);  → {{ vm().activeCount }}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>export const selectCartState = createFeatureSelector&lt;CartState&gt;('cart');
+export const selectItems = createSelector(selectCartState, (s) =&gt; s.items);
+export const selectTotal = createSelector(selectItems,
+  (items) =&gt; items.reduce((sum, i) =&gt; sum + i.price * i.qty, 0));</code></pre>
+
+<h3 class="part">9. Advanced Example — parameterized selector</h3>
+<div class="code-label">typescript</div>
+<pre><code>// factory selector — takes a param (e.g. id)
+export const selectUserById = (id: number) =&gt; createSelector(
+  usersFeature.selectUsers,
+  (users) =&gt; users.find(u =&gt; u.id === id),
+);
+// usage: store.selectSignal(selectUserById(42));
+// NOTE: creates a new selector per call — memoize the factory if called often</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>createFeatureSelector('users')</code> — feature slice ka entry point.</li>
+<li><code>createSelector(input, projector)</code> — derive; memoized.</li>
+<li>Composition: <code>selectActiveUsers</code> ko <code>selectUsersVm</code> ka input.</li>
+<li>View-model: ek selector jo component ki saari zaroorat combine kare.</li>
+<li>Parameterized: factory function jo selector return kare (id-based).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Poora state select karke component mein filter/derive — logic selector mein rakho (memoized, reusable).</li>
+<li>Projector mein naya object/array har baar banana bina real change — memoization break, unnecessary re-renders.</li>
+<li>Selector mein side-effects/async — selectors PURE + synchronous.</li>
+<li>Parameterized selector har call pe naya banana (memoization lost) — factory ko cache karo.</li>
+<li>State shape change pe har component fix karna — selectors se decouple karo (ek jagah shape).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Derivation selectors mein (memoized, reusable, testable) — na components mein.</li>
+<li>Compose selectors — layered, DRY.</li>
+<li>View-model selector per component — ek subscribe, sab data.</li>
+<li>Selectors pure + immutable-friendly (stable references for memoization + OnPush).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Memoization selectors ka core perf feature — expensive derivation (filter/sort of large list) sirf tab re-run jab inputs change; warna cached. Stable references (immutability se) + <code>OnPush</code> = component sirf real change pe re-render. View-model selectors se ek stable object → fewer template subscriptions. Non-memoized inline derivation har CD pe re-run.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Memoization cache size</td><td>Default last-1 memoized; params/args badalte reh toh cache thrash.</td></tr>
+<tr><td>New object in projector</td><td>Projector <code>{...}</code> naya ref deta — downstream re-runs; sirf zaroorat pe.</td></tr>
+<tr><td>Global state combine</td><td>Multiple feature selectors ko ek view-model mein combine.</td></tr>
+<tr><td><code>createFeature</code> selectors</td><td>Auto per-property selectors — manual <code>createSelector</code> boilerplate kam.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Selector kya hai aur memoization kya deti?</summary><div class="ans"><p>Pure function jo store se state slice derive karta (<code>createSelector</code>). Memoization: input selectors ke results unchanged (referentially) hon toh projector dobara nahi chalta — cached result. Isse expensive derivation redundant re-run nahi hoti, aur stable references <code>OnPush</code> ke saath unnecessary re-renders rokti.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> View-model selector kya hai, kyun useful?</summary><div class="ans"><p>Ek selector jo multiple state slices ko ek object mein combine karta — component ki saari zaroorat ek jagah (<code>{ users, loading, activeCount }</code>). Component ek hi <code>selectSignal(selectVm)</code> se sab paata (multiple subscriptions nahi). Memoized, decoupled from shape, cleaner template.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Selectors kyun, component mein direct derivation kyun nahi?</summary><div class="ans"><p>Selectors derivation ko reusable + memoized + testable + decoupled banate. Component mein inline filter/sort har CD pe re-run hota (no memoization), state shape se coupled (shape badle toh har component fix), aur non-reusable. Selector ek jagah rakhta — shape change = sirf selector update.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek selector har state change pe component ko re-render karwa raha, bhale relevant slice na badla ho. Kyun?</summary><div class="ans"><p>Probably projector har baar naya object/array bana raha (<code>(s) =&gt; ({...})</code> ya <code>.filter()</code>) jabki underlying data same — naya reference memoization + OnPush ko lagता value badli. Fix: ensure input selectors stable references dein (immutability), aur projector sirf zaroorat pe naya object banaye. Composition se derivation ko granular rakho.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>createFeatureSelector('key')</code> + <code>createSelector(...inputs, projector)</code>. Pure + MEMOIZED.</li>
+<li>Memoization: inputs === prev → cached (needs immutability). Composable + layered.</li>
+<li>View-model selector = combine slices for a component. Derivation in selectors, not components.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.10 · Composed selectors</div><p>Feature state se layered selectors banao: <code>selectItems</code> → <code>selectTotal</code> → <code>selectVm</code> (view-model). Component mein <code>selectSignal(selectVm)</code> se ek subscribe se sab render karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-15.11 · Prove memoization</div><p>Projector mein ek <code>console.log</code> daalkar prove karo ki unrelated state change pe selector recompute nahi hota (memoized), par relevant change pe hota. Non-memoized inline version se contrast karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Entity</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>@ngrx/entity · createEntityAdapter · EntityState · normalized (ids+entities) · CRUD updaters · getSelectors · sortComparer · selectId</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>@ngrx/entity</code> collections (lists of records) ko manage karne ka toolkit hai. Ye data ko <strong>normalized</strong> shape mein rakhta — <code>{ ids: [1,2,3], entities: { 1: {...}, 2: {...} } }</code> — aur ek <strong>adapter</strong> deta jismein ready-made CRUD updaters (addOne, updateOne, removeOne, setAll) + selectors hote. List-heavy state ka boilerplate drastically kam.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Arrays of records ko reducers mein manage karna painful hai — add/update/remove ke liye immutable <code>.map</code>/<code>.filter</code>/spread har baar likhna, aur ek item ko id se dhoondhna O(n). Entity adapter ye normalize karke: lookups O(1) (dictionary), CRUD ek-line updaters, aur consistent shape deta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Raw array state ka dard</div>
+<ul style="margin-bottom:0">
+<li>Har CRUD ke liye verbose immutable array logic.</li>
+<li>Id se lookup O(n) (<code>.find</code>).</li>
+<li>Duplicate/inconsistent shapes across features.</li>
+</ul></div>
+<div class="panel good-p"><div class="ptitle">Entity adapter</div><p>Normalized <code>{ids, entities}</code> — O(1) lookup, one-line CRUD updaters, built-in selectors, optional sorting. Boilerplate gone.</p></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Normalized state + adapter</div><p><code>createEntityAdapter&lt;T&gt;()</code> ek adapter banata jo <code>EntityState&lt;T&gt;</code> shape manage karta: <code>ids</code> (order) + <code>entities</code> (id→record dictionary). Adapter ke methods (<code>setAll</code>, <code>addOne</code>, <code>upsertMany</code>, <code>updateOne</code>, <code>removeOne</code>...) ek state leke naya normalized state return karte — sab immutable, tumhe array logic nahi likhni. <code>selectId</code> (default <code>entity.id</code>) aur <code>sortComparer</code> (optional ordering) configure kar sakte. <code>adapter.getSelectors()</code> ready selectors (<code>selectAll</code>, <code>selectEntities</code>, <code>selectIds</code>, <code>selectTotal</code>) deta.</p></div>
+
+<div class="dg-title">Diagram — normalized shape</div>
+<pre class="diagram">
+ raw:  [ {id:1,name:'A'}, {id:2,name:'B'} ]      O(n) find, verbose CRUD
+
+ normalized (EntityState):
+   { ids: [1, 2],
+     entities: { 1: {id:1,name:'A'}, 2: {id:2,name:'B'} } }   O(1) lookup
+        │
+   adapter.updateOne({id:1, changes:{name:'A2'}}, state) ─▶ new normalized state
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ createEntityAdapter ─▶ adapter + getInitialState()
+ reducer on(loadSuccess) ─▶ adapter.setAll(users, state) ─▶ normalized state
+ selectors: adapter.getSelectors(featureSelector) ─▶ selectAll/selectEntities/...
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>createEntityAdapter&lt;T&gt;({selectId, sortComparer})</code></td><td>Create adapter (id fn + optional sort).</td></tr>
+<tr><td><code>adapter.getInitialState(extra?)</code></td><td>Initial <code>{ids:[], entities:{}}</code> (+ extra fields like loading).</td></tr>
+<tr><td>CRUD updaters</td><td><code>setAll</code>, <code>addOne/addMany</code>, <code>upsertOne/Many</code>, <code>updateOne/Many</code>, <code>removeOne/All</code>, <code>setOne</code>, <code>mapOne</code>.</td></tr>
+<tr><td><code>adapter.getSelectors(featureSel)</code></td><td><code>selectAll</code>, <code>selectEntities</code>, <code>selectIds</code>, <code>selectTotal</code>.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">users.feature.ts with entity</div>
+<pre><code>import { createEntityAdapter, EntityState } from '@ngrx/entity';
+import { createFeature, createReducer, on } from '@ngrx/store';
+
+interface UsersState extends EntityState&lt;User&gt; { loading: boolean; }
+const adapter = createEntityAdapter&lt;User&gt;({
+  sortComparer: (a, b) =&gt; a.name.localeCompare(b.name),
+});
+const initialState: UsersState = adapter.getInitialState({ loading: false });
+
+export const usersFeature = createFeature({
+  name: 'users',
+  reducer: createReducer(
+    initialState,
+    on(UsersActions.loadUsers, (s) =&gt; ({ ...s, loading: true })),
+    on(UsersApiActions.loadSuccess, (s, { users }) =&gt; adapter.setAll(users, { ...s, loading: false })),
+    on(UsersActions.addUser, (s, { user }) =&gt; adapter.addOne(user, s)),
+    on(UsersActions.deleteUser, (s, { id }) =&gt; adapter.removeOne(id, s)),
+  ),
+  extraSelectors: ({ selectUsersState }) =&gt; adapter.getSelectors(selectUsersState),
+});
+// usersFeature.selectAll, selectEntities, selectIds, selectTotal (from adapter)</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const adapter = createEntityAdapter&lt;Todo&gt;();
+const initial = adapter.getInitialState();
+
+// in reducer handlers:
+adapter.addOne(todo, state);                          // add
+adapter.updateOne({ id: 1, changes: { done: true } }, state);  // update
+adapter.removeOne(1, state);                          // delete</code></pre>
+
+<h3 class="part">9. Advanced Example — selectors + O(1) lookup</h3>
+<div class="code-label">typescript</div>
+<pre><code>const { selectAll, selectEntities, selectTotal } = adapter.getSelectors(selectUsersState);
+
+// O(1) lookup by id (dictionary) — no .find over array
+export const selectUserById = (id: number) =&gt; createSelector(
+  selectEntities,
+  (entities) =&gt; entities[id],   // direct key access, O(1)
+);
+// selectAll → sorted array (sortComparer applied); selectTotal → count</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>createEntityAdapter&lt;User&gt;({sortComparer})</code> — adapter + auto-sort.</li>
+<li><code>adapter.getInitialState({loading})</code> — normalized + extra fields.</li>
+<li><code>adapter.setAll(users, state)</code> — replace collection (immutable, normalized).</li>
+<li><code>adapter.updateOne({id, changes})</code> — partial update by id.</li>
+<li><code>adapter.getSelectors(featureSel)</code> — ready selectAll/selectEntities/etc.</li>
+<li><code>selectEntities[id]</code> — O(1) lookup (dictionary).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Raw arrays manage karna jab entity adapter boilerplate hata sakta.</li>
+<li><code>selectId</code> galat/missing jab id field <code>id</code> nahi (custom key) — lookups toot.</li>
+<li>Adapter updater ka return na use karna (immutable naya state return karta — assign karo).</li>
+<li><code>selectAll</code> (sorted array) vs <code>selectEntities</code> (dictionary) confuse — list render vs id-lookup.</li>
+<li>Extra state (loading/error) ko <code>getInitialState({...})</code> mein na dena.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Collections/lists → entity adapter (normalized, O(1), less boilerplate).</li>
+<li><code>selectId</code>/<code>sortComparer</code> configure karo (custom id, ordering).</li>
+<li>Adapter selectors (<code>getSelectors</code>) use karo; <code>selectEntities</code> for id-lookup.</li>
+<li>Extra state (loading/error/selectedId) ko <code>getInitialState</code> mein extend.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Normalization ka bada perf win — id-lookup O(1) (dictionary) vs O(n) array <code>.find</code>. CRUD updaters efficient immutable operations. <code>selectAll</code> memoized sorted array. Bade collections (hundreds/thousands) mein ye scaling difference bhaari. <code>sortComparer</code> se sorting bhi centralized + memoized.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Custom id field</td><td><code>selectId: (e) =&gt; e.uuid</code> jab id key <code>id</code> nahi.</td></tr>
+<tr><td>upsert vs add</td><td><code>upsertOne</code> add-or-update; <code>addOne</code> duplicate id pe ignore.</td></tr>
+<tr><td>Signals entities</td><td><code>@ngrx/signals/entities</code> — SignalStore ke liye <code>withEntities</code> (S-08).</td></tr>
+<tr><td>Sorted vs insertion order</td><td><code>sortComparer:false</code> → insertion order; fn → sorted.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>@ngrx/entity</code> kya solve karta?</summary><div class="ans"><p>Collections (lists) ka state management. Data ko normalized shape (<code>{ids, entities}</code>) mein rakhta aur ek adapter deta jismein ready CRUD updaters (addOne/updateOne/removeOne/setAll) + selectors. Fayda: O(1) id-lookup (dictionary), one-line CRUD (no verbose array immutability), consistent shape.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Normalized shape (<code>ids + entities</code>) kyun, raw array kyun nahi?</summary><div class="ans"><p>Array mein id-lookup O(n) (<code>.find</code>) aur CRUD verbose (immutable map/filter). Normalized: <code>entities</code> ek dictionary (id→record) → O(1) lookup; <code>ids</code> order preserve karta. CRUD adapter updaters se one-line. Bade lists pe performance + boilerplate dono behtar.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>selectAll</code> vs <code>selectEntities</code>?</summary><div class="ans"><p><code>selectAll</code> → array (sorted if sortComparer) — list rendering ke liye (<code>@for</code>). <code>selectEntities</code> → dictionary (id→record) — id se O(1) lookup ke liye. <code>selectIds</code> → order, <code>selectTotal</code> → count. List dikhani hai → selectAll; ek specific id chahiye → selectEntities.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> 5000 users ki list hai aur ek user ko id se update karna slow lag raha (array <code>.map</code>). Entity se kaise better?</summary><div class="ans"><p>Entity adapter normalized <code>{ids, entities}</code> use karta — <code>adapter.updateOne({id, changes}, state)</code> dictionary mein direct id-access se update karta (O(1) locate), poore array pe <code>.map</code> nahi. Lookups bhi <code>selectEntities[id]</code> se O(1). 5000 items pe ye scaling difference significant — plus CRUD one-liners.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>@ngrx/entity</code> = normalized collections <code>{ids, entities}</code>. O(1) lookup, one-line CRUD.</li>
+<li><code>createEntityAdapter</code> → updaters (setAll/addOne/updateOne/removeOne) + <code>getSelectors</code> (selectAll/Entities/Ids/Total).</li>
+<li>Configure <code>selectId</code>/<code>sortComparer</code>. <code>selectAll</code>=array(list), <code>selectEntities</code>=dict(lookup).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.12 · Entity feature</div><p>Ek users feature banao entity adapter se: loadSuccess (setAll), add (addOne), update (updateOne), delete (removeOne), sortComparer by name. Adapter selectors se list render + id-lookup dono karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-15.13 · O(1) vs O(n)</div><p>Ek bade collection (1000+ items) mein raw-array update vs entity <code>updateOne</code> ka approach compare karo. <code>selectEntities[id]</code> se O(1) lookup selector banao.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Signal Store</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>@ngrx/signals · signalStore · withState · withComputed · withMethods · withHooks · patchState · signalStoreFeature · rxMethod · withEntities · vs classic Store</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>@ngrx/signals</code> ka <strong>SignalStore</strong> signals ke upar ek lightweight, signal-native state management hai. <code>signalStore(...)</code> ek injectable store banata jismein state (signals), computed (derived signals), aur methods (actions) ek builder-style <code>with*</code> features se — classic Redux boilerplate ke bina. Modern NgRx ka default recommendation.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Classic Store (Actions/Reducers/Effects/Selectors) powerful par verbose — ek simple feature ke liye 4 files. SignalStore signals-native hai: state directly signals, no <code>| async</code>, fine-grained CD, aur sab (state/computed/methods) ek jagah — drastically kam boilerplate, same predictability.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Classic NgRx ka boilerplate + RxJS overhead simple cases mein. SignalStore structured state-management deta with far less ceremony, signal-native reactivity (template mein direct read), aur composable features — 80% cases ke liye modern sweet spot.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Builder — order matters (recap from Ch14)</div><p><code>signalStore</code> features (<code>withState</code>, <code>withComputed</code>, <code>withMethods</code>, <code>withHooks</code>, <code>withProps</code>) ko RxJS <code>pipe</code> ki tarah sequentially compose karta — har feature pichhle sab members ko access kar sakta (isliye order matters). <code>withState</code> state ko signals mein badalta; <code>withComputed</code> derived signals; <code>withMethods</code> actions (jo <code>patchState</code> se immutable update karte). Sab signals — fine-grained CD, template mein direct call. <code>signalStoreFeature</code> se reusable custom features. RxJS side-effects <code>rxMethod</code> se.</p></div>
+
+<div class="dg-title">Diagram — classic vs SignalStore</div>
+<pre class="diagram">
+ CLASSIC:  actions.ts + reducer.ts + effects.ts + selectors.ts   (4 files)
+    dispatch(action) → effect → success action → reducer → selector → component
+
+ SIGNALSTORE:  one store
+    signalStore(withState, withComputed, withMethods)
+    store.method() → patchState → signals update → template {{ store.x() }}
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ inject(Store) ─▶ read store.count() / store.double() (signals)
+   ─▶ store.increment() ─▶ patchState(store, {...}) ─▶ signals update
+   ─▶ template + computeds react (fine-grained, no | async)
+</pre>
+
+<h3 class="part">6. Architecture — the features</h3>
+<table>
+<tr><td><code>signalStore({providedIn}, ...)</code></td><td>Injectable store (singleton or component-provided).</td></tr>
+<tr><td><code>withState(initial)</code></td><td>State slices → signals.</td></tr>
+<tr><td><code>withComputed(s =&gt; ({...}))</code></td><td>Derived signals (memoized selectors).</td></tr>
+<tr><td><code>withMethods(s =&gt; ({...}))</code></td><td>Actions; <code>inject()</code> services; <code>patchState</code>.</td></tr>
+<tr><td><code>withHooks({onInit, onDestroy})</code></td><td>Lifecycle (initial load).</td></tr>
+<tr><td><code>rxMethod</code> / <code>withEntities</code> / <code>signalStoreFeature</code></td><td>RxJS side-effects / entity CRUD / reusable features.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">users.store.ts</div>
+<pre><code>import { computed, inject } from '@angular/core';
+import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { tapResponse } from '@ngrx/operators';
+import { pipe, switchMap, tap } from 'rxjs';
+
+type State = { users: User[]; loading: boolean; query: string };
+
+export const UsersStore = signalStore(
+  { providedIn: 'root' },
+  withState&lt;State&gt;({ users: [], loading: false, query: '' }),
+  withComputed(({ users, query }) =&gt; ({
+    filtered: computed(() =&gt; users().filter(u =&gt; u.name.includes(query()))),
+    count: computed(() =&gt; users().length),
+  })),
+  withMethods((store, api = inject(UsersApi)) =&gt; ({
+    setQuery(q: string) { patchState(store, { query: q }); },
+    loadAll: rxMethod&lt;void&gt;(pipe(
+      tap(() =&gt; patchState(store, { loading: true })),
+      switchMap(() =&gt; api.getAll().pipe(tapResponse({
+        next: (users) =&gt; patchState(store, { users, loading: false }),
+        error: () =&gt; patchState(store, { loading: false }),
+      )))),
+    ),
+  })),
+  withHooks({ onInit(store) { store.loadAll(); } }),
+);
+// component: store = inject(UsersStore);  template: {{ store.filtered() }}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>export const CounterStore = signalStore(
+  { providedIn: 'root' },
+  withState({ count: 0 }),
+  withComputed(({ count }) =&gt; ({ double: computed(() =&gt; count() * 2) })),
+  withMethods((store) =&gt; ({
+    inc() { patchState(store, { count: store.count() + 1 }); },
+  })),
+);</code></pre>
+
+<h3 class="part">9. Advanced Example — reusable feature</h3>
+<div class="code-label">signalStoreFeature</div>
+<pre><code>export function withRequestStatus() {
+  return signalStoreFeature(
+    withState&lt;{ status: 'idle' | 'pending' | 'done' }&gt;({ status: 'idle' }),
+    withComputed(({ status }) =&gt; ({ isPending: computed(() =&gt; status() === 'pending') })),
+  );
+}
+// plug into any store: signalStore(withRequestStatus(), withState(...), ...)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>signalStore({providedIn:'root'}, ...)</code> — injectable singleton store.</li>
+<li><code>withState&lt;T&gt;(initial)</code> — har key ek signal.</li>
+<li><code>withComputed(({...}) =&gt; ...)</code> — derived signals (memoized).</li>
+<li><code>withMethods((store, api=inject) =&gt; ...)</code> — actions + service inject + <code>patchState</code>.</li>
+<li><code>rxMethod</code> — RxJS-based method (switchMap/tapResponse for async).</li>
+<li><code>withHooks.onInit</code> — store init pe load.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>State directly mutate karna — hamesha <code>patchState</code> (immutable).</li>
+<li>Feature order galat (<code>withComputed</code> jo state pe depend, <code>withState</code> ke pehle).</li>
+<li>Async ke liye manual subscribe jab <code>rxMethod</code> + <code>tapResponse</code> cleaner.</li>
+<li>Ek giant store — feature-split (<code>signalStoreFeature</code>).</li>
+<li>Classic Store choose karna jab SignalStore kaafi (modern default, less boilerplate).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Modern apps mein SignalStore default; classic Store sirf large/strict-unidirectional.</li>
+<li>Derived → <code>withComputed</code>; async → <code>rxMethod</code> + <code>tapResponse</code>; entities → <code>withEntities</code>.</li>
+<li>Reusable logic → <code>signalStoreFeature</code>. <code>patchState</code> for updates.</li>
+<li>Shared state → <code>providedIn:'root'</code>; local → component-provided.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>SignalStore fine-grained CD (signals) — sirf affected consumers update, no <code>| async</code> subscription machinery. <code>withComputed</code> memoized selectors. Classic Store ke muqable kam boilerplate + no action/reducer indirection = simpler + often faster. <code>rxMethod</code> se async cancellation (switchMap) efficient. Feature-split lazy-loadable.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Private members</td><td><code>_</code> prefix se private computed/state.</td></tr>
+<tr><td>Events plugin</td><td>NgRx v19.2+ (experimental) — Redux-style events for inter-store comms.</td></tr>
+<tr><td>DevTools</td><td>SignalStore ka DevTools support classic Store se alag/limited.</td></tr>
+<tr><td>Store scope</td><td><code>providedIn:'root'</code> global; component providers → per-instance (local).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> SignalStore classic NgRx Store se kaise alag?</summary><div class="ans"><p>SignalStore signals-native + lightweight: state/computed/methods ek builder mein co-located, kam boilerplate, no actions/reducers/effects/selectors indirection, template mein no <code>| async</code>, fine-grained CD. Classic Store Redux-style (4 files, RxJS-heavy). SignalStore = modern default for most apps; classic for very large/strict-unidirectional.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> SignalStore mein async data kaise handle karte ho?</summary><div class="ans"><p><code>rxMethod</code> (<code>@ngrx/signals/rxjs-interop</code>) — ek RxJS pipeline as a store method: <code>rxMethod(pipe(tap(loading), switchMap(() =&gt; api.get().pipe(tapResponse({next, error})))))</code>. <code>tapResponse</code> (<code>@ngrx/operators</code>) success/error safely handle karta (stream alive). Ya simple async ke liye <code>async</code> method + <code>patchState</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>signalStoreFeature</code> ka fayda?</summary><div class="ans"><p>Reusable, composable store features banane deta — jaise <code>withRequestStatus()</code> (loading/error state + computed + updaters) jo kisi bhi store mein plug ho. DRY: same cross-cutting logic (loading, pagination, selection) multiple stores mein reuse. Composition over duplication.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek naye Angular app mein simple feature-state chahiye. Team classic NgRx (actions/reducers/effects) propose kar rahi. Better?</summary><div class="ans"><p>Modern default SignalStore hai — same structured state-management par far less boilerplate (4 files → 1 store), signal-native (no <code>| async</code>, fine-grained CD), aur async <code>rxMethod</code> se. Classic Store ki full ceremony (actions/reducers/effects/selectors) sirf tab justify hoti jab bahut bada/strict-unidirectional/inter-store-heavy ho. Simple feature ke liye SignalStore cleaner + faster to build.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>signalStore(withState, withComputed, withMethods, withHooks)</code> — builder, ORDER matters, signals-native.</li>
+<li>Updates via <code>patchState</code> (immutable). Async → <code>rxMethod</code> + <code>tapResponse</code>. Entities → <code>withEntities</code>.</li>
+<li>Modern default (less boilerplate than classic). Reusable → <code>signalStoreFeature</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.14 · Users SignalStore</div><p>Ek <code>signalStore</code> banao with withState (users/loading/query), withComputed (filtered/count), withMethods (setQuery + <code>rxMethod</code> loadAll with tapResponse), withHooks (load onInit). Component se consume karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-15.15 · Classic → SignalStore</div><p>Ek chhota classic-NgRx feature (actions+reducer+effect+selectors) ko SignalStore mein port karo. Boilerplate line-count compare karke difference note karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s9">
+<div class="sec-head">
+  <span class="sec-num">S-09</span>
+  <h2>Component Store</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s9"> Done</label>
+</div>
+<p class="covers">Covers: <b>@ngrx/component-store · local/component-scoped state · select · updater · effect · setState/patchState · tapResponse · lifecycle-bound · vs global Store</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>@ngrx/component-store</code> ek <strong>local, component-scoped</strong> reactive state solution hai. Global Store ke unlike, ye ek component (ya feature) ki lifetime se bandha hota hai — component destroy pe state + subscriptions clean ho jaate. Standalone (<code>@ngrx/store</code> pe depend nahi karta). API: <code>select</code>, <code>updater</code>, <code>effect</code>, <code>patchState</code>.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Kabhi complex local state chahiye (ek smart component ka form + async + derived state) jo global store mein daalna over-engineering ho aur plain component properties se manage karna messy. ComponentStore is beech ka solution deta — structured reactive local state, lifecycle-bound, RxJS-powered, bina global store ke.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>"Local state jo complex hai par global nahi honi chahiye." Global store mein daalne se pollution + boilerplate; plain properties se async/derived state messy. ComponentStore local reactive state ko clean, encapsulated, auto-cleaned form mein deta.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Lifecycle-bound reactive state</div><p><code>ComponentStore&lt;State&gt;</code> ko component ke <code>providers</code> mein diya jaata — toh iski instance component ke saath banti aur destroy hoti. State reactive hai: <code>select(fn)</code> derived Observables deta, <code>updater(fn)</code> synchronous state updates ke liye, <code>effect(fn)</code> async side-effects (jo ek Observable ko subscribe karta, component destroy pe auto-unsubscribe). Important: ComponentStore <code>effect</code> ko "call" karne ka matlab ek internal Subject pe value push karna — effect stream Observable ko subscribe karke reactively handle karta. Errors ko <code>tapResponse</code> (<code>@ngrx/operators</code>) se safely handle karo (stream alive rakhta).</p></div>
+
+<div class="dg-title">Diagram — ComponentStore lifecycle</div>
+<pre class="diagram">
+ provided at component level ─▶ store created with component
+   select(fn)   ─▶ derived Observable&lt;T&gt;
+   updater(fn)  ─▶ sync state update
+   effect(fn)   ─▶ async side-effect (subscribes Observable)
+ component destroyed ─▶ store destroyed ─▶ all subscriptions cleaned (auto)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ constructor: super(initialState)
+ select(s =&gt; s.x) ─▶ vm$ (template | async)
+ updater((s, v) =&gt; ({...s, x:v})) ─▶ call to update sync
+ effect(trigger$ =&gt; trigger$.pipe(switchMap(HTTP), tapResponse(...))) ─▶ async
+ destroy ─▶ auto-cleanup
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>extends ComponentStore&lt;State&gt;</code></td><td><code>super(initialState)</code>. Provided at component level.</td></tr>
+<tr><td><code>select(projector)</code></td><td>Derived state as Observable (like a selector).</td></tr>
+<tr><td><code>updater((state, value) =&gt; newState)</code></td><td>Synchronous immutable updates.</td></tr>
+<tr><td><code>effect(origin$ =&gt; ...)</code></td><td>Async side-effects; auto-subscribed/cleaned.</td></tr>
+<tr><td><code>setState</code> / <code>patchState</code> / <code>get</code></td><td>Set full / partial state; sync snapshot.</td></tr>
+<tr><td><code>tapResponse</code> (<code>@ngrx/operators</code>)</td><td>Safe next/error handling inside effects.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">movies.store.ts (component-scoped)</div>
+<pre><code>import { ComponentStore } from '@ngrx/component-store';
+import { tapResponse } from '@ngrx/operators';
+import { switchMap, tap, Observable } from 'rxjs';
+
+interface MoviesState { movies: Movie[]; loading: boolean; }
+
+@Injectable()   // provided at component level (not root)
+export class MoviesStore extends ComponentStore&lt;MoviesState&gt; {
+  private api = inject(MoviesApi);
+  constructor() { super({ movies: [], loading: false }); }
+
+  readonly movies$ = this.select((s) =&gt; s.movies);
+  readonly loading$ = this.select((s) =&gt; s.loading);
+
+  readonly setLoading = this.updater((s, loading: boolean) =&gt; ({ ...s, loading }));
+
+  readonly load = this.effect((trigger$: Observable&lt;void&gt;) =&gt;
+    trigger$.pipe(
+      tap(() =&gt; this.setLoading(true)),
+      switchMap(() =&gt; this.api.getAll().pipe(tapResponse({
+        next: (movies) =&gt; this.patchState({ movies, loading: false }),
+        error: () =&gt; this.setLoading(false),
+      )))
+    ));
+}
+// component: providers: [MoviesStore]; store.load(); movies$ = store.movies$;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>@Injectable()
+export class CounterStore extends ComponentStore&lt;{ count: number }&gt; {
+  constructor() { super({ count: 0 }); }
+  readonly count$ = this.select((s) =&gt; s.count);
+  readonly increment = this.updater((s) =&gt; ({ count: s.count + 1 }));
+}
+// component providers: [CounterStore]  — new instance per component</code></pre>
+
+<h3 class="part">9. Advanced Example — Store vs ComponentStore vs SignalStore</h3>
+<div class="code-label">when to use which</div>
+<pre><code>// GLOBAL Store (@ngrx/store): app-wide shared state, many features, DevTools, strict flow
+// COMPONENT Store (@ngrx/component-store): complex LOCAL state, lifecycle-bound, RxJS
+// SIGNAL Store (@ngrx/signals): modern default, signal-native, local OR global, least boilerplate
+
+// scope:  global shared → Store/SignalStore(root)
+//         local complex  → ComponentStore or SignalStore(component-provided)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>@Injectable()</code> + component <code>providers: [Store]</code> → per-component instance (local).</li>
+<li><code>super(initialState)</code> — initial state.</li>
+<li><code>select(fn)</code> — derived Observable (selector-like).</li>
+<li><code>updater((s, v) =&gt; newState)</code> — sync immutable update.</li>
+<li><code>effect(trigger$ =&gt; ...)</code> — async; <code>tapResponse</code> for next/error; auto-cleanup on destroy.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>ComponentStore ko <code>root</code> mein provide karna — ye local hai; component/feature providers mein.</li>
+<li>Effect mein error handling bhoolna — <code>tapResponse</code> use karo (stream alive on error).</li>
+<li>Global shared state ke liye ComponentStore — global store use karo.</li>
+<li><code>tapResponse</code> ko purane <code>@ngrx/component-store</code> se import karna — v18+ mein <code>@ngrx/operators</code>.</li>
+<li>Updater mein async/side-effect — updater sync + pure; async effect mein.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Complex LOCAL state (smart component/feature) → ComponentStore (ya SignalStore component-provided).</li>
+<li>Component <code>providers</code> mein provide karo (lifecycle-bound, auto-clean).</li>
+<li>Effects mein <code>tapResponse</code> for safe next/error.</li>
+<li><code>updater</code> sync, <code>effect</code> async — clear separation.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>ComponentStore lifecycle-bound — component destroy pe state + saari subscriptions auto-clean (no leaks). Local scope se global store pollution avoid (chhota global tree). RxJS-powered effects cancellation (switchMap) dete. Modern alternative: SignalStore (component-provided) fine-grained CD + no <code>| async</code> deta — often preferred for new local state.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>effect trigger</td><td>Effect "call" = internal Subject pe push; void effects trigger-based, ya source Observable se auto.</td></tr>
+<tr><td>Shared across few components</td><td>Feature-level provide (route/parent) — scoped sharing.</td></tr>
+<tr><td>tapResponse location</td><td>v18+ import from <code>@ngrx/operators</code> (moved from component-store).</td></tr>
+<tr><td>vs SignalStore</td><td>Overlapping use cases; SignalStore modern signal-native alternative.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> ComponentStore global Store se kaise alag?</summary><div class="ans"><p>ComponentStore local/component-scoped hai — component ke <code>providers</code> mein diya jaata, uski lifetime se bandha, destroy pe auto-clean. Global Store app-wide singleton, shared across features, DevTools + strict Redux flow. ComponentStore standalone (<code>@ngrx/store</code> pe depend nahi). Complex LOCAL state → ComponentStore; app-wide shared → global Store.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> ComponentStore ki <code>select</code>, <code>updater</code>, <code>effect</code> kya karti hain?</summary><div class="ans"><p><code>select(fn)</code> — derived state as Observable (selector jaisa). <code>updater((state, value) =&gt; newState)</code> — synchronous immutable state updates. <code>effect(origin$ =&gt; ...)</code> — async side-effects (HTTP), jo ek Observable subscribe karta aur component destroy pe auto-unsubscribe hota. <code>tapResponse</code> se effects mein safe error handling.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek complex smart component hai with local form + async data + derived state. Global store overkill lagta. Kya use karo?</summary><div class="ans"><p>ComponentStore (ya SignalStore component-provided). Ye local reactive state ko structured deta — <code>select</code> for derived, <code>updater</code> for sync updates, <code>effect</code> for async — bina global store pollute kiye, aur component destroy pe auto-clean. Global store mein local component state daalna over-engineering + tree pollution hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>ComponentStore = LOCAL, component-scoped, lifecycle-bound reactive state (standalone, RxJS).</li>
+<li><code>select</code> (derived Obs), <code>updater</code> (sync update), <code>effect</code> (async, auto-clean), <code>patchState</code>, <code>tapResponse</code>.</li>
+<li>Complex local state (not global) → ComponentStore or SignalStore(component-provided). Provide at component level.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.16 · Local movies store</div><p>Ek <code>ComponentStore</code> banao (component providers) with <code>select</code> (movies/loading), <code>updater</code> (setLoading), <code>effect</code> (load with <code>tapResponse</code>). Prove karo component destroy pe state + subscription clean ho jaate.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-15.17 · Store family decision</div><p>Teen mini-features (app-wide auth, single component's complex local form-async, shared feature-level state) — har ek ke liye Store / ComponentStore / SignalStore choose karke justify karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s10">
+<div class="sec-head">
+  <span class="sec-num">S-10</span>
+  <h2>Architecture &amp; Folder Structure</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s10"> Done</label>
+</div>
+<p class="covers">Covers: <b>data flow architecture · when to use what · feature-based folders · state folder layout · facade pattern · naming conventions · container/presentational · scalability</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Architecture = saare NgRx pieces (actions/reducers/effects/selectors/store) ko ek coherent, scalable system mein organize karna — data flow, layering, aur file/folder structure. Ye "sab kuch ek jagah kaise fit hota" aur "code kaise organize karein" ka blueprint hai — interviews mein sabse zyada poocha jaata (senior signal).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Individual pieces jaanna alag baat; unhe maintainable, scalable, team-friendly structure mein organize karna asli skill. Bura structure = spaghetti (state kahan, kaun update karta, files bikhri). Achha structure = predictable, discoverable, testable, aur naye devs ke liye navigable.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Scattered, unmaintainable state code. Clear architecture + folder structure deta: consistent data flow (unidirectional), separation of concerns (dumb components + smart facades + store), aur feature-based organization jo scale kare aur team-friendly ho.</p>
+
+<h3 class="part">4. Internal Working — layered architecture</h3>
+<div class="panel why"><div class="ptitle">The layers</div><p>Ek clean NgRx architecture typically layered hoti: <strong>Components</strong> (presentational/dumb — sirf inputs/outputs) + <strong>Container/Smart components</strong> (store se connect) → optionally a <strong>Facade</strong> (ek service jo store interactions — dispatch/select — encapsulate kare, taaki components store ki details na jaanein) → <strong>Store</strong> (actions/reducers/effects/selectors) → <strong>Services</strong> (HTTP, called from effects). Data unidirectional flow karta. Facade optional hai (debate hai — abstraction vs indirection), par bade apps mein components ko NgRx se decouple karta.</p></div>
+
+<div class="dg-title">Diagram — layered architecture</div>
+<pre class="diagram">
+ Presentational component (dumb: @Input/@Output)
+        ▲
+ Container / Facade  ── dispatch/select ──▶ STORE (actions→reducers→state)
+        │                                      ▲        │
+        │                                   Effects ────┘ (HTTP via Services)
+        ▼
+ template renders derived state (selectors)
+</pre>
+
+<h3 class="part">5. Execution Flow — feature slice</h3>
+<pre class="diagram">
+ feature/
+   component (smart) ─▶ facade.loadUsers() ─▶ store.dispatch(loadUsers)
+     ─▶ effect: api.getUsers() ─▶ loadSuccess ─▶ reducer ─▶ state
+     ─▶ facade.users$ = store.select(selectUsers) ─▶ dumb component @Input
+</pre>
+
+<h3 class="part">6. Architecture — folder structure (feature-based)</h3>
+<div class="code-label">recommended: feature-based, colocated state</div>
+<pre><code>src/app/
+├── users/                      ← feature module/folder
+│   ├── components/             ← presentational (dumb)
+│   │   ├── user-list.component.ts
+│   │   └── user-card.component.ts
+│   ├── containers/             ← smart (connected)
+│   │   └── users-page.component.ts
+│   ├── state/                  ← NgRx for this feature
+│   │   ├── users.actions.ts
+│   │   ├── users.reducer.ts   (or users.feature.ts)
+│   │   ├── users.effects.ts
+│   │   ├── users.selectors.ts
+│   │   └── users.model.ts
+│   ├── users.facade.ts         ← optional facade
+│   └── users.routes.ts         ← lazy route + provideState/provideEffects
+├── shared/                     ← shared components/pipes/utils
+└── core/                       ← singletons, interceptors, guards</code></pre>
+
+<h3 class="part">7. Real Project Example — the facade pattern</h3>
+<div class="code-label">users.facade.ts</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class UsersFacade {
+  private store = inject(Store);
+  // expose state (components don't touch store/selectors directly)
+  readonly users = this.store.selectSignal(usersFeature.selectAll);
+  readonly loading = this.store.selectSignal(usersFeature.selectLoading);
+  // expose actions as methods
+  loadUsers() { this.store.dispatch(UsersActions.loadUsers()); }
+  addUser(user: User) { this.store.dispatch(UsersActions.addUser({ user })); }
+}
+// component just uses facade — decoupled from NgRx internals</code></pre>
+
+<h3 class="part">8. Beginner Example — the golden rules</h3>
+<div class="panel info-p"><div class="ptitle">Architecture rules of thumb</div>
+<ul style="margin-bottom:0">
+<li><strong>Feature-based</strong> folders (not type-based) — colocate a feature's state with its components.</li>
+<li><strong>Dumb + smart</strong> split — presentational (inputs/outputs) vs container (store-connected).</li>
+<li><strong>Lazy state</strong> — feature state loads with its route (<code>provideState</code>).</li>
+<li><strong>One-way flow</strong> — components dispatch, read via selectors; never mutate.</li>
+</ul></div>
+
+<h3 class="part">9. Advanced Example — when to use what (the decision)</h3>
+<div class="code-label">state solution decision tree</div>
+<pre><code>Local UI state (toggle, form)        → plain signals
+Complex local state (1 component)     → SignalStore(component) / ComponentStore
+Shared feature state                  → SignalStore(root) — modern default
+Large enterprise, strict flow, DevTools, many teams
+                                      → classic Store (actions/reducers/effects)
+Collections/lists                     → + Entity adapter (or withEntities)
+Server cache                          → consider TanStack Query, not store</code></pre>
+
+<h3 class="part">10. Code Explanation — structure rationale</h3>
+<ol>
+<li><strong>Feature folders</strong> — ek feature ka sab (components + state) ek jagah → discoverable, deletable, lazy-loadable.</li>
+<li><strong>state/ subfolder</strong> — NgRx files grouped (actions/reducer/effects/selectors).</li>
+<li><strong>Facade</strong> — components ↔ store ke beech thin layer → decoupling, testability.</li>
+<li><strong>dumb/smart split</strong> — presentational reusable + testable; smart connects.</li>
+<li><strong>Lazy routes</strong> — feature state route ke saath load (modular bundle).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><strong>Type-based folders</strong> (all actions in one folder, all reducers in another) — feature ko change karne ke liye 5 folders mein jaana. Feature-based better.</li>
+<li>Sab kuch global root state mein — feature state lazy rakho.</li>
+<li>Dumb components mein store inject karna — presentational ko store-agnostic rakho (inputs/outputs).</li>
+<li>Facade ke bina bade app mein — components NgRx internals se tightly coupled.</li>
+<li>Business logic components mein — effects/services mein.</li>
+<li>Over-architecting chhoti app — YAGNI; complexity match karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Feature-based folders; colocate state with feature; lazy-load.</li>
+<li>Dumb (presentational) + smart (container) component split.</li>
+<li>Facade for decoupling in larger apps (optional but scales well).</li>
+<li>Consistent naming (<code>*.actions.ts</code>, <code>*.effects.ts</code>, <code>*.feature.ts</code>).</li>
+<li>Match tool to complexity — signals/SignalStore first, classic Store when justified.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Architecture perf: lazy feature state → smaller initial bundle. Dumb components + <code>OnPush</code> + memoized selectors → minimal re-renders. Facade with <code>selectSignal</code> → fine-grained updates. Feature-based structure → better tree-shaking + lazy-loading boundaries. Good structure indirectly enables all the perf patterns.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Facade debate</td><td>Facade abstraction ya unnecessary indirection? Team/size-dependent; consistency matters.</td></tr>
+<tr><td>Shared feature state</td><td>Cross-feature state → careful (root or well-defined shared slice).</td></tr>
+<tr><td>Monorepo / Nx</td><td>Library boundaries enforce architecture (feature/data-access/ui libs).</td></tr>
+<tr><td>Migration</td><td>Type-based → feature-based incrementally; classic → SignalStore gradually.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-med">MEDIUM</span> NgRx project ko kaise structure karoge?</summary><div class="ans"><p>Feature-based folders — har feature apna folder with <code>components/</code> (dumb), <code>containers/</code> (smart), <code>state/</code> (actions/reducer/effects/selectors), optional facade, aur lazy route (<code>provideState</code>/<code>provideEffects</code>). Shared cheezein <code>shared/</code>, singletons <code>core/</code>. Type-based (saare actions ek folder) avoid — feature-based colocation discoverable + lazy-loadable + scalable.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Facade pattern kya hai, pros/cons?</summary><div class="ans"><p>Ek service jo store interactions (dispatch/select) encapsulate karta — components sirf facade use karte, NgRx internals nahi jaante. <strong>Pros:</strong> decoupling (store refactor components ko affect nahi), cleaner components, easier testing/mocking. <strong>Cons:</strong> extra indirection layer, kuch log ise unnecessary abstraction maante. Bade apps/teams mein useful; chhoti mein optional.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Dumb vs smart components?</summary><div class="ans"><p>Dumb (presentational): sirf <code>@Input</code>/<code>@Output</code> (ya <code>input()</code>/<code>output()</code>), no store/service — reusable, testable, store-agnostic. Smart (container): store se connect (dispatch/select), data dumb components ko pass karta. Ye separation reusability + testability deta aur state logic ko UI se decouple karta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek team ne saare actions ko <code>store/actions/</code>, reducers ko <code>store/reducers/</code> mein rakha (type-based). Ek feature change karne mein pain ho raha. Better?</summary><div class="ans"><p>Feature-based structure mein migrate karo — har feature ka action/reducer/effect/selector ek <code>feature/state/</code> folder mein colocated. Ek feature change karne pe sab ek jagah (5 alag folders nahi), feature deletable/lazy-loadable, aur naye devs ke liye navigable. Type-based folders scale pe fragment kar dete hain.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Layers: dumb components ← smart/facade ← store (actions/reducers/effects/selectors) ← services (HTTP via effects).</li>
+<li>Folders: FEATURE-based (colocate state + components), lazy state, <code>shared/</code>+<code>core/</code>. Not type-based.</li>
+<li>Decision: signals → SignalStore → classic Store by complexity. Facade for decoupling. Dumb+smart split.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-15.18 · Feature architecture</div><p>Ek "products" feature ko full feature-based structure mein banao: dumb components, smart container, <code>state/</code> folder (feature+effects+selectors), facade, aur lazy route with <code>provideState</code>. Data flow diagram bhi banao.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-15.19 · Facade + dumb/smart</div><p>Ek facade banao jo store ko encapsulate kare. Ek smart container (facade use karta) + dumb presentational (sirf inputs/outputs) split karo. Prove karo dumb component store-agnostic hai (easily testable).</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-15.20 · State solution audit</div><p>5 real features do (auth, cart, a complex local wizard, a large data table, a UI toggle). Har ek ke liye state solution (signals/SignalStore/Store+Entity/ComponentStore) choose karke poora justify karo — architecture decision doc likho.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 15 complete.</b><br>
+  NgRx overview → Store → Actions → Reducers → Effects → Selectors → Entity → Signal Store → Component Store → Architecture &amp; Folder Structure.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. NgRx v18→v20 (standalone providers, createFeature, createActionGroup, functional effects, mature SignalStore). Modern default: <b>SignalStore</b>; classic Store for large/strict-unidirectional. Angular state-management ab tumhaare haath mein. Agla chapter: <b>Change Detection &amp; Zoneless</b> ya <b>Angular Testing (Vitest / Jest / Testing Library)</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch15_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

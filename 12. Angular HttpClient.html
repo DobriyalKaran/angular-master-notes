@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 12 — Angular HttpClient | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 8 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 12 — <span>Angular HttpClient</span></h1>
+  <p class="subtitle">Frontend akela kuch nahi — asli data server se aata hai. <code>HttpClient</code> woh bridge hai: request bhejo, Observable milta hai, aur us stream pe RxJS ka poora arsenal chalta hai (retry, cancel, transform). Is chapter mein <em>WHY-first</em> — pehle problem, phir solution, phir internals. CRUD se lekar interceptors tak, sab production-grade patterns ke saath.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Angular: <b>v17 → v20</b> (fetch default, functional interceptors)</span>
+    <span class="chip">Sections: <b>8</b> · Topics: <b>24+</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">HttpClient — Setup &amp; Basics</a><div class="sub">provideHttpClient · withFetch · inject(HttpClient) · Observable-based · typed GET</div></li>
+    <li><a href="#s2">CRUD Operations</a><div class="sub">GET · POST · PUT · PATCH · DELETE · typed responses · full response · observe</div></li>
+    <li><a href="#s3">Headers</a><div class="sub">HttpHeaders · immutability · set vs append · content-type · auth header</div></li>
+    <li><a href="#s4">Params (Query)</a><div class="sub">HttpParams · immutability · fromObject · arrays · encoding · pagination</div></li>
+    <li><a href="#s5">Error Handling</a><div class="sub">catchError · HttpErrorResponse · status codes · client vs server · rethrow</div></li>
+    <li><a href="#s6">Retry</a><div class="sub">retry({count,delay}) · exponential backoff · retryWhen deprecated · idempotency</div></li>
+    <li><a href="#s7">Cancellation</a><div class="sub">unsubscribe · switchMap auto-cancel · takeUntilDestroyed · AbortSignal · typeahead</div></li>
+    <li><a href="#s8">Interceptors</a><div class="sub">HttpInterceptorFn · withInterceptors · req.clone · chaining order · auth/error/loading · HttpContext</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>HttpClient — Setup &amp; Basics</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>provideHttpClient · withFetch · inject(HttpClient) · Observable-based (lazy/cold) · typed GET · subscribe vs AsyncPipe · JSON auto-parse</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>HttpClient</code> Angular ki injectable service hai jo browser se HTTP requests bhejती hai (REST APIs se baat karne ke liye). Har method (<code>get</code>, <code>post</code>...) ek <strong>Observable</strong> return karta hai — response asynchronously stream ke through aata hai, RxJS operators ke saath.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Native <code>fetch</code>/<code>XMLHttpRequest</code> se bhi request bhej sakte, par <code>HttpClient</code> Angular-integrated hai: automatic JSON parsing, typed responses, interceptors (auth/logging), RxJS operators (retry/cancel/switchMap), testability, aur error normalization (<code>HttpErrorResponse</code>). Ye sab manually likhna painful.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel good-p"><div class="ptitle">HttpClient deta hai</div>
+<ul style="margin-bottom:0">
+<li><strong>Observable-based</strong> — retry, cancel, debounce, switchMap "free" mein.</li>
+<li><strong>Typed responses</strong> — <code>http.get&lt;User&gt;()</code>, compile-time safety.</li>
+<li><strong>Interceptors</strong> — cross-cutting concerns (auth token, logging) ek jagah (S-08).</li>
+<li><strong>Auto JSON parse</strong> + error normalization + testability.</li>
+</ul></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Cold Observable + lazy</div><p><code>http.get()</code> turant request nahi bhejता — ye ek <strong>cold Observable</strong> return karta hai. Request tabhi jaati hai jab koi <code>subscribe()</code> kare (ya <code>AsyncPipe</code> subscribe kare). Har subscribe ek nayi request fire karega. Andar: request interceptor chain se guzarti hai → backend (fetch by default) → response → back through interceptors → JSON parse → tumhare subscriber ko emit → phir Observable <strong>complete</strong> ho jaata (single value + complete).</p></div>
+
+<div class="dg-title">Diagram — request lifecycle</div>
+<pre class="diagram">
+ http.get&lt;User&gt;(url)  ─▶ returns COLD Observable (nothing sent yet)
+        │
+   .subscribe() ──▶ interceptor chain (out) ─▶ fetch backend ─▶ SERVER
+        ▲                                                          │
+        └── value + complete ◀─ JSON parse ◀─ interceptor chain (in) ◀┘
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+inject(HttpClient) ─▶ http.get&lt;User&gt;('/api/user/1')
+   ─▶ subscribe (or AsyncPipe) ─▶ request fired ─▶ interceptors ─▶ backend
+   ─▶ response ─▶ auto JSON.parse ─▶ typed User ─▶ next(user) ─▶ complete()
+</pre>
+
+<h3 class="part">6. Architecture (Building blocks)</h3>
+<table>
+<tr><td><code>provideHttpClient()</code></td><td>Modern setup (app.config). Supersedes <code>HttpClientModule</code>.</td></tr>
+<tr><td><code>withFetch()</code></td><td>Fetch backend (v20 default). SSR-safe. XHR (<code>withXhr</code>) legacy.</td></tr>
+<tr><td><code>withInterceptors([...])</code></td><td>Functional interceptors (S-08).</td></tr>
+<tr><td><code>HttpClient</code></td><td>The service — <code>inject(HttpClient)</code>, methods return Observables.</td></tr>
+<tr><td><code>HttpResponse</code> / <code>HttpErrorResponse</code></td><td>Full response / error wrappers.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">app.config.ts</div>
+<pre><code>import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideHttpClient(
+      withFetch(),                        // fetch backend (default v20, SSR-safe)
+      withInterceptors([authInterceptor]) // S-08
+    ),
+  ],
+};</code></pre>
+<div class="code-label">user.service.ts</div>
+<pre><code>import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class UserService {
+  private http = inject(HttpClient);
+  private base = '/api/users';
+
+  getUser(id: number): Observable&lt;User&gt; {
+    return this.http.get&lt;User&gt;(`${this.base}/${id}`);   // typed, lazy
+  }
+}</code></pre>
+<div class="code-label">component (AsyncPipe — no manual subscribe)</div>
+<pre><code>user$ = inject(UserService).getUser(1);
+// template: &lt;div *ngIf="user$ | async as user"&gt;{{ user.name }}&lt;/div&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Todo[]&gt;('/api/todos').subscribe(todos =&gt; {
+  this.todos = todos;   // response yahan available
+});</code></pre>
+
+<h3 class="part">9. Advanced Example — full response &amp; observe</h3>
+<div class="code-label">typescript</div>
+<pre><code>// sirf body (default): observe: 'body'
+this.http.get&lt;User&gt;(url);
+
+// poora response chahiye (status, headers)
+this.http.get&lt;User&gt;(url, { observe: 'response' })
+  .subscribe(resp =&gt; {
+    console.log(resp.status);              // 200
+    console.log(resp.headers.get('X-Total-Count'));
+    console.log(resp.body);                // User
+  });
+
+// non-JSON (file download)
+this.http.get('/report.pdf', { responseType: 'blob' });</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>inject(HttpClient)</code> — modern DI; service ko HttpClient milta hai.</li>
+<li><code>http.get&lt;User&gt;(url)</code> — generic <code>&lt;User&gt;</code> se response typed; ye ek cold Observable.</li>
+<li><code>observe: 'response'</code> — sirf body ki jagah pura <code>HttpResponse</code> (status + headers).</li>
+<li><code>responseType: 'blob'</code> — JSON ke alawa (files, text) ke liye.</li>
+<li><code>| async</code> — AsyncPipe auto subscribe + unsubscribe (leak-free).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>http.get()</code> call karke <code>subscribe</code> na karna → request kabhi jaati hi nahi (cold/lazy).</li>
+<li>Manual subscribe ka unsubscribe bhoolna → memory leak. <code>AsyncPipe</code> ya <code>takeUntilDestroyed()</code>.</li>
+<li>Ek hi Observable ko multiple jagah subscribe → multiple identical requests. <code>shareReplay(1)</code>.</li>
+<li><code>HttpClientModule</code> import karna (deprecated) — <code>provideHttpClient()</code> use karo.</li>
+<li>Response ko component se seedhe fetch karna — service layer mein rakho (separation).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>HTTP calls ko services mein encapsulate karo; components sirf consume karein.</li>
+<li>Templates mein <code>AsyncPipe</code> use karo — auto subscribe/unsubscribe.</li>
+<li>Hamesha typed: <code>http.get&lt;T&gt;()</code>. <code>any</code> avoid.</li>
+<li><code>provideHttpClient(withFetch())</code> — modern, SSR-safe default.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Duplicate requests sabse common perf issue — same data ko multiple subscribers ke liye <code>shareReplay(1)</code> se cache karo. Templates mein bina AsyncPipe ke multiple <code>| async</code> par same Observable → multiple requests. <code>withFetch()</code> modern backend, better SSR + streaming. Interceptors mein heavy work poore app ko slow kar sakta (S-08).</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Empty/204 response</td><td>Body <code>null</code> aa sakta — typing mein handle karo.</td></tr>
+<tr><td>Non-2xx</td><td>Observable <code>error</code> channel pe jaata (<code>HttpErrorResponse</code>) — S-05.</td></tr>
+<tr><td>SSR</td><td>Fetch backend server pe safe; XHR SSR pe deprecated (v23 mein removal).</td></tr>
+<tr><td><code>httpResource()</code></td><td>v20 experimental — signal-based reactive HTTP; abhi Observable-based stable choice.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>http.get()</code> call kiya par request nahi gayi. Kyun?</summary><div class="ans"><p>HttpClient methods <strong>cold Observable</strong> return karte hain — lazy. Request tabhi fire hoti hai jab koi <code>subscribe()</code> kare (ya AsyncPipe subscribe kare). Bina subscribe ke kuch nahi hota. Aur har subscribe ek nayi request bhejता hai.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Modern HttpClient setup kaise karte ho?</summary><div class="ans"><p><code>provideHttpClient(withFetch())</code> app.config ke providers mein. <code>HttpClientModule</code> deprecated hai. Interceptors <code>withInterceptors([...])</code> se. Service mein <code>inject(HttpClient)</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Same API data 3 jagah chahiye bina 3 requests ke. Kaise?</summary><div class="ans"><p>Observable pe <code>shareReplay(1)</code> lagao — pehla subscriber request fire karega, response cache hoga, baaki subscribers cached value paayenge (multicast). Bina iske har subscriber alag request bhejta (cold Observable ki wajah se).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Response ke status code aur ek custom header (<code>X-Total-Count</code>) chahiye pagination ke liye, sirf body nahi. Kaise?</summary><div class="ans"><p><code>http.get&lt;T&gt;(url, { observe: 'response' })</code> pass karo — ab Observable pura <code>HttpResponse</code> emit karega. <code>resp.status</code>, <code>resp.headers.get('X-Total-Count')</code>, aur <code>resp.body</code> sab available.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Setup: <code>provideHttpClient(withFetch())</code>. <code>inject(HttpClient)</code>. Methods → <strong>cold</strong> Observable (lazy).</li>
+<li>Typed: <code>http.get&lt;T&gt;()</code>. <code>observe:'response'</code> for full response; <code>responseType:'blob'</code> for files.</li>
+<li>AsyncPipe for auto sub/unsub. <code>shareReplay(1)</code> to dedupe. Services encapsulate calls.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.1 · Typed user service</div><p>Ek <code>UserService</code> banao jo <code>getUser(id)</code> se typed <code>User</code> laaye. Component mein AsyncPipe se render karo (manual subscribe nahi). Verify request tabhi jaati hai jab template subscribe karta hai.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-12.2 · Paginated list with headers</div><p><code>observe:'response'</code> se list + <code>X-Total-Count</code> header padho aur pagination banao. Same data ko do components mein <code>shareReplay(1)</code> se ek hi request se serve karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>CRUD Operations</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>GET · POST · PUT · PATCH · DELETE · request body · typed responses · PUT vs PATCH · idempotency · full CRUD service</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>CRUD = Create, Read, Update, Delete — data ke 4 basic operations, jo HTTP methods pe map hote hain: <strong>POST</strong> (create), <strong>GET</strong> (read), <strong>PUT/PATCH</strong> (update), <strong>DELETE</strong> (delete). HttpClient har ek ke liye ek method deta hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Har data-driven app resources ko manage karta hai — user banao, padho, edit karo, delete karo. REST conventions in operations ko standard HTTP verbs se express karte hain, jisse APIs predictable + cacheable + tooling-friendly ho.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Server pe data manipulate karne ka standardized, semantic tarika. Sahi verb use karne se caching, retries (idempotency), aur error semantics correct rehti hain.</p>
+
+<h3 class="part">4. Internal Working</h3>
+<p>Har method same pipeline (S-01) chalata hai, bas HTTP <em>verb</em> aur body alag. <code>post</code>/<code>put</code>/<code>patch</code> ek body argument lete hain (auto JSON-serialized). <code>get</code>/<code>delete</code> usually body nahi. Sab typed Observable return karte hain jo single value emit karke complete hoti hai.</p>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+create ─▶ http.post&lt;User&gt;(url, body)   ─▶ 201 Created ─▶ new User
+read   ─▶ http.get&lt;User[]&gt;(url)        ─▶ 200 OK      ─▶ User[]
+update ─▶ http.put/patch&lt;User&gt;(url,b)  ─▶ 200 OK      ─▶ updated User
+delete ─▶ http.delete&lt;void&gt;(url)       ─▶ 204 No Content
+</pre>
+
+<h3 class="part">6. Architecture — verb map</h3>
+<table>
+<tr><td><b>Verb</b></td><td><b>CRUD</b></td><td><b>Body?</b></td><td><b>Idempotent?</b></td></tr>
+<tr><td><code>GET</code></td><td>Read</td><td>No</td><td>Yes (safe)</td></tr>
+<tr><td><code>POST</code></td><td>Create</td><td>Yes</td><td>No</td></tr>
+<tr><td><code>PUT</code></td><td>Update (replace)</td><td>Yes (full)</td><td>Yes</td></tr>
+<tr><td><code>PATCH</code></td><td>Update (partial)</td><td>Yes (partial)</td><td>Usually</td></tr>
+<tr><td><code>DELETE</code></td><td>Delete</td><td>No</td><td>Yes</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">user.service.ts — full CRUD</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class UserService {
+  private http = inject(HttpClient);
+  private base = '/api/users';
+
+  list():            Observable&lt;User[]&gt; { return this.http.get&lt;User[]&gt;(this.base); }
+  get(id: number):   Observable&lt;User&gt;   { return this.http.get&lt;User&gt;(`${this.base}/${id}`); }
+  create(u: NewUser):Observable&lt;User&gt;   { return this.http.post&lt;User&gt;(this.base, u); }
+  update(id: number, u: User): Observable&lt;User&gt; { return this.http.put&lt;User&gt;(`${this.base}/${id}`, u); }
+  patch(id: number, partial: Partial&lt;User&gt;): Observable&lt;User&gt; {
+    return this.http.patch&lt;User&gt;(`${this.base}/${id}`, partial);
+  }
+  remove(id: number): Observable&lt;void&gt; { return this.http.delete&lt;void&gt;(`${this.base}/${id}`); }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>// create
+this.http.post&lt;Todo&gt;('/api/todos', { title: 'Learn HttpClient', done: false })
+  .subscribe(created =&gt; console.log(created.id));</code></pre>
+
+<h3 class="part">9. Advanced Example — optimistic update pattern</h3>
+<div class="code-label">typescript</div>
+<pre><code>toggleDone(todo: Todo) {
+  const prev = todo.done;
+  todo.done = !prev;                                  // UI turant update (optimistic)
+  this.http.patch&lt;Todo&gt;(`/api/todos/${todo.id}`, { done: todo.done })
+    .subscribe({
+      error: () =&gt; { todo.done = prev; },              // fail → rollback
+    });
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>post&lt;User&gt;(url, body)</code> — body object auto JSON-serialize, response typed as <code>User</code>.</li>
+<li><code>put</code> pura resource replace; <code>patch</code> sirf diye fields update (<code>Partial&lt;User&gt;</code>).</li>
+<li><code>delete&lt;void&gt;</code> — usually 204, koi body nahi.</li>
+<li>Optimistic: UI pehle update, error pe rollback — snappy UX.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>PUT ko partial body ke saath use karna → server missing fields ko wipe kar sakta. Partial = PATCH.</li>
+<li>Response ko subscribe kiye bina "fire" samajhna — POST bhi cold hai, subscribe zaroori.</li>
+<li>POST ko retry karna (non-idempotent) → duplicate records. Sirf idempotent verbs retry.</li>
+<li>Error case handle na karna — CRUD fail ho sakti (validation, conflict). <code>catchError</code> (S-05).</li>
+<li>Har mutation ke baad poori list re-fetch karna — optimistic update ya local cache update karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Ek resource = ek service; CRUD methods typed + consistent naming.</li>
+<li>PUT = full replace, PATCH = partial — semantics respect karo.</li>
+<li>Mutations pe optimistic update + rollback for snappy UX.</li>
+<li>Base URL ko config/environment se; magic strings avoid.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Har mutation pe poora list re-fetch (waterfall) avoid karo — response se local state update karo ya optimistic. Bulk operations ke liye batch endpoints. GET responses ko <code>shareReplay</code>/cache karo jahan data slow-changing ho. PATCH (chhota payload) PUT se light jab sirf ek-do fields badle.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>201 with Location</td><td>POST created resource ka URL <code>Location</code> header mein — <code>observe:'response'</code> se padho.</td></tr>
+<tr><td>409 Conflict</td><td>Concurrent update — optimistic-locking (version/etag) se handle.</td></tr>
+<tr><td>DELETE returns body</td><td>Kuch APIs deleted resource return karte — <code>&lt;T&gt;</code> adjust.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> PUT vs PATCH?</summary><div class="ans"><p>PUT poora resource replace karta hai (full representation bhejni chahiye — missing fields wipe ho sakti). PATCH partial update — sirf badle hue fields. Ek field toggle karna ho toh PATCH (chhota payload, safe), pura object replace karna ho toh PUT.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Kaunse HTTP verbs idempotent hain aur ye retry ke liye kyun important?</summary><div class="ans"><p>GET, PUT, DELETE idempotent (same request kai baar = same result). POST idempotent nahi (har baar naya resource). Isliye failed request retry karte waqt sirf idempotent verbs safe hain — POST retry se duplicate records ban sakte. Retry logic (S-06) mein verb check karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Todo ka checkbox toggle karte hi UI turant update karna hai, par server slow hai. Best pattern?</summary><div class="ans"><p>Optimistic update: UI ko turant naye state pe set karo, phir PATCH bhejo. Error case mein purani value pe rollback karo (<code>error</code> callback). Isse UX snappy rehti hai; server confirm karne ka wait nahi karna padta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>POST=create, GET=read, PUT=replace, PATCH=partial, DELETE=delete. All cold Observables.</li>
+<li>Idempotent: GET/PUT/DELETE (retry-safe); POST not (no retry → dupes).</li>
+<li>Body auto JSON-serialized. Optimistic update + rollback for snappy mutations.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.3 · Full CRUD todo service</div><p>Ek <code>TodoService</code> banao with list/get/create/update/patch/remove — sab typed. Ek component se create + delete karke list ko re-fetch ke bina local state update karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-12.4 · Optimistic toggle</div><p>Todo done-toggle ko optimistic banao: UI turant update, PATCH bhejo, error pe rollback. Ek fake failing endpoint se rollback verify karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Headers</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>HttpHeaders · immutability · set vs append · Content-Type · Authorization · reading response headers · headers via interceptor</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>HTTP headers request/response ke saath jaane wali metadata key-value pairs hain — <code>Content-Type</code>, <code>Authorization</code>, <code>Accept</code>, custom (<code>X-Request-Id</code>). Angular inhe <code>HttpHeaders</code> class se represent karta hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Server ko batana padta hai kaun request kar raha (auth token), body kis format mein hai (content-type), kaun sa response format chahiye (accept), plus tracing/versioning custom headers. Ye sab headers ke through hota hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Request/response ka metadata channel — data (body) se alag. Auth, content negotiation, caching directives, tracing — sab headers se.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">HttpHeaders IMMUTABLE hai</div><p>Ye critical hai: <code>HttpHeaders</code> immutable hai. <code>headers.set(...)</code>/<code>headers.append(...)</code> original ko modify <strong>nahi</strong> karte — ek <em>naya</em> <code>HttpHeaders</code> instance return karte hain. Isliye return value ko capture karna zaroori. Ye immutability interceptors ko safe banati hai (ek request doosri ko affect nahi karti).</p></div>
+
+<div class="dg-title">Diagram — immutability</div>
+<pre class="diagram">
+ let h = new HttpHeaders();
+ h.set('A', '1');          ✗ result discarded — h still empty!
+ h = h.set('A', '1');      ✓ capture the NEW instance
+        │
+        └─▶ each set/append returns a brand-new HttpHeaders (original untouched)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+build HttpHeaders (chained set/append) ─▶ pass in options { headers }
+        ─▶ request carries headers ─▶ server reads (auth/content-type)
+        ─▶ response headers ─▶ read via resp.headers.get('X-...') (observe:'response')
+</pre>
+
+<h3 class="part">6. Architecture — set vs append</h3>
+<table>
+<tr><td><code>set(name, value)</code></td><td>Us header ki saari values <strong>replace</strong> karta hai (ek value).</td></tr>
+<tr><td><code>append(name, value)</code></td><td>Existing ke saath ek aur value <strong>add</strong> (multi-value headers).</td></tr>
+<tr><td><code>delete(name)</code> / <code>has()</code> / <code>get()</code></td><td>Remove / check / read (get single, getAll for multi).</td></tr>
+<tr><td>Constructor <code>{ ... }</code></td><td><code>new HttpHeaders({ Authorization: 'Bearer x' })</code> — object se init.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">typescript</div>
+<pre><code>import { HttpHeaders } from '@angular/common/http';
+
+const headers = new HttpHeaders()
+  .set('Content-Type', 'application/json')
+  .set('Authorization', `Bearer ${token}`)
+  .set('X-Request-Id', crypto.randomUUID());
+
+this.http.post&lt;Order&gt;('/api/orders', body, { headers })
+  .subscribe(order =&gt; { /* ... */ });</code></pre>
+<div class="panel info-p"><div class="ptitle">Reality check</div><p>Auth header har request pe manually lagana anti-pattern hai — ye <strong>interceptor</strong> ka kaam hai (S-08). Manual headers sirf request-specific cheezon ke liye. Chaining kaam karti hai kyunki har <code>set</code> naya instance return karta hai.</p></div>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const headers = new HttpHeaders({ 'X-Api-Key': 'abc123' });
+this.http.get('/api/data', { headers });</code></pre>
+
+<h3 class="part">9. Advanced Example — reading response headers</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Item[]&gt;('/api/items', { observe: 'response' })
+  .subscribe(resp =&gt; {
+    const total = resp.headers.get('X-Total-Count');   // pagination
+    const rateLimit = resp.headers.get('X-RateLimit-Remaining');
+  });</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>new HttpHeaders()</code> — khaali immutable headers.</li>
+<li><code>.set(...).set(...)</code> — chaining; har call naya instance, final captured.</li>
+<li><code>{ headers }</code> — request options mein pass.</li>
+<li>Response headers ke liye <code>observe:'response'</code> zaroori (body-only mode mein headers nahi).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>headers.set(...)</code> ka return capture na karna (immutability bhoolna) → header laga hi nahi.</li>
+<li><code>Content-Type: application/json</code> manually set karna jab body object hai — HttpClient auto set karta hai; manual set FormData/blob ke saath todega.</li>
+<li>Response headers padhne ke liye <code>observe:'response'</code> bhoolna → headers accessible nahi.</li>
+<li>CORS: custom response headers server ko <code>Access-Control-Expose-Headers</code> se expose karne padte, warna browser hide karta.</li>
+<li>Auth header har method mein manually — interceptor use karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Cross-cutting headers (auth, tracing) → interceptor (S-08), na ki har call.</li>
+<li>Immutability yaad rakho — hamesha return value use karo.</li>
+<li>JSON body pe <code>Content-Type</code> ko auto rehne do; FormData/blob pe manually mat set karo.</li>
+<li>Sensitive tokens ko interceptor se centralize — leak/duplication avoid.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Headers khud lightweight. Immutability ka matlab har <code>set</code> ek naya object banata — hot paths mein hundreds of headers na banao, par typical use mein negligible. Interceptor mein header logic centralize karke redundant work avoid.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multi-value header</td><td><code>append</code> se multiple; padhne ke liye <code>getAll(name)</code>.</td></tr>
+<tr><td>Case-insensitivity</td><td>Header names case-insensitive (<code>content-type</code> == <code>Content-Type</code>).</td></tr>
+<tr><td>FormData upload</td><td>Content-Type khud mat set karo — browser boundary ke saath set karega.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>HttpHeaders</code> mutable hai ya immutable? Impact?</summary><div class="ans"><p>Immutable. <code>set</code>/<code>append</code>/<code>delete</code> original modify nahi karte — naya <code>HttpHeaders</code> instance return karte hain. Isliye return value capture karna zaroori (<code>h = h.set(...)</code>). Ye interceptors ko safe banata hai (requests ek doosre ko affect nahi karti).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>set</code> vs <code>append</code>?</summary><div class="ans"><p><code>set</code> us header ki saari existing values replace karta hai (single value). <code>append</code> existing ke saath ek aur value add karta hai (multi-value headers). Single overwrite → set, multiple values → append.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Auth token har request pe chahiye. Best jagah kahan?</summary><div class="ans"><p>Ek functional interceptor (S-08) mein — <code>req.clone({ headers: req.headers.set('Authorization', ...) })</code>. Har service call mein manually header lagana repetitive + error-prone hai; interceptor ise centralize karta hai aur token refresh bhi ek jagah handle hota.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>HttpHeaders</code> IMMUTABLE — <code>set</code>/<code>append</code> return new instance; capture it.</li>
+<li><code>set</code> = replace, <code>append</code> = add. Read response headers via <code>observe:'response'</code>.</li>
+<li>JSON <code>Content-Type</code> auto; don't set for FormData. Auth/tracing → interceptor.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.5 · Custom headers + response read</div><p>Ek request bhejo custom headers (X-Request-Id via <code>crypto.randomUUID()</code>) ke saath. Response se <code>X-Total-Count</code> padhkar dikhao (<code>observe:'response'</code>). Immutability trap dekho — return capture karke.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Params (Query)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>HttpParams · immutability · set vs append · fromObject shorthand · array values · auto-encoding · pagination/filter/sort</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>HttpParams</code> URL ke query string (<code>?page=2&amp;sort=name</code>) ko represent karta hai. Ye request ke saath jaane wale optional key-value filters hain — pagination, search, sort, filters ke liye.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Query params se ek hi endpoint ko customize karte hain: "users, page 2, sorted by name, active only". Manual string concat (<code>url + '?page=' + page</code>) encoding bugs deta hai (space, &amp;, special chars). <code>HttpParams</code> ye safely + immutably handle karta hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Safe query-string construction with auto URL-encoding, aur immutable/predictable param building (interceptors mein bhi safe).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">HttpParams bhi IMMUTABLE</div><p><code>HttpHeaders</code> ki tarah, <code>HttpParams</code> bhi immutable hai — <code>params.set(...)</code> naya instance return karta hai, original unchanged. Values automatically URL-encoded hoti hain (space → <code>%20</code>, etc). HttpClient params ko URL ke saath append karke request banata.</p></div>
+
+<div class="dg-title">Diagram — params to URL</div>
+<pre class="diagram">
+ new HttpParams()
+   .set('page', '2')          each set() → NEW HttpParams (immutable)
+   .set('sort', 'name')
+   .append('tag', 'a')
+   .append('tag', 'b')
+        │
+        ▼   auto-encoded
+ GET /api/users?page=2&amp;sort=name&amp;tag=a&amp;tag=b
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+build HttpParams ─▶ options { params } ─▶ HttpClient appends encoded query to URL
+        ─▶ GET /api/users?page=2&amp;sort=name ─▶ server filters ─▶ response
+</pre>
+
+<h3 class="part">6. Architecture — two ways to build</h3>
+<table>
+<tr><td>Chained <code>set</code>/<code>append</code></td><td><code>new HttpParams().set('page','2')</code> — explicit, dynamic.</td></tr>
+<tr><td><code>fromObject</code> shorthand</td><td><code>new HttpParams({ fromObject: { page: 2, sort: 'name' } })</code> — concise.</td></tr>
+<tr><td><code>set</code> vs <code>append</code></td><td><code>set</code> replace; <code>append</code> multi-value (<code>?tag=a&amp;tag=b</code>).</td></tr>
+<tr><td><code>fromString</code></td><td>Existing query string se parse.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">user.service.ts</div>
+<pre><code>import { HttpParams } from '@angular/common/http';
+
+listUsers(page: number, sort: string, filters: Record&lt;string, string&gt;) {
+  let params = new HttpParams()
+    .set('page', page)               // number auto-stringify (v15+)
+    .set('sort', sort);
+
+  for (const [k, v] of Object.entries(filters)) {
+    if (v) params = params.set(k, v);  // ← reassign! immutable
+  }
+
+  return this.http.get&lt;User[]&gt;('/api/users', { params });
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const params = new HttpParams({ fromObject: { page: 1, size: 20 } });
+this.http.get&lt;User[]&gt;('/api/users', { params });   // ?page=1&amp;size=20</code></pre>
+
+<h3 class="part">9. Advanced Example — array values + special chars</h3>
+<div class="code-label">typescript</div>
+<pre><code>let params = new HttpParams()
+  .append('tag', 'angular')
+  .append('tag', 'rxjs')                 // ?tag=angular&amp;tag=rxjs
+  .set('q', 'hello world &amp; more');       // auto-encoded → hello%20world%20%26%20more
+
+this.http.get('/api/search', { params });</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>new HttpParams()</code> — empty immutable params.</li>
+<li><code>.set('page', page)</code> — number bhi allowed (auto-stringify, v15+).</li>
+<li><code>params = params.set(k, v)</code> — <strong>reassign</strong> kyunki immutable (loop mein critical).</li>
+<li><code>append</code> — same key multiple values (array filters).</li>
+<li>Special chars auto-encoded — manual encoding ki zaroorat nahi.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Loop mein <code>params.set()</code> ka return na capture karna → sirf aakhri (ya koi nahi) param lagta. <strong>Reassign zaroori.</strong></li>
+<li>Manual string concat + <code>encodeURIComponent</code> bhoolna → broken URLs (space/&amp;).</li>
+<li><code>set</code> use karke multi-value expect karna — multi ke liye <code>append</code>.</li>
+<li>Empty/undefined values bhi bhejना → <code>?filter=undefined</code>. Conditionally add.</li>
+<li>Bahut sare params (long URL) → server/browser length limits; POST-with-body consider.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Immutability yaad rakho — loop mein hamesha reassign.</li>
+<li>Simple cases → <code>fromObject</code>; dynamic/conditional → chained with reassign.</li>
+<li>Empty values conditionally skip — clean URLs.</li>
+<li>Encoding HttpClient pe chhodo; manual <code>encodeURIComponent</code> mat karo.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Params khud lightweight. Immutability se har <code>set</code> naya object — loop mein hundreds pe minor, typical use negligible. Query-based caching: same params = same URL = HTTP cache/<code>shareReplay</code> friendly. Debounce search params before firing (typeahead — S-07).</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Custom encoder</td><td><code>HttpParams</code> ka default encoder RFC ke kuch chars encode nahi karता — custom <code>HttpParameterCodec</code> se override.</td></tr>
+<tr><td>Boolean/number</td><td>v15+ number/boolean directly; purane mein <code>String(x)</code>.</td></tr>
+<tr><td>Repeated keys order</td><td><code>append</code> order preserve karta — server-side parsing pe dhyan.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Query params bhejने ka safe tarika?</summary><div class="ans"><p><code>HttpParams</code> use karo (manual string concat nahi) — <code>new HttpParams({ fromObject: {...} })</code> ya chained <code>.set()</code>. Ye auto URL-encode karta hai aur immutable hai. Manual concat special chars (space, &amp;) pe URLs todta hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Loop mein dynamic filters add kar rahe ho par sirf ek param URL mein aa raha. Kyun?</summary><div class="ans"><p><code>HttpParams</code> immutable hai — <code>params.set()</code> naya instance return karta hai, original modify nahi. Loop mein return ko reassign nahi kiya (<code>params = params.set(k,v)</code>), isliye har iteration ka result discard ho gaya. Reassign karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Multi-select filter (kai tags) ek param mein bhejне hain jaise <code>?tag=a&amp;tag=b</code>. Kaise?</summary><div class="ans"><p><code>append</code> use karo (set nahi): <code>params = params.append('tag','a').append('tag','b')</code> → <code>?tag=a&amp;tag=b</code>. <code>set</code> pichli value replace kar deta, isliye multi-value ke liye <code>append</code>.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>HttpParams</code> IMMUTABLE + auto-encoded. Loop → <strong>reassign</strong> (<code>params = params.set(...)</code>).</li>
+<li>Shorthand: <code>new HttpParams({ fromObject: {...} })</code>. Multi-value: <code>append</code>.</li>
+<li>Pass via <code>{ params }</code>. Skip empty values. Let HttpClient encode.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.6 · Paginated + filtered list</div><p>Ek <code>list(page, sort, filters)</code> banao jo <code>HttpParams</code> se query bhejta hai. Dynamic filters ko loop mein add karo (reassign trap avoid). Empty filters skip karo. Multi-select tags ko <code>append</code> se bhejo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Error Handling</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>catchError · HttpErrorResponse · status codes · client (status 0) vs server errors · throwError · fallback value · global vs local · error channel</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Error handling = jab request fail ho (network down, 404, 500, validation) toh gracefully handle karna — crash ke bajaye user-friendly message, fallback, ya retry. HttpClient failures ko Observable ke <strong>error channel</strong> pe bhejता hai, jise <code>catchError</code> se pakadte hain.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Network reliable nahi — timeouts, server errors, offline. Bina handling ke app crash ya blank screen. Proper handling se user ko clear feedback, retry option, aur app stable rehti hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Failures ko catch karke UX (messages, fallback data) aur robustness (retry, logging) deta hai. Client-side errors (network, status 0) aur server errors (4xx/5xx) ko distinguish karke sahi action leta hai.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">HttpErrorResponse anatomy</div><p>Non-2xx ya network failure pe HttpClient ek <code>HttpErrorResponse</code> ko error channel pe emit karta hai. Key fields: <code>status</code> (HTTP code, ya <strong>0</strong> for network/client-side/CORS failure), <code>error</code> (server ka error body), <code>message</code>, <code>url</code>. <code>status === 0</code> ka matlab request server tak pahunchi hi nahi (offline/CORS/DNS).</p></div>
+
+<div class="dg-title">Diagram — success vs error channels</div>
+<pre class="diagram">
+ http.get() ─▶ subscribe({
+                 next:  (data)  ─▶  2xx response (success channel)
+                 error: (err: HttpErrorResponse) ─▶ non-2xx OR network fail
+               })
+   status === 0     ─▶ client-side / network / CORS (server tak nahi pahuncha)
+   status 4xx/5xx   ─▶ server responded with error
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+request ─▶ 500 error ─▶ error channel ─▶ catchError(err =&gt; ...)
+   ├─ recover: return of(fallback)      ─▶ stream continues with fallback (VALID)
+   └─ propagate: return throwError(()=&gt;err) ─▶ error reaches subscriber's error cb
+</pre>
+
+<h3 class="part">6. Architecture — catchError choices</h3>
+<table>
+<tr><td>Recover</td><td><code>return of(fallbackValue)</code> — stream continue with default (e.g. empty list).</td></tr>
+<tr><td>Rethrow</td><td><code>return throwError(() =&gt; userFacingError)</code> — propagate (transformed) to subscriber.</td></tr>
+<tr><td>Local</td><td>Service/component level <code>catchError</code> — specific handling.</td></tr>
+<tr><td>Global</td><td>Error interceptor (S-08) — 401→logout, 500→toast, centralized.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">user.service.ts</div>
+<pre><code>import { catchError, throwError, of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+
+getUser(id: number): Observable&lt;User&gt; {
+  return this.http.get&lt;User&gt;(`/api/users/${id}`).pipe(
+    catchError((err: HttpErrorResponse) =&gt; {
+      if (err.status === 0)   return throwError(() =&gt; new Error('Network down — check connection'));
+      if (err.status === 404) return throwError(() =&gt; new Error('User not found'));
+      if (err.status === 401) { this.auth.logout(); }
+      return throwError(() =&gt; new Error(err.error?.message ?? 'Something went wrong'));
+    })
+  );
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Todo[]&gt;('/api/todos').subscribe({
+  next: todos =&gt; this.todos = todos,
+  error: (err: HttpErrorResponse) =&gt; this.msg = `Error ${err.status}`,
+});</code></pre>
+
+<h3 class="part">9. Advanced Example — fallback + typed error</h3>
+<div class="code-label">typescript</div>
+<pre><code>getDashboard(): Observable&lt;Stats&gt; {
+  return this.http.get&lt;Stats&gt;('/api/stats').pipe(
+    catchError((err: HttpErrorResponse) =&gt; {
+      this.logger.error('stats failed', err);
+      return of(EMPTY_STATS);        // graceful fallback — page still renders
+    })
+  );
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>catchError((err: HttpErrorResponse) =&gt; ...)</code> — error channel intercept.</li>
+<li><code>err.status === 0</code> — network/CORS/offline (server tak nahi pahuncha).</li>
+<li><code>throwError(() =&gt; ...)</code> — factory form (RxJS 7+); transformed error propagate.</li>
+<li><code>of(fallback)</code> — error swallow karke default se stream continue.</li>
+<li><code>err.error?.message</code> — server ka error body message (backend structured errors).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>catchError</code> ke andar value <em>return</em> na karna → stream break/undefined behavior. Hamesha <code>of()</code>/<code>throwError()</code> return.</li>
+<li><code>throwError(err)</code> (old) vs <code>throwError(() =&gt; err)</code> (RxJS 7+) — factory form use karo.</li>
+<li><code>status === 0</code> ko server error samajhna — ye client/network hai, alag message.</li>
+<li>Har jagah local <code>catchError</code> duplicate — cross-cutting (401/500) global interceptor mein.</li>
+<li>Raw <code>HttpErrorResponse</code> ko user ko dikhana — user-friendly message mein transform karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Cross-cutting errors (401 logout, 500 toast, logging) → error interceptor (S-08).</li>
+<li>Local <code>catchError</code> sirf request-specific recovery (fallback list, custom message) ke liye.</li>
+<li><code>status === 0</code> ko network error treat karo — retry/offline UX.</li>
+<li>Errors ko user-friendly messages mein map karo; raw response na dikhao.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Error handling khud cheap, par retry logic (S-06) ke saath poorly-tuned backoff server ko hammer kar sakta. Graceful fallback (<code>of(default)</code>) blank/crash se better perceived perf. Global interceptor duplicate handling avoid karke bundle + runtime clean rakhta.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>CORS failure</td><td><code>status === 0</code>, error body empty — server misconfig, network se distinguish hard.</td></tr>
+<tr><td>Non-JSON error body</td><td>HTML error page (proxy/500) — <code>err.error</code> string ho sakta, parse carefully.</td></tr>
+<tr><td>Timeout</td><td><code>timeout(ms)</code> operator se; <code>TimeoutError</code> alag se catch.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> HttpClient errors kaise catch karte ho?</summary><div class="ans"><p><code>.pipe(catchError(err =&gt; ...))</code> — error channel intercept. Ya <code>subscribe({ error: ... })</code>. Error ek <code>HttpErrorResponse</code> hoti hai jismein <code>status</code>, <code>error</code> (body), <code>message</code> hote hain.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>err.status === 0</code> ka kya matlab?</summary><div class="ans"><p>Request server tak pahunchi hi nahi — client-side/network failure (offline, DNS, CORS block). Server ne koi HTTP status return nahi kiya. Isliye "no internet / connection problem" wala message dikhao, na ki server error. 4xx/5xx ke opposite.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>catchError</code> mein recover vs rethrow?</summary><div class="ans"><p>Recover: <code>return of(fallback)</code> — error swallow, stream default value se continue (page render hota hai). Rethrow: <code>return throwError(() =&gt; transformedErr)</code> — error subscriber ke <code>error</code> callback tak propagate (user ko dikhao). Non-critical data → recover; critical → rethrow.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Har API call mein 401 pe logout karna hai — har service mein <code>catchError</code> likhna DRY nahi. Better?</summary><div class="ans"><p>Ek error <strong>interceptor</strong> (S-08) banao jo har response ka <code>catchError</code> check kare: <code>401</code> → <code>auth.logout()</code> + login redirect. Centralized, ek jagah, saari requests pe apply. Local <code>catchError</code> sirf request-specific cases ke liye bachao.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Errors → error channel. <code>catchError</code>. <code>HttpErrorResponse</code>: <code>status</code>, <code>error</code>, <code>message</code>.</li>
+<li><code>status === 0</code> = network/client/CORS (server tak nahi). 4xx/5xx = server responded.</li>
+<li>Recover: <code>of(fallback)</code>. Rethrow: <code>throwError(() =&gt; e)</code> (factory form). Cross-cutting → interceptor.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.7 · Robust getUser</div><p><code>getUser(id)</code> mein <code>catchError</code> se status-wise handle karo: 0 → "network down", 404 → "not found", 401 → logout, else generic. User-friendly messages return karo (raw error nahi).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-12.8 · Graceful dashboard</div><p>Ek dashboard banao jahan ek widget ki API fail hone pe poora page crash na ho — us widget ke liye <code>catchError(of(EMPTY))</code> fallback, baaki widgets render hote rahein.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Retry</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>retry(count) · retry({count,delay}) · exponential backoff · retryWhen (deprecated) · idempotency · retry only transient · retry + catchError order</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Retry = failed request ko automatically dobara try karna. Transient failures (temporary network glitch, 503, timeout) aksar retry pe pass ho jaate. RxJS ka <code>retry</code> operator failed Observable ko re-subscribe (yani nayi request) karta hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Networks flaky hote hain — ek momentary drop se user ko error dena bura UX hai. Automatic retry (with backoff) transient failures ko silently recover kar deta, robustness badhata.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Transient failures ko user ke saamne aane se pehle recover karna — resilience. Par sirf transient errors pe (permanent 404 pe retry bekaar/harmful).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">retry = re-subscribe</div><p><code>retry(n)</code> jab source error kare, to use Observable ko dob<span></span>ara <strong>subscribe</strong> karta hai — aur cold HTTP Observable pe re-subscribe ka matlab ek <em>nayi request</em>. <code>n</code> attempts tak. RxJS 7.3+ mein <code>retry({ count, delay })</code> config object — <code>delay</code> number (fixed) ya function (backoff) ho sakta. Purana <code>retryWhen</code> deprecated hai.</p></div>
+
+<div class="dg-title">Diagram — retry with backoff</div>
+<pre class="diagram">
+ request ─▶ ✗ error ─▶ wait 1s  ─▶ retry #1 ─▶ ✗
+                       wait 2s  ─▶ retry #2 ─▶ ✗
+                       wait 4s  ─▶ retry #3 ─▶ ✓ success  (or give up → error)
+        (exponential backoff: delay doubles each attempt)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+http.get() ─▶ error ─▶ retry({count:3, delay}) ─┬─ attempts left ─▶ delay ─▶ re-request
+                                                └─ exhausted ─▶ catchError / error channel
+</pre>
+
+<h3 class="part">6. Architecture — retry forms</h3>
+<table>
+<tr><td><code>retry(3)</code></td><td>Simple — 3 immediate retries (no delay). Basic.</td></tr>
+<tr><td><code>retry({ count: 3, delay: 1000 })</code></td><td>Fixed 1s delay between attempts (RxJS 7.3+).</td></tr>
+<tr><td><code>retry({ count, delay: (err, i) =&gt; ... })</code></td><td>Function delay → exponential backoff, conditional retry.</td></tr>
+<tr><td><code>retryWhen</code></td><td><strong>Deprecated</strong> — use config <code>delay</code> function instead.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">exponential backoff + conditional</div>
+<pre><code>import { retry, timer, throwError } from 'rxjs';
+
+getData() {
+  return this.http.get&lt;Data&gt;('/api/data').pipe(
+    retry({
+      count: 3,
+      delay: (error: HttpErrorResponse, retryCount) =&gt; {
+        // sirf transient errors pe retry (5xx / network)
+        if (error.status &amp;&amp; error.status &lt; 500 &amp;&amp; error.status !== 0)
+          return throwError(() =&gt; error);          // 4xx → don't retry
+        return timer(Math.pow(2, retryCount) * 1000); // 2s, 4s, 8s
+      },
+    }),
+    catchError(err =&gt; throwError(() =&gt; new Error('Failed after retries')))
+  );
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Data&gt;('/api/data').pipe(
+  retry(2)   // 2 immediate retries on failure
+).subscribe(...);</code></pre>
+
+<h3 class="part">9. Advanced Example — retry + catchError order</h3>
+<div class="code-label">typescript</div>
+<pre><code>this.http.get&lt;Data&gt;(url).pipe(
+  retry({ count: 3, delay: 1000 }),   // pehle: 3 baar try
+  catchError(err =&gt; of(FALLBACK)),    // phir: saare fail → fallback
+);
+// ORDER matters: retry pehle (exhaust attempts), catchError baad mein (final fallback)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>retry({ count: 3, delay: fn })</code> — 3 attempts, delay function se controlled.</li>
+<li><code>error.status &lt; 500 &amp;&amp; !== 0</code> → 4xx (client error) — retry pointless, <code>throwError</code> to stop.</li>
+<li><code>timer(2^retryCount * 1000)</code> — exponential backoff (2s, 4s, 8s).</li>
+<li><code>catchError</code> retry ke <em>baad</em> — jab saare attempts exhaust ho jaayein.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Non-idempotent requests (POST) ko blindly retry → duplicate records. Sirf GET/PUT/DELETE.</li>
+<li>Permanent errors (400/404/401) pe retry → bekaar load, delay. Conditional retry (transient only).</li>
+<li>Backoff ke bina immediate retries → server ko hammer (thundering herd).</li>
+<li><code>retryWhen</code> use karna — deprecated; <code>retry({ delay })</code> function form.</li>
+<li><code>catchError</code> ko <code>retry</code> se pehle rakhna → retry kabhi trigger nahi hoga (error already caught).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Sirf idempotent + transient (5xx, network, timeout) pe retry.</li>
+<li>Exponential backoff (+jitter) — server ko flood na karo.</li>
+<li>Retry count cap (2-3); phir graceful failure.</li>
+<li>Order: <code>retry</code> pehle, <code>catchError</code> baad. Global retry policy → interceptor (S-08).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Poorly-tuned retry sabse khatarnak — no backoff pe "retry storm" server ko down kar sakta (thundering herd). Exponential backoff + jitter (random delay add) se load spread hota. Retry cap zaroori warna slow endpoint pe attempts pile up. Idempotency check duplicate side-effects rokta.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Retry + cancellation</td><td>User navigate away → unsubscribe retry loop ko bhi cancel karta hai (S-07).</td></tr>
+<tr><td>Timeout + retry</td><td><code>timeout(5000)</code> phir <code>retry</code> — slow requests ko fail-fast + retry.</td></tr>
+<tr><td>429 Too Many Requests</td><td><code>Retry-After</code> header respect karo — us duration ka delay.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>retry</code> operator andar kya karta hai?</summary><div class="ans"><p>Source error kare toh Observable ko re-subscribe karta hai — cold HTTP Observable pe re-subscribe = nayi request. <code>retry(3)</code> max 3 attempts. RxJS 7.3+ mein <code>retry({ count, delay })</code> se delay/backoff control.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Har error pe retry karna galat kyun? Kya karoge?</summary><div class="ans"><p>Permanent errors (400/404/401) retry pe kabhi pass nahi honge — bekaar load + delay. Aur POST (non-idempotent) retry se duplicates. Fix: conditional retry — <code>delay</code> function mein status check karke sirf transient (5xx/network/timeout) + idempotent verbs pe retry, baaki pe <code>throwError</code>.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Exponential backoff kya hai aur kyun zaroori? Implement kaise?</summary><div class="ans"><p>Har retry pe delay badhaना (1s, 2s, 4s...) taaki failing server ko recover ka time mile aur saare clients ek saath re-request na karein (thundering herd). Implement: <code>retry({ count: 3, delay: (err, i) =&gt; timer(Math.pow(2, i) * 1000) })</code>. Production mein jitter (random offset) bhi add karo taaki retries synchronize na ho.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Payment POST fail hua, tumne retry laga diya, ab customer ko double charge ho gaya. Kya galat tha?</summary><div class="ans"><p>POST non-idempotent hai — har retry naya charge create karta hai. POST pe blind retry nahi karna chahiye. Fix: idempotency key (client-generated unique id) header bhejो taaki server duplicate requests ko dedupe kare, ya POST ko retry se exclude karo.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>retry</code> = re-subscribe = new request. <code>retry({ count, delay })</code> (RxJS 7.3+). <code>retryWhen</code> deprecated.</li>
+<li>Only idempotent + transient (5xx/network/timeout). 4xx → don't retry. Exponential backoff + jitter.</li>
+<li>Order: <code>retry</code> then <code>catchError</code>. POST retry → dupes (use idempotency key).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.9 · Smart retry with backoff</div><p>Ek GET call pe <code>retry({ count:3, delay: fn })</code> lagao: exponential backoff (2^n sec), 4xx pe retry mat karo (<code>throwError</code>), sirf 5xx/network. Attempts exhaust hone pe graceful fallback (<code>catchError</code>).</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Cancellation</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>unsubscribe · switchMap auto-cancel · takeUntilDestroyed · typeahead search · AbortSignal (fetch) · why cancel matters</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Cancellation = ek in-flight (chal rahi) HTTP request ko rok dena, uski response ka intezaar chhodkar. RxJS mein <code>unsubscribe()</code> (ya operators jaise <code>switchMap</code>) HTTP Observable se unsubscribe karke underlying request ko <strong>abort</strong> kar deta hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Typeahead search: user har keystroke pe request bhejता hai — purani responses bekaar (ya out-of-order aa kar galat result dikha sakti). User navigate away kar gaya toh chal rahi request ki response ki zaroorat nahi. Cancellation waste + race conditions rokta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Bina cancellation — 2 problems</div>
+<ul style="margin-bottom:0">
+<li><strong>Race conditions:</strong> "reac" ki slow response "react" ki fast response ke baad aati → stale result dikhta.</li>
+<li><strong>Wasted work + leaks:</strong> navigate-away ke baad response aati, component gone → error/leak, bandwidth waste.</li>
+</ul></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">unsubscribe = abort</div><p>HTTP Observable ke teardown logic mein request abort hota hai. Jab tum <code>subscription.unsubscribe()</code> karte ho (ya <code>switchMap</code> naya value pe purani inner ko unsubscribe karta hai, ya <code>takeUntilDestroyed</code> component destroy pe unsubscribe karta hai), Angular underlying request (fetch backend ke saath <code>AbortController</code> se) cancel kar deta hai — sirf JS-side ignore nahi, asli network request bhi abort.</p></div>
+
+<div class="dg-title">Diagram — switchMap auto-cancel (typeahead)</div>
+<pre class="diagram">
+ type "r"  ─▶ switchMap ─▶ request(r)   ─── cancelled ✗ (superseded)
+ type "re" ─▶ switchMap ─▶ request(re)  ─── cancelled ✗
+ type "rea"─▶ switchMap ─▶ request(rea) ─── cancelled ✗
+ type "reac"─▶ switchMap ─▶ request(reac) ─▶ ✓ only LATEST survives
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+input change ─▶ debounceTime ─▶ distinctUntilChanged ─▶ switchMap(http.get)
+        ─▶ new keystroke ─▶ previous inner Observable unsubscribed ─▶ request ABORTED
+        ─▶ only latest response reaches subscriber
+</pre>
+
+<h3 class="part">6. Architecture — cancellation tools</h3>
+<table>
+<tr><td>Manual <code>unsubscribe()</code></td><td>Store subscription, call <code>.unsubscribe()</code> — explicit but verbose.</td></tr>
+<tr><td><code>switchMap</code></td><td>Naya emission → purani inner request auto-cancel. Typeahead ka core.</td></tr>
+<tr><td><code>takeUntilDestroyed()</code></td><td>Component destroy pe auto-unsubscribe (in-flight cancel).</td></tr>
+<tr><td><code>AsyncPipe</code></td><td>Template destroy pe auto-unsubscribe.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — typeahead</h3>
+<div class="code-label">search.ts</div>
+<pre><code>import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+
+searchControl = new FormControl('');
+
+results$ = this.searchControl.valueChanges.pipe(
+  debounceTime(300),             // wait for typing pause
+  distinctUntilChanged(),        // skip if value unchanged
+  switchMap(q =&gt;                 // ← cancels previous in-flight request
+    this.http.get&lt;Result[]&gt;('/api/search', { params: { q: q ?? '' } })
+  ),
+  takeUntilDestroyed()           // cancel on component destroy
+);
+// template: &lt;li *ngFor="let r of results$ | async"&gt;{{ r.name }}&lt;/li&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const sub = this.http.get('/api/slow').subscribe(...);
+// user cancels:
+sub.unsubscribe();   // in-flight request aborted</code></pre>
+
+<h3 class="part">9. Advanced Example — manual with AbortSignal (fetch backend)</h3>
+<div class="code-label">typescript</div>
+<pre><code>// component destroy pe saari subscriptions cancel
+private destroyRef = inject(DestroyRef);
+
+load() {
+  this.http.get&lt;Data&gt;('/api/data')
+    .pipe(takeUntilDestroyed(this.destroyRef))   // outside injection context
+    .subscribe(data =&gt; this.data = data);
+}
+// fetch backend: unsubscribe internally triggers AbortController.abort()</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>debounceTime(300)</code> — typing rukne ka wait (har keystroke pe request na ho).</li>
+<li><code>distinctUntilChanged()</code> — same value pe dobara request skip.</li>
+<li><code>switchMap</code> — naya value aaye toh purani in-flight HTTP <strong>cancel</strong>, sirf latest.</li>
+<li><code>takeUntilDestroyed()</code> — component destroy pe subscription (aur request) cancel.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Typeahead mein <code>mergeMap</code>/<code>concatMap</code> use karna → purani requests cancel nahi, race conditions + stale results. Use <code>switchMap</code>.</li>
+<li>Manual subscriptions bina cleanup → leak; navigate-away pe request chalti rehti.</li>
+<li>Har keystroke pe bina debounce → API flood.</li>
+<li>Cancellation ko sirf "JS ignore" samajhna — HttpClient asli network request abort karta hai (fetch backend).</li>
+<li><code>takeUntilDestroyed()</code> ko injection context ke bahar bina <code>DestroyRef</code> ke call — error.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Typeahead/dependent requests → <code>switchMap</code> (auto-cancel).</li>
+<li>Component lifetime cleanup → <code>takeUntilDestroyed()</code> ya <code>AsyncPipe</code>.</li>
+<li><code>debounceTime</code> + <code>distinctUntilChanged</code> se requests minimize.</li>
+<li>Manual subscriptions se bacho; declarative streams prefer.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Cancellation direct perf win — wasted requests, bandwidth, aur unnecessary re-renders bachaता. <code>switchMap</code> in-flight cancel karke server load kam karta. <code>debounceTime</code> request count drastically ghatata (10 keystrokes → 1 request). Bina cancellation, stale responses UI thrash karti hain.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Non-cancellable side-effect</td><td>Server-side POST already processed ho sakta — cancel client-side hai, server rollback nahi.</td></tr>
+<tr><td>switchMap vs form submit</td><td>Sequential mutations ke liye <code>concatMap</code> (cancel nahi chahiye); search ke liye <code>switchMap</code>.</td></tr>
+<tr><td>XHR vs fetch abort</td><td>Dono backends abort support karte; fetch native <code>AbortController</code> use karta.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> HTTP request cancel kaise karte ho?</summary><div class="ans"><p>Observable se <code>unsubscribe()</code> karke — HttpClient underlying request abort kar deta hai. Ya declaratively: <code>switchMap</code> (purani auto-cancel), <code>takeUntilDestroyed()</code> (component destroy pe), <code>AsyncPipe</code> (template destroy pe).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Typeahead search mein <code>switchMap</code> kyun, <code>mergeMap</code> kyun nahi?</summary><div class="ans"><p><code>switchMap</code> naya keystroke aane pe pichli in-flight request cancel kar deta — sirf latest query ki response matter karti, stale/out-of-order results avoid. <code>mergeMap</code> saari parallel chalata; slow purani response fast nayi ke baad aakr galat result dikha sakti (race condition) + zyada API calls.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> User ek slow-loading page se navigate away karta hai, phir console mein error aata hai (component destroyed but response aayi). Fix?</summary><div class="ans"><p>Subscription component destroy pe cancel nahi ho rahi. <code>takeUntilDestroyed()</code> (ya <code>AsyncPipe</code>) add karo — component destroy pe unsubscribe hoga aur in-flight request abort ho jaayegi, response kabhi aayegi hi nahi (no error/leak).</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Cancel = unsubscribe = request abort (real network abort via fetch AbortController).</li>
+<li>Typeahead: <code>debounceTime</code> + <code>distinctUntilChanged</code> + <code>switchMap</code> (auto-cancel previous).</li>
+<li>Lifetime: <code>takeUntilDestroyed()</code> / <code>AsyncPipe</code>. switchMap for search, concatMap for sequential mutations.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.10 · Typeahead search</div><p>Ek search box banao jo <code>debounceTime(300)</code> + <code>distinctUntilChanged</code> + <code>switchMap</code> se API hit kare. Network tab mein verify: fast typing pe purani requests cancel hoti hain (sirf latest survives).</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-12.11 · Cancel on destroy</div><p>Ek slow request (3s) load karne wala component banao. Load ke dauraan navigate away karo aur <code>takeUntilDestroyed()</code> se verify karo ki request cancel ho jaati hai (koi post-destroy error nahi).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Interceptors</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>HttpInterceptorFn · withInterceptors · req.clone (immutable) · chaining order · auth · error · loading · retry · HttpContext · DI-based (legacy)</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Interceptor ek <strong>middleware</strong> hai jo har HTTP request/response ke beech mein baithता hai. Har request outgoing pe (aur response incoming pe) intercept karke modify/observe/short-circuit kar sakta hai — auth header add, logging, error handling, loading spinner, retry — sab centralized.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Cross-cutting concerns (auth token har request pe, 401 pe logout, har request log) ko har service call mein repeat karna DRY nahi + error-prone. Interceptor inhe ek jagah, automatically, saari requests pe apply karta hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Duplication + scattered logic. Auth, logging, error handling, loading UI, retry policy — ye sab request-agnostic hain. Interceptor inhe application-wide middleware bana deta hai, services ko clean rakhkar.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Chain + immutable clone</div><p>Interceptors ek <strong>chain</strong> banate hain — request declared order mein aage jaati hai (out), response ulte order mein wapas (in). Har interceptor <code>(req, next)</code> leta hai: <code>next(req)</code> call karke aage bhejता hai. Request <strong>immutable</strong> hai — modify karne ke liye <code>req.clone({ ... })</code> se naya banana padta (original nahi chhedte). Response stream pe <code>pipe</code> karke observe/transform.</p></div>
+
+<div class="dg-title">Diagram — interceptor chain</div>
+<pre class="diagram">
+ REQUEST  ─▶ [logging] ─▶ [auth] ─▶ [retry] ─▶ backend ─▶ SERVER
+                                                            │
+ RESPONSE ◀─ [logging] ◀─ [auth] ◀─ [retry] ◀─ backend ◀───┘
+            (reverse order on the way back — response handling)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+http.get() ─▶ interceptor[0] req.clone(+header) ─▶ next(req)
+        ─▶ interceptor[1] ... ─▶ backend ─▶ response
+        ─▶ interceptor[1] pipe(catchError) ─▶ interceptor[0] pipe(tap log) ─▶ subscriber
+</pre>
+
+<h3 class="part">6. Architecture — functional (modern) vs DI (legacy)</h3>
+<table>
+<tr><td>Functional (<code>HttpInterceptorFn</code>)</td><td>Plain function <code>(req, next) =&gt; ...</code>, <code>inject()</code> for DI. <code>withInterceptors([...])</code>. <strong>Recommended.</strong></td></tr>
+<tr><td>DI-based (class)</td><td><code>HttpInterceptor</code> class + <code>HTTP_INTERCEPTORS</code> + <code>withInterceptorsFromDi()</code>. Legacy, being phased out.</td></tr>
+<tr><td>Order</td><td>Array declared order = execution order (out); reverse on response.</td></tr>
+<tr><td><code>HttpContext</code></td><td>Per-request metadata (e.g. skip-auth flag) via <code>HttpContextToken</code>.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — auth + error + loading</h3>
+<div class="code-label">auth.interceptor.ts</div>
+<pre><code>import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+
+export const authInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  const token = inject(AuthService).token();
+  if (!token) return next(req);
+  const cloned = req.clone({
+    headers: req.headers.set('Authorization', `Bearer ${token}`),  // immutable clone
+  });
+  return next(cloned);
+};</code></pre>
+<div class="code-label">error.interceptor.ts</div>
+<pre><code>export const errorInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  const router = inject(Router);
+  return next(req).pipe(
+    catchError((err: HttpErrorResponse) =&gt; {
+      if (err.status === 401) inject(AuthService).logout();
+      if (err.status === 0)   inject(ToastService).show('Network down');
+      return throwError(() =&gt; err);
+    })
+  );
+};</code></pre>
+<div class="code-label">app.config.ts — order matters</div>
+<pre><code>provideHttpClient(
+  withInterceptors([loadingInterceptor, authInterceptor, errorInterceptor])
+)</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>export const loggingInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  console.log('[HTTP]', req.method, req.url);
+  return next(req);
+};</code></pre>
+
+<h3 class="part">9. Advanced Example — loading spinner + HttpContext skip</h3>
+<div class="code-label">skip-loading token + interceptor</div>
+<pre><code>export const SKIP_LOADING = new HttpContextToken(() =&gt; false);
+
+export const loadingInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  if (req.context.get(SKIP_LOADING)) return next(req);   // opt-out
+  const loader = inject(LoadingService);
+  loader.show();
+  return next(req).pipe(finalize(() =&gt; loader.hide()));  // hide on complete/error
+};
+
+// per-request opt-out:
+this.http.get('/api/poll', { context: new HttpContext().set(SKIP_LOADING, true) });</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>HttpInterceptorFn = (req, next) =&gt; ...</code> — functional interceptor signature.</li>
+<li><code>inject(AuthService)</code> — DI inside functional interceptor (injection context available).</li>
+<li><code>req.clone({ headers: ... })</code> — request immutable; clone karke modify.</li>
+<li><code>next(cloned)</code> — chain mein aage forward.</li>
+<li><code>finalize(() =&gt; loader.hide())</code> — success/error dono pe spinner off.</li>
+<li><code>HttpContext</code> — per-request flags (skip-auth, skip-loading).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Request ko directly mutate karna (<code>req.headers.set</code> without clone) → immutable, no effect. <code>req.clone()</code>.</li>
+<li><code>next(req)</code> return/call na karna → chain toot jaati, request kabhi nahi jaati.</li>
+<li>Interceptor order galat (error before auth, ya loading after error) → wrong behavior.</li>
+<li>Loading spinner <code>finalize</code> ke bina → error case mein spinner atka.</li>
+<li>Legacy <code>HttpClientModule</code> + <code>HTTP_INTERCEPTORS</code> — functional + <code>withInterceptors</code> use karo.</li>
+<li>Auth interceptor ka token refresh recursive loop bina careful handling — 401 pe refresh phir retry, but infinite avoid.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Functional interceptors (<code>withInterceptors</code>) — tree-shakable, predictable, no circular-DI.</li>
+<li>Ek interceptor = ek concern (auth / error / loading / retry alag).</li>
+<li>Order intentional: loading → auth → (retry) → error (response handling reverse).</li>
+<li><code>HttpContext</code> se per-request opt-outs (skip-auth for public endpoints).</li>
+<li>Spinner ko <code>finalize</code> se hide (success + error dono).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Interceptor har request pe chalta — heavy sync work (large logging, JSON stringify) har call slow karega. Keep them lean. Loading interceptor mein counter (concurrent requests) rakho warna ek request ke complete pe spinner off ho jaayega jab doosri chal rahi ho. Retry interceptor global backoff se server-friendly.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Concurrent loading</td><td>Multiple parallel requests → request-counter, last complete pe hi hide.</td></tr>
+<tr><td>Token refresh (401)</td><td>401 pe refresh token → retry original; guard against infinite loop (skip refresh endpoint).</td></tr>
+<tr><td>Skip interceptor</td><td>Public/3rd-party API pe auth skip — <code>HttpContext</code> flag ya URL check.</td></tr>
+<tr><td>SSR</td><td>Interceptors server pe bhi chalte — browser-only APIs guard karo.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Interceptor kya hai, kis liye use hota hai?</summary><div class="ans"><p>HTTP requests/responses ke liye middleware. Har request/response ko intercept karke modify/observe/short-circuit karta hai. Common uses: auth header add, logging, error handling (401 logout), loading spinner, retry, caching. Cross-cutting concerns ko centralize karta hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Functional vs DI-based interceptor?</summary><div class="ans"><p>Functional (<code>HttpInterceptorFn</code>, plain function + <code>inject()</code>, <code>withInterceptors([...])</code>) — recommended: tree-shakable, predictable order, no class boilerplate, circular-DI safe. DI-based (class implementing <code>HttpInterceptor</code> + <code>HTTP_INTERCEPTORS</code> + <code>withInterceptorsFromDi()</code>) legacy hai aur phase-out ho raha.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Interceptor mein request kaise modify karte ho aur kyun clone?</summary><div class="ans"><p><code>HttpRequest</code> immutable hai — directly modify nahi hota. <code>req.clone({ headers: req.headers.set(...), ... })</code> se ek naya request banate hain aur <code>next(cloned)</code> forward karte hain. Immutability ensure karti hai ki ek request doosri ko affect na kare aur retries safe rahein.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Multiple interceptors ka order kaise decide hota hai? Ek loading spinner interceptor kaise sahi banaoge?</summary><div class="ans"><p><code>withInterceptors([a, b, c])</code> — array order = request pe execution order (a→b→c), response pe reverse (c→b→a). Loading spinner: <code>show()</code> at start, <code>finalize(() =&gt; hide())</code> (success+error dono). Multiple concurrent requests ke liye ek request-<em>counter</em> rakho (increment on show, decrement on finalize) taaki spinner tabhi hide ho jab saari requests complete, na ki pehli ke complete pe.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Auth interceptor har request pe token lagata hai, par ek public login/signup endpoint pe token nahi bhejना. Kaise skip karo?</summary><div class="ans"><p><code>HttpContextToken</code> banao (<code>SKIP_AUTH</code>), interceptor mein <code>req.context.get(SKIP_AUTH)</code> check karke skip karo. Call site pe <code>{ context: new HttpContext().set(SKIP_AUTH, true) }</code> pass karo. (Ya URL-based check, par HttpContext cleaner + type-safe hai.)</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Middleware for requests/responses. Functional <code>HttpInterceptorFn</code> + <code>withInterceptors([...])</code> (recommended).</li>
+<li>Request IMMUTABLE → <code>req.clone({...})</code>. Must call <code>next(req)</code>. Chain: declared order out, reverse in.</li>
+<li>Uses: auth, error (401 logout), loading (<code>finalize</code> + counter), retry. Per-request opt-out via <code>HttpContext</code>.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-12.12 · Auth + error interceptors</div><p>Do functional interceptors banao: (1) auth — <code>req.clone</code> se Bearer token add; (2) error — 401 pe logout, 0 pe "network down" toast. <code>withInterceptors</code> mein register karke order verify karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-12.13 · Loading spinner interceptor</div><p>Ek loading interceptor banao jo global spinner show/hide kare using a request-<em>counter</em> (concurrent requests handle). <code>finalize</code> se error case bhi cover. Ek polling endpoint ko <code>HttpContext</code> flag se spinner-skip karo.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-12.14 · Global retry interceptor</div><p>Ek retry interceptor banao jo sirf idempotent (GET) + transient (5xx/network) requests ko exponential backoff se retry kare. POST/4xx skip karo. S-06 ka logic interceptor level pe apply.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 12 complete.</b><br>
+  HttpClient setup → CRUD → headers → params → error handling → retry → cancellation → interceptors.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. Next-gen: <b>httpResource()</b> (v20 experimental, signal-based) — Observable-based HttpClient abhi production standard. Agla chapter: <b>RxJS Deep-Dive</b> ya <b>State Management</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch12_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

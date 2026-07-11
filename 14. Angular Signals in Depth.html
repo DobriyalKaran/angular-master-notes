@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 14 — Angular Signals in Depth | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 8 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 14 — <span>Angular Signals</span> in Depth</h1>
+  <p class="subtitle">Signals Angular ka naya reactive core hai — v17 se aaya, v20 tak stable + zoneless default ka foundation. Ye ek <em>fine-grained reactivity</em> system hai: value badle toh sirf woh cheezein re-compute/re-render hoti hain jo us value pe depend karti hain — poora tree nahi. Is chapter mein <em>WHY-first</em>: pehle problem (Zone.js/RxJS pain), phir signal primitives, phir inputs/queries/store, aur aakhir mein <strong>Signals vs RxJS</strong> ka clear decision framework.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Angular: <b>v17 → v20+</b> (effect stable v20, linkedSignal ~v20)</span>
+    <span class="chip">Sections: <b>8</b> · Topics: <b>20+</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">signal() — Writable State</a><div class="sub">set · update · reading · equality · fine-grained reactivity · vs BehaviorSubject</div></li>
+    <li><a href="#s2">computed() — Derived State</a><div class="sub">memoized · lazy · glitch-free · dependency tracking · pure</div></li>
+    <li><a href="#s3">effect() — Side Effects</a><div class="sub">timing (CD cycle) · cleanup · untracked · allowSignalWrites removed · when NOT to use</div></li>
+    <li><a href="#s4">linkedSignal() — Writable + Reset</a><div class="sub">source + computation · auto-reset on source change · dependent selection · vs computed</div></li>
+    <li><a href="#s5">Signal Inputs</a><div class="sub">input() · input.required() · transform · alias · model() two-way · output()</div></li>
+    <li><a href="#s6">Signal Queries</a><div class="sub">viewChild · viewChildren · contentChild · contentChildren · required · vs decorator queries</div></li>
+    <li><a href="#s7">Signal Store (NgRx)</a><div class="sub">signalStore · withState · withComputed · withMethods · withHooks · patchState · custom features</div></li>
+    <li><a href="#s8">Signals vs RxJS</a><div class="sub">sync vs async · toSignal · toObservable · when to use which · interop patterns</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>signal() — Writable State</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>writable signal · read () · set · update · fine-grained reactivity · equality function · asReadonly · signal vs BehaviorSubject · zoneless</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Signal ek <strong>reactive value container</strong> hai — ek box jismein value rehti hai, aur jab value badalti hai toh woh sab jagah jo us value ko "padh" rahe the automatically notify ho jaate. <code>signal(0)</code> ek writable signal banata; <code>count()</code> se padho, <code>count.set(5)</code> se likho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Purane Angular mein change detection <strong>Zone.js</strong> pe depend karta tha — koi bhi async event (click, timer, HTTP) poore component tree ko re-check karwata, bhale kuch badla ho ya nahi. Ye inefficient. Signals <em>fine-grained</em> reactivity dete hain: Angular ko exactly pata hota hai kaunsa signal kahan use hua, toh sirf wahi update hota. Yehi zoneless Angular ka foundation hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">Purane approaches ka dard</div>
+<ul style="margin-bottom:0">
+<li><strong>Zone.js</strong> — har event pe poora tree check; over-rendering.</li>
+<li><strong>BehaviorSubject</strong> — kaam karta par verbose: <code>.value</code>, <code>| async</code>, subscribe/unsubscribe, leak-management.</li>
+<li>Template mein <code>| async</code> ka boilerplate, aur derived state ke liye RxJS operators.</li>
+</ul></div>
+<div class="panel good-p"><div class="ptitle">Signal</div><p>Synchronous read (<code>count()</code>), auto dependency-tracking, no subscribe/unsubscribe, no <code>| async</code>, fine-grained updates. Template mein seedhe <code>{{ count() }}</code>.</p></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Producer / Consumer dependency graph</div><p>Har signal ek <em>producer</em> hai. Jab tum ek <em>reactive context</em> (template, <code>computed</code>, <code>effect</code>) ke andar <code>count()</code> call karte ho, Angular us context ko signal ka <em>consumer</em> register kar deta hai — ek dependency edge banti hai. Jab <code>count.set()</code> se value badalti hai, signal apne saare consumers ko "dirty" mark karta hai, aur woh re-evaluate hote hain. Ye graph automatic + dynamic hai — tumhe dependencies declare nahi karni. Signal by default <em>referential equality</em> (<code>===</code>) se check karta: agar nayi value purani ke barabar hai, consumers notify nahi hote (no wasted work).</p></div>
+
+<div class="dg-title">Diagram — dependency graph</div>
+<pre class="diagram">
+ count = signal(0)
+     │  (read in these consumers)
+     ├──▶ template {{ count() }}      ─ re-renders on change
+     ├──▶ computed(() =&gt; count()*2)   ─ recomputes on change
+     └──▶ effect(() =&gt; log(count()))  ─ re-runs on change
+
+ count.set(1) ─▶ mark consumers dirty ─▶ only THESE update (not whole tree)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ const count = signal(0);
+ count();            ─▶ read → 0 (registers dependency if in reactive context)
+ count.set(5);       ─▶ write → notify consumers (if 5 !== old)
+ count.update(n =&gt; n+1); ─▶ read+write in one → 6
+ count.asReadonly(); ─▶ read-only view (no set/update) for exposing
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>signal(initial)</code></td><td>Create writable signal with initial value.</td></tr>
+<tr><td><code>sig()</code></td><td>Read (call it). In reactive context → registers dependency.</td></tr>
+<tr><td><code>sig.set(value)</code></td><td>Replace value.</td></tr>
+<tr><td><code>sig.update(fn)</code></td><td>Derive new from old: <code>sig.update(c =&gt; c + 1)</code>.</td></tr>
+<tr><td><code>sig.asReadonly()</code></td><td>Read-only view — expose without letting outsiders write.</td></tr>
+<tr><td><code>signal(v, { equal })</code></td><td>Custom equality (e.g. deep) to control change detection.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">counter.component.ts</div>
+<pre><code>import { Component, signal } from '@angular/core';
+
+@Component({
+  selector: 'app-counter',
+  template: `
+    &lt;p&gt;Count: {{ count() }}&lt;/p&gt;
+    &lt;button (click)="increment()"&gt;+&lt;/button&gt;
+  `,
+})
+export class Counter {
+  count = signal(0);                          // writable signal
+  increment() { this.count.update(c =&gt; c + 1); }  // no subscribe, no | async
+}</code></pre>
+<div class="panel info-p"><div class="ptitle">Note</div><p>Template mein <code>count()</code> — call karna zaroori (signal ek function hai). <code>{{ count }}</code> (bina call) galat — woh function print karega.</p></div>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const name = signal('Karan');
+console.log(name());          // Karan
+name.set('Kumar');            // now Kumar
+name.update(n =&gt; n + '!');    // Kumar!</code></pre>
+
+<h3 class="part">9. Advanced Example — objects &amp; immutability, custom equality</h3>
+<div class="code-label">typescript</div>
+<pre><code>const user = signal({ name: 'Karan', age: 25 });
+
+// ❌ mutate → same reference → NO update (referential equality)
+user().age = 26;
+
+// ✅ new reference → update fires
+user.update(u =&gt; ({ ...u, age: 26 }));
+
+// custom equality (deep) — control when consumers notify
+const list = signal([1, 2, 3], { equal: (a, b) =&gt; a.length === b.length });</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>signal(0)</code> — writable signal, initial <code>0</code>.</li>
+<li><code>count()</code> — read; reactive context mein dependency register.</li>
+<li><code>set(v)</code> — full replace; <code>update(fn)</code> — old se new derive.</li>
+<li>Objects: immutable update (<code>{...u, ...}</code>) zaroori — mutation same ref = no notify.</li>
+<li><code>{ equal }</code> — custom equality se change-detection control.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Template mein <code>{{ count }}</code> (bina <code>()</code>) — signal call karna bhoolna.</li>
+<li>Object/array signal ko mutate karna (<code>arr().push()</code>) → same reference → update nahi hota. Immutable update karo.</li>
+<li><code>set</code> vs <code>update</code> confuse — new value = set; old se derive = update.</li>
+<li>Signal ko RxJS ki tarah subscribe karne ki koshish — signal sync hai, seedhe <code>()</code> se padho.</li>
+<li>Public writable signal expose karke bahar se uncontrolled writes — <code>asReadonly()</code>.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Objects/arrays hamesha immutably update (<code>update(x =&gt; ({...x}))</code>).</li>
+<li>State ko service mein rakho, <code>asReadonly()</code> expose, mutation methods se controlled.</li>
+<li>Template mein seedhe <code>signal()</code> call — no <code>| async</code> needed.</li>
+<li>Prefer signals over BehaviorSubject for synchronous local/UI state.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Signals ka poora point perf hai — fine-grained updates matlab sirf affected DOM/computeds update, poora tree nahi (Zone.js ke opposite). Referential equality wasted updates rokti (same value set = no-op). Zoneless Angular signals pe hi khada hai. Bade objects pe custom <code>equal</code> se unnecessary notifications control karo.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Same value set</td><td><code>set</code> with equal value → consumers notify nahi (referential equality).</td></tr>
+<tr><td>Reading outside reactive context</td><td>Seedhe <code>sig()</code> value deta, par dependency register nahi hoti (e.g. event handler mein).</td></tr>
+<tr><td>Signal in constructor</td><td>Field initializer / constructor injection context mein banao.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Signal kya hai aur kaise read/write karte ho?</summary><div class="ans"><p>Reactive value container. <code>signal(0)</code> banata; <code>count()</code> (call karke) padho; <code>count.set(5)</code> replace; <code>count.update(c =&gt; c+1)</code> old se derive. Reactive context (template/computed/effect) mein read karne pe dependency auto-register hoti hai — value badle toh sirf woh consumers update.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Signal vs BehaviorSubject?</summary><div class="ans"><p>Dono "current value + notify on change". Signal: synchronous read (<code>()</code>), auto dependency-tracking, no subscribe/unsubscribe (no leaks), template mein no <code>| async</code>, fine-grained CD. BehaviorSubject: async (subscribe), <code>.value</code> for sync, manual cleanup, <code>| async</code> in template. Synchronous UI state → signal; async streams → RxJS.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Object signal update kiya par UI refresh nahi hua. Kyun?</summary><div class="ans"><p>Signal referential equality (<code>===</code>) se check karta hai. Object ko mutate kiya (<code>user().age = 26</code>) toh reference same rehti — signal ko lagता value nahi badli, consumers notify nahi hote. Fix: immutable update — <code>user.update(u =&gt; ({...u, age: 26}))</code> — nayi reference se change fire hoga.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek state service bana rahe ho, chahte ho components padh sakein par directly write na kar sakein. Kaise?</summary><div class="ans"><p>Private writable signal + public <code>asReadonly()</code>: <code>private _count = signal(0); readonly count = this._count.asReadonly();</code>. Components <code>store.count()</code> padh sakte, par <code>.set()</code> nahi (readonly signal pe set nahi hota). Mutation service ke methods (jo <code>_count.set()</code> karte) se controlled. BehaviorSubject ke <code>asObservable()</code> jaisa pattern.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>signal(init)</code> → read <code>sig()</code>, write <code>set()</code>/<code>update()</code>. Function — call it (even in template).</li>
+<li>Referential equality — objects/arrays IMMUTABLE update, warna no notify. Custom <code>{equal}</code> to tune.</li>
+<li>Fine-grained reactivity (foundation of zoneless). Expose via <code>asReadonly()</code>. No subscribe/leak.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.1 · Counter signal</div><p>Ek counter component banao (signal) with increment/decrement/reset. Template mein <code>{{ count() }}</code>. Prove karo Zone.js ke bina bhi UI update hota (mentally: koi <code>| async</code> nahi).</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-14.2 · Immutable object signal</div><p>Ek <code>user</code> object signal banao. Pehle mutate karke prove karo UI refresh nahi hota, phir immutable update se fix karo. <code>asReadonly()</code> se ek read-only view expose karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>computed() — Derived State</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>derived signal · memoization · lazy evaluation · glitch-free · auto dependency tracking · pure computation · read-only · vs method</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>computed()</code> ek <strong>derived, read-only signal</strong> banata hai — ek value jo doosre signals se calculate hoti hai. <code>const total = computed(() =&gt; price() * qty())</code>. Jab <code>price</code> ya <code>qty</code> badle, <code>total</code> automatically recompute hota. Ye <em>memoized</em> aur <em>lazy</em> hai.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Derived values (subtotal, filtered list, full name) ko manually sync karna error-prone hai — kaunse changes pe kya recompute? <code>computed</code> ye automatic karta: dependencies track karke, sirf zaroorat pe recompute, aur result cache karke. Template mein calculation ki jagah clean derived signal.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Manual state synchronization aur redundant computation. Bina computed ke: ya toh template mein bhaari expression (har CD pe re-run), ya manual "jab X badle toh Y update karo" (bug-prone). computed dono solve karta — declarative + memoized.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Lazy + memoized + glitch-free</div><p>• <strong>Lazy</strong> — computed ki body tab tak nahi chalti jab tak koi use padhe na (aur value stale ho). Agar koi nahi padh raha, computation skip.
+<br>• <strong>Memoized</strong> — ek baar compute hone ke baad value cache; agli read pe dobara compute nahi (jab tak dependency na badle).
+<br>• <strong>Auto-tracked</strong> — body ke andar jo signals padhे jaate hain, wahi dependencies ban jaate (dynamic).
+<br>• <strong>Glitch-free</strong> — ek synchronous batch mein multiple dependency changes ho toh computed sirf ek baar final value pe settle hota — intermediate inconsistent states expose nahi karta.</p></div>
+
+<div class="dg-title">Diagram — lazy + memoized</div>
+<pre class="diagram">
+ price=signal(10)  qty=signal(2)
+ total = computed(() =&gt; price() * qty())
+
+ read total() ─▶ compute (10*2=20), CACHE 20
+ read total() ─▶ return cached 20 (no recompute)
+ qty.set(3)   ─▶ mark total STALE (but don't compute yet — lazy)
+ read total() ─▶ recompute (10*3=30), cache 30
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ dependency (price/qty) changes ─▶ computed marked STALE (not recomputed)
+        ─▶ someone reads total() ─▶ recompute ─▶ cache ─▶ return
+        (if nobody reads → never recomputes — lazy)
+</pre>
+
+<h3 class="part">6. Architecture</h3>
+<table>
+<tr><td><code>computed(fn)</code></td><td>Derived read-only signal. Body reads other signals.</td></tr>
+<tr><td>Read-only</td><td>No <code>set</code>/<code>update</code> — value purely derived (writable version → linkedSignal, S-04).</td></tr>
+<tr><td>Auto-tracked deps</td><td>Signals read inside <code>fn</code> become dependencies (dynamic each run).</td></tr>
+<tr><td>Chainable</td><td>computed can read other computeds — graph builds.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">cart computeds</div>
+<pre><code>import { signal, computed } from '@angular/core';
+
+export class CartComponent {
+  items = signal&lt;CartItem[]&gt;([]);
+
+  subtotal = computed(() =&gt; this.items().reduce((s, i) =&gt; s + i.price * i.qty, 0));
+  tax      = computed(() =&gt; this.subtotal() * 0.18);         // chains on subtotal
+  total    = computed(() =&gt; this.subtotal() + this.tax());   // chains on both
+
+  // template: {{ total() | currency:'INR' }} — auto-updates when items change
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const first = signal('Karan');
+const last = signal('Kumar');
+const fullName = computed(() =&gt; `${first()} ${last()}`);
+
+console.log(fullName());   // Karan Kumar
+first.set('K');
+console.log(fullName());   // K Kumar (auto-updated)</code></pre>
+
+<h3 class="part">9. Advanced Example — filtered/derived list</h3>
+<div class="code-label">typescript</div>
+<pre><code>const todos = signal&lt;Todo[]&gt;([...]);
+const filter = signal&lt;'all' | 'active' | 'done'&gt;('all');
+
+const visibleTodos = computed(() =&gt; {
+  const f = filter();
+  const list = todos();
+  return f === 'all' ? list
+       : f === 'active' ? list.filter(t =&gt; !t.done)
+       : list.filter(t =&gt; t.done);
+});
+const activeCount = computed(() =&gt; todos().filter(t =&gt; !t.done).length);</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>computed(() =&gt; ...)</code> — body doosre signals padhta; wahi dependencies.</li>
+<li><code>subtotal</code> pe <code>tax</code>/<code>total</code> chain — computed graph.</li>
+<li>Read-only — sirf derive, koi <code>set</code> nahi.</li>
+<li>Lazy: agar template <code>total()</code> na padhe, recompute nahi.</li>
+<li>Memoized: dependency unchanged → cached value return.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Computed body mein side-effects (state mutate, HTTP, console spam) — computed <strong>pure</strong> hona chahiye. Side-effects → effect (S-03).</li>
+<li>Computed mein async (Promise/HTTP) — computed synchronous hai; async ke liye resource/RxJS.</li>
+<li>Manually recompute karne ki koshish — computed khud manage karta.</li>
+<li>Computed ko writable expect karna — read-only; writable+derived chahiye toh linkedSignal (S-04).</li>
+<li>Non-signal values (plain props) pe depend karke expect karna ki auto-update ho — sirf signals track hote.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Derived state ke liye HAMESHA computed (na ki manual sync ya template calculation).</li>
+<li>Computed pure rakho — no side-effects, no async.</li>
+<li>Chain computeds for clean layered derivation (subtotal → tax → total).</li>
+<li>Template mein bhaari expression ki jagah computed — memoized, ek hi baar calc.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Computed memoization ka bada perf win — ek expensive calc (filter/sort of large list) sirf tab re-run jab dependency badle, aur agar multiple jagah padha jaaye toh ek hi baar compute (cached). Template mein direct method call (<code>{{ compute() }}</code>) har CD pe re-run hota; computed nahi. Lazy nature: unused computeds kabhi compute nahi hote.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Conditional dependencies</td><td>Body mein <code>if</code> se kabhi ek signal read, kabhi doosra — deps dynamically track hote (jo us run mein padha).</td></tr>
+<tr><td>Diamond dependency</td><td>A→B, A→C, B&amp;C→D: glitch-free ensures D ek baar consistent value pe settle.</td></tr>
+<tr><td>Equal result</td><td>Computed ka naya result purane === ho toh downstream consumers notify nahi (custom <code>equal</code> bhi).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>computed()</code> kya hai?</summary><div class="ans"><p>Ek derived, read-only signal jo doosre signals se value calculate karta hai. Dependencies auto-track hoti hain — jo signal body mein padha jaaye. Dependency badle toh computed recompute (lazy + memoized). Jaise <code>total = computed(() =&gt; price() * qty())</code>.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Computed "lazy + memoized" ka kya matlab?</summary><div class="ans"><p><strong>Lazy</strong>: body tab tak nahi chalti jab tak koi value padhe na (koi consumer nahi → compute nahi). <strong>Memoized</strong>: ek baar compute hone par value cache hoti; agli read pe dobara compute nahi jab tak dependency na badle. Isse redundant calculation avoid hoti — bada perf win for expensive derivations.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Template mein <code>{{ getTotal() }}</code> (method) vs <code>{{ total() }}</code> (computed) — farak?</summary><div class="ans"><p>Method har change-detection cycle pe re-run hota (Angular ko nahi pata kab result badlega). Computed memoized hai — sirf tab recompute jab uske signal dependencies badlein, warna cached value. Bade/expensive calc ke liye computed drastically kam runs — better perf.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Computed ke andar tumne ek API call daal di aur ajeeb behavior aa raha. Kyun galat?</summary><div class="ans"><p>Computed <strong>pure + synchronous</strong> hona chahiye — sirf derive, koi side-effect/async nahi. API call (side-effect + async) computed mein daalna: har recompute pe fire ho sakta, race conditions, aur computed sync value expect karta. Async data ke liye <code>resource()</code>/<code>rxResource()</code> ya RxJS + <code>toSignal</code> use karo; side-effects <code>effect()</code> mein.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>computed(() =&gt; ...)</code> = derived read-only signal. Auto-tracks signals read inside.</li>
+<li>LAZY (no read → no compute) + MEMOIZED (cache until deps change) + glitch-free.</li>
+<li>PURE — no side-effects/async. Chain freely. Beats template method calls (memoized).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.3 · Cart totals</div><p>Cart items signal se <code>subtotal</code> → <code>tax</code> → <code>total</code> chained computeds banao. Item add/remove pe sab auto-update ho. Prove karo memoization (ek console.log body mein — count recomputes).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-14.4 · Filtered todos</div><p>todos + filter signals se <code>visibleTodos</code> aur <code>activeCount</code> computeds banao. Filter/list change pe reactive update. Method-in-template vs computed ka recompute-count farak measure karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>effect() — Side Effects</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>side-effects · auto-tracking · timing (CD cycle) · cleanup (onCleanup) · untracked · allowSignalWrites removed · injection context · when NOT to use</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>effect()</code> ek function register karta hai jo tab-tab chalta hai jab uske andar padhe gaye koi bhi signal badalte hain. Ye <strong>side-effects</strong> ke liye hai — logging, DOM manipulation, localStorage sync, 3rd-party libs — yani reactive value change pe "kuch karna" (value derive karna nahi, woh computed ka kaam).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Kabhi signal change pe world ke saath interact karna padta — console log, <code>localStorage.setItem</code>, chart library ko update, analytics event. Ye "pure derivation" nahi (computed ka domain), balki external side-effect hai. <code>effect</code> ye reactively karta, dependencies auto-track karke.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Reactive side-effects ko cleanly express karna — bina manual "jab X change ho toh ye karo" wiring ke. Par ye <strong>escape hatch</strong> hai: zyada tar reactivity computed/template se honi chahiye; effect sirf jab bahar duniya se baat karni ho.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Timing + tracking + cleanup</div><p>• <strong>Auto-track</strong> — effect ki body mein padhe signals uski dependencies; koi badle toh effect re-run.
+<br>• <strong>Timing (v19+)</strong> — effects ab <em>change detection cycle</em> ka part hain (pehle microtask queue the). Parent effects child se pehle chalte. Pehla run effect register hone ke baad first CD pe.
+<br>• <strong>Cleanup</strong> — effect fn ko <code>onCleanup</code> milta; next run se pehle (aur destroy pe) previous cleanup chalta — timers/listeners clear karne ko.
+<br>• <strong>Auto-destroy</strong> — injection context mein banao toh component destroy pe auto-cleanup (DestroyRef).
+<br>• <strong>allowSignalWrites removed (v19)</strong> — ab effect ke andar signal write default allowed (pehle flag chahiye tha), par soch-samajhkar (infinite loop se bacho).</p></div>
+
+<div class="dg-title">Diagram — effect lifecycle</div>
+<pre class="diagram">
+ effect(() =&gt; {
+   const v = count();          ← tracked dependency
+   localStorage.setItem('c', v);  ← side effect
+   onCleanup(() =&gt; {...});      ← runs before next run &amp; on destroy
+ });
+ count change ─▶ cleanup(prev) ─▶ re-run effect ─▶ new side effect
+ component destroy ─▶ final cleanup ─▶ effect stopped (auto)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ register effect ─▶ first CD ─▶ run (track deps) ─▶ side effect
+   dep changes ─▶ (next CD) ─▶ onCleanup(prev) ─▶ re-run ─▶ side effect
+   destroy ─▶ onCleanup(final) ─▶ stopped
+</pre>
+
+<h3 class="part">6. Architecture</h3>
+<table>
+<tr><td><code>effect(fn)</code></td><td>Register reactive side-effect. Injection context (field/constructor).</td></tr>
+<tr><td><code>onCleanup(fn)</code></td><td>Inside effect — cleanup before next run &amp; on destroy.</td></tr>
+<tr><td><code>untracked(fn)</code></td><td>Read a signal WITHOUT making it a dependency.</td></tr>
+<tr><td><code>effect(fn, { injector })</code></td><td>Outside injection context — pass injector.</td></tr>
+<tr><td><code>{ manualCleanup }</code></td><td>Opt out of auto-destroy (rare; then destroy manually).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">persist to localStorage</div>
+<pre><code>import { Component, signal, effect } from '@angular/core';
+
+export class SettingsComponent {
+  theme = signal&lt;'light' | 'dark'&gt;('dark');
+
+  constructor() {
+    // re-runs whenever theme() changes; auto-cleaned on destroy
+    effect(() =&gt; {
+      localStorage.setItem('theme', this.theme());
+      document.body.className = this.theme();
+    });
+  }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const count = signal(0);
+effect(() =&gt; console.log('count is', count()));
+count.set(1);   // logs: count is 1
+count.set(2);   // logs: count is 2</code></pre>
+
+<h3 class="part">9. Advanced Example — cleanup + untracked</h3>
+<div class="code-label">typescript</div>
+<pre><code>effect((onCleanup) =&gt; {
+  const id = setInterval(() =&gt; poll(query()), 1000);   // query() tracked
+  onCleanup(() =&gt; clearInterval(id));                    // clear before re-run/destroy
+});
+
+// untracked: read userId WITHOUT re-running when it changes
+effect(() =&gt; {
+  const t = theme();                          // tracked
+  analytics.log(t, untracked(() =&gt; userId())); // userId read but NOT a dependency
+});</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>effect(() =&gt; ...)</code> — body ke signals track; change pe re-run.</li>
+<li><code>onCleanup(fn)</code> — next run se pehle + destroy pe cleanup (timers/listeners).</li>
+<li><code>untracked(() =&gt; sig())</code> — value padho par dependency mat banao (unnecessary re-runs avoid).</li>
+<li>Constructor/field mein banao → injection context → auto-destroy.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><strong>effect ko state-sync ke liye use karna</strong> (jab computed/linkedSignal behtar) — #1 anti-pattern. Effect last resort.</li>
+<li>Effect mein signal write jo apni hi dependency badle → <strong>infinite loop</strong>. (allowSignalWrites hata, par responsibility tumhaari.)</li>
+<li>Cleanup na dena jab timer/listener banaya → leak.</li>
+<li>Async data fetch effect mein — race conditions; <code>resource()</code>/RxJS use karo.</li>
+<li>Injection context ke bahar bina <code>injector</code> effect banana → error.</li>
+<li>Har signal read ko track hone dena jab kuch ko <code>untracked</code> hona chahiye → over-firing.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Effect sirf <strong>external side-effects</strong> ke liye (log, DOM, storage, 3rd-party). Derivation → computed. State reset → linkedSignal.</li>
+<li>Timers/listeners banao toh <code>onCleanup</code> hamesha.</li>
+<li>Jo signals trigger nahi karne chahiye unhe <code>untracked</code> se padho.</li>
+<li>Signal writes effect mein soch-samajhkar (loop se bacho); prefer derived state.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Effects CD cycle ka part hain — bhaari sync work har run pe CD slow karega. Over-tracking (unnecessary deps) se over-firing — <code>untracked</code> se scope karo. Effect abuse (state sync) unnecessary re-runs + hard-to-debug cascades deta; computed/linkedSignal zyada efficient + predictable. Cleanup se resources leak nahi karte.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Signal write in effect</td><td>Allowed (v19+) par apni dependency likhna → infinite loop. Careful / prefer derived.</td></tr>
+<tr><td>View queries in effect</td><td>Timing change (v19): effects CD ke dauraan; view-query-dependent effects ka behavior verify.</td></tr>
+<tr><td><code>afterRenderEffect</code></td><td>DOM-measurement side-effects ke liye alag primitive (post-render).</td></tr>
+<tr><td>manualCleanup</td><td>Auto-destroy opt-out — phir <code>EffectRef.destroy()</code> khud karo.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>effect()</code> kab use karte ho, computed ki jagah kyun nahi?</summary><div class="ans"><p>Effect <strong>side-effects</strong> ke liye — logging, localStorage, DOM, 3rd-party libs — jab signal change pe bahar duniya se interact karna ho. Computed <strong>derivation</strong> ke liye (naya value calculate). Rule: naya value chahiye → computed; kuch "karna" (side-effect) chahiye → effect. Effect last resort hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Effect mein cleanup kaise aur kyun?</summary><div class="ans"><p>Effect fn ko <code>onCleanup</code> callback milta hai — ye next re-run se pehle aur component destroy pe chalta. Timers (<code>setInterval</code>), event listeners, subscriptions jaise resources clear karne ko: <code>effect((onCleanup) =&gt; { const id = setInterval(...); onCleanup(() =&gt; clearInterval(id)); })</code>. Bina cleanup → leak.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>untracked()</code> kya karta hai?</summary><div class="ans"><p>Ek signal ko reactive context (effect/computed) ke andar padhne deta hai <em>bina</em> use dependency banaye — yani us signal ke change pe effect re-run nahi hoga. Use case: effect ko ek signal (jaise <code>theme</code>) pe react karana hai par doosre (jaise <code>userId</code>) ki latest value <em>chahiye</em> par uspe trigger nahi karna. <code>untracked(() =&gt; userId())</code>.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Selected item ko options change hone pe reset karna hai. Junior ne effect use kiya. Better?</summary><div class="ans"><p>Effect se state-sync anti-pattern hai — options aur selected ko independent treat karta, cascades + potential loops. Better: <code>linkedSignal</code> (S-04) — ek writable signal jo <code>options</code> (source) pe auto-reset ho par user manually bhi <code>.set()</code> kar sake. Ye exactly is "dependent selection" case ke liye banaya gaya.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>effect(fn)</code> = reactive SIDE-effects (log/DOM/storage/3rd-party). NOT for derivation (computed) or state-sync (linkedSignal).</li>
+<li>Auto-tracks deps; runs in CD cycle (v19+); <code>onCleanup</code> for timers/listeners; auto-destroy in injection context.</li>
+<li><code>allowSignalWrites</code> removed — writes allowed but beware infinite loops. <code>untracked()</code> to read without depending.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.5 · Theme persister</div><p>Ek <code>theme</code> signal + <code>effect</code> banao jo change pe <code>localStorage</code> + <code>document.body.class</code> update kare. Reload pe stored theme restore karo. Destroy pe auto-cleanup verify karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-14.6 · Cleanup + untracked</div><p>Ek effect banao jo ek signal (<code>query</code>) pe polling start kare (<code>onCleanup</code> se clear). Ek doosra signal <code>untracked</code> se padho aur prove karo uspe effect re-run nahi hota.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>linkedSignal() — Writable + Reset</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>writable derived signal · source + computation · auto-reset on source change · shorthand vs full form · previous value · dependent selection · vs computed vs effect</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p><code>linkedSignal()</code> ek <strong>writable signal jo ek source se linked hai</strong>. Ye <code>computed</code> aur <code>signal</code> ke beech ka gap bharta: computed ki tarah source change pe auto-reset hota hai, par plain signal ki tarah tum <code>.set()</code> bhi kar sakte ho. Perfect for "dependent selection" — jaise options list badle toh selected item reset ho, par user manually bhi select kar sake.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Ek common problem: state jo <em>usually</em> ek source se derive hoti hai par user override bhi kar sakta. <code>computed</code> read-only hai (override nahi). Plain <code>signal</code> auto-reset nahi karta (source badle toh stale selection reh jaati). Pehle log <code>effect</code>+<code>signal</code> se ye hack karte the (anti-pattern). <code>linkedSignal</code> ise cleanly solve karta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<div class="panel bad-p"><div class="ptitle">The gap</div>
+<ul style="margin-bottom:0">
+<li><code>computed</code> → auto-reset ✓ but read-only ✗ (user override nahi).</li>
+<li><code>signal</code> → writable ✓ but no auto-reset ✗ (stale on source change).</li>
+<li>Old hack: <code>effect(() =&gt; selected.set(default))</code> — messy, loop-prone.</li>
+</ul></div>
+<div class="panel good-p"><div class="ptitle">linkedSignal</div><p>Writable ✓ AND auto-reset on source change ✓. Dono ek primitive mein.</p></div>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Computed value + writable override</div><p>linkedSignal ek <em>source</em> signal (ya signals) track karta hai aur ek <em>computation</em> se apna value derive karta. Jab source badalta hai, computation dobara chalti aur signal ka value <strong>reset</strong> ho jaata (override discard). Par jab tak source same hai, tum <code>.set()</code>/<code>.update()</code> se value override kar sakte ho — woh override hold hota. Full form mein <code>computation</code> ko <em>previous</em> value bhi milti hai (source aur pichhla state) taaki smart reset logic likh sako (jaise "agar purana selection abhi bhi list mein hai toh use rakho").</p></div>
+
+<div class="dg-title">Diagram — linkedSignal behavior</div>
+<pre class="diagram">
+ options = signal(['Std','Express','Overnight'])
+ selected = linkedSignal(() =&gt; options()[0])   // reset to first
+
+ selected()            ─▶ 'Std'   (derived from source)
+ selected.set('Express') ─▶ 'Express'  (manual override holds)
+ options.set(['Drone','Teleport']) ─▶ RESET ─▶ 'Drone' (source changed)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ source unchanged ─▶ manual .set()/.update() ─▶ value holds (override)
+ source CHANGES   ─▶ computation re-runs ─▶ value RESETS (override discarded)
+ (full form: computation(source, previous) → smart reset)
+</pre>
+
+<h3 class="part">6. Architecture — two forms</h3>
+<table>
+<tr><td>Shorthand</td><td><code>linkedSignal(() =&gt; source()[0])</code> — reset to computed value on source change.</td></tr>
+<tr><td>Full form</td><td><code>linkedSignal({ source, computation: (src, prev) =&gt; ... })</code> — access previous value/source for smart reset.</td></tr>
+<tr><td>Writable</td><td>Has <code>set</code>/<code>update</code> (unlike computed).</td></tr>
+<tr><td>Status</td><td>Experimental v19 → stabilized ~v20. Import from <code>@angular/core</code>.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">dependent selection — keep valid selection</div>
+<pre><code>import { signal, linkedSignal } from '@angular/core';
+
+export class ProductPicker {
+  variants = signal&lt;Variant[]&gt;([...]);      // source (changes when product changes)
+
+  // full form: keep previous selection IF still valid, else reset to first
+  selected = linkedSignal&lt;Variant[], Variant&gt;({
+    source: this.variants,
+    computation: (variants, previous) =&gt; {
+      const stillThere = previous &amp;&amp; variants.find(v =&gt; v.id === previous.value.id);
+      return stillThere ?? variants[0];      // smart reset
+    },
+  });
+
+  choose(v: Variant) { this.selected.set(v); }   // user override (writable!)
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>const options = signal(['Std', 'Express', 'Overnight']);
+const selected = linkedSignal(() =&gt; options()[0]);   // default = first
+
+selected.set('Express');          // override → 'Express'
+options.set(['Drone', 'Teleport']); // source changed → reset → 'Drone'</code></pre>
+
+<h3 class="part">9. Advanced Example — vs computed vs effect</h3>
+<div class="code-label">typescript</div>
+<pre><code>// computed: read-only — user CANNOT override
+const c = computed(() =&gt; options()[0]);        // c.set() ❌
+
+// effect hack (old, avoid): messy + loop risk
+// effect(() =&gt; selected.set(options()[0]));
+
+// linkedSignal: writable + auto-reset — the right tool
+const selected = linkedSignal(() =&gt; options()[0]);   // selected.set() ✓</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Shorthand <code>linkedSignal(() =&gt; source()[0])</code> — source change pe first item pe reset.</li>
+<li>Full form <code>{ source, computation: (src, prev) =&gt; ... }</code> — <code>prev.value</code> se smart reset.</li>
+<li><code>selected.set(v)</code> — user override (writable — computed nahi kar sakta).</li>
+<li>Source badalte hi computation re-run → value reset (override gaya).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Jahan sirf derivation chahiye (no override) wahan linkedSignal — computed use karo (simpler, read-only intent clear).</li>
+<li>Effect+signal hack use karna jab linkedSignal exactly ye case solve karta.</li>
+<li>Full-form mein <code>previous</code> ka <code>.value</code> access bhoolna (<code>previous</code> ek wrapper object hai).</li>
+<li>Source ko non-signal rakhna — source ek signal (ya computed) hona chahiye track hone ke liye.</li>
+<li>Version assume karna — experimental v19, stable ~v20; older projects mein na ho.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>"Derived but user-overridable, resets on source change" → linkedSignal (textbook use).</li>
+<li>Pure derivation → computed; external side-effect → effect; ye alag domains.</li>
+<li>Smart reset (keep valid selection) → full form with <code>previous</code>.</li>
+<li>Dependent dropdowns/selection, form defaults-from-source — ideal fits.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>linkedSignal computed jaisa efficient — source change pe hi recompute, warna cached override. Effect-based reset hack ke muqable predictable + no extra CD cascades. Fine-grained: sirf jab source ya override badle tab consumers update.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Previous wrapper</td><td>Full form mein <code>previous</code> = <code>{ source, value }</code> — <code>previous.value</code> se pichhla state.</td></tr>
+<tr><td>Multiple sources</td><td>Computation mein multiple signals padho — koi bhi badle toh reset.</td></tr>
+<tr><td>resource() integration</td><td>linkedSignal ko <code>resource()</code> ke request param mein wire karke reactive fetch pipeline.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>linkedSignal</code> kya hai, computed se kaise alag?</summary><div class="ans"><p>Ek <strong>writable</strong> signal jo ek source se linked hai — source change pe auto-reset (computed jaisa) par <code>.set()</code> se override bhi ho sakta (plain signal jaisa). Computed read-only hai (override nahi); linkedSignal writable + auto-reset dono. "Dependent selection" ka ideal tool.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> linkedSignal kaunsa problem solve karta hai jo computed/signal nahi kar paate?</summary><div class="ans"><p>"State jo usually source se derive hoti hai par user override kar sakta, aur source badle toh reset ho." Computed auto-reset karta par read-only (override nahi). Plain signal writable par auto-reset nahi (stale selection). linkedSignal dono — writable + reset-on-source. Pehle effect+signal se hack karte the (loop-prone).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Product variants dropdown — product badle toh selection reset ho, par agar purana variant naye product mein bhi ho toh use rakho. Kaise?</summary><div class="ans"><p>Full-form linkedSignal: <code>{ source: variants, computation: (variants, previous) =&gt; variants.find(v =&gt; v.id === previous?.value.id) ?? variants[0] }</code>. Source (variants) badle toh computation chale: agar pichhla selection naye list mein exist karta hai toh use rakho, warna first pe reset. User <code>.set()</code> se manually bhi choose kar sake.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>linkedSignal</code> = writable signal + auto-reset on source change. Fills computed↔signal gap.</li>
+<li>Shorthand <code>linkedSignal(() =&gt; src()[0])</code>; full <code>{ source, computation:(src,prev)=&gt;... }</code> for smart reset.</li>
+<li>Use for dependent selection/defaults. Replaces effect+signal reset hack. Stable ~v20.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.7 · Shipping selector</div><p>Options signal + <code>linkedSignal</code> se selected banao (default first). User override karo, phir options badalkar prove karo reset hota hai. computed se try karke dekho kyun override fail hota.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-14.8 · Smart reset selection</div><p>Full-form linkedSignal se aisa selector banao jo source change pe purana selection <em>agar valid ho toh rakhe</em>, warna first pe reset kare (<code>previous</code> use karke). Dependent dropdown scenario simulate karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Signal Inputs</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>input() · input.required() · default value · alias · transform · model() two-way · output() · vs @Input decorator · reactive inputs</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Signal inputs parent-to-child data ko <strong>signals</strong> ke roop mein receive karte hain — <code>@Input()</code> decorator ka signal-based replacement. <code>name = input&lt;string&gt;()</code> ek read-only signal deta hai jo parent ke binding se update hota. Ab input reactive hai: use <code>computed</code>/<code>effect</code> mein directly use kar sakte ho.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Purana <code>@Input()</code> ek plain property tha — uspe react karne ke liye <code>ngOnChanges</code> (clunky) chahiye tha, aur computed/effect mein use nahi hota tha. Signal inputs input ko reactive banate: value change automatically downstream computeds/effects/template ko flow karti — <code>ngOnChanges</code> ki zaroorat khatam.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Inputs ko baaki signal reactivity ke saath integrate karna. <code>ngOnChanges</code> boilerplate hatana. Required inputs ko type-safe banana (<code>input.required</code> — undefined nahi). Transform/alias declaratively.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Read-only signal fed by binding</div><p><code>input()</code> ek <em>read-only</em> signal banata hai — child use likh nahi sakta (parent owns it). Jab parent binding ki value badalti hai, Angular signal ko update kar deta, aur uske consumers (computed/effect/template) react karte. <code>input.required()</code> koi default nahi leta aur type non-undefined hoti (compiler enforce karta ki parent bind kare). <code>model()</code> ek <em>writable</em> signal deta jo two-way binding (<code>[(value)]</code>) support karta — child bhi likh sakta aur parent ko propagate hota.</p></div>
+
+<div class="dg-title">Diagram — input vs model</div>
+<pre class="diagram">
+ PARENT [name]="user"  ─▶ child: name = input&lt;string&gt;()   (read-only signal)
+                                    child reads name(), cannot set
+
+ PARENT [(value)]="x"  ─▶ child: value = model&lt;string&gt;()  (writable, two-way)
+                                    child value.set(...) ─▶ propagates to parent
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ parent binding changes ─▶ input signal updates ─▶ computed/effect/template react
+ model: child value.set() ─▶ emits to parent ─▶ parent state updates (two-way)
+</pre>
+
+<h3 class="part">6. Architecture — the input family</h3>
+<table>
+<tr><td><code>input&lt;T&gt;()</code></td><td>Optional input, <code>T | undefined</code>. Read-only signal.</td></tr>
+<tr><td><code>input(default)</code></td><td>With default value → type <code>T</code> (never undefined).</td></tr>
+<tr><td><code>input.required&lt;T&gt;()</code></td><td>Required — parent MUST bind; type <code>T</code>.</td></tr>
+<tr><td><code>input(d, { alias, transform })</code></td><td>Alias (external name) + transform (e.g. <code>booleanAttribute</code>, <code>numberAttribute</code>).</td></tr>
+<tr><td><code>model&lt;T&gt;()</code></td><td>Writable, two-way (<code>[(x)]</code>). Replaces <code>@Input</code>+<code>@Output</code> pair.</td></tr>
+<tr><td><code>output&lt;T&gt;()</code></td><td>Signal-era event emitter (replaces <code>@Output EventEmitter</code>).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">user-card.component.ts</div>
+<pre><code>import { Component, input, output, computed } from '@angular/core';
+
+@Component({
+  selector: 'user-card',
+  template: `
+    &lt;h3&gt;{{ displayName() }}&lt;/h3&gt;
+    &lt;button (click)="remove.emit(user().id)"&gt;Remove&lt;/button&gt;
+  `,
+})
+export class UserCard {
+  user = input.required&lt;User&gt;();                 // required — parent must bind
+  showEmail = input(false, { transform: booleanAttribute }); // "true" attr → boolean
+  remove = output&lt;number&gt;();                     // signal-era output
+
+  // input is reactive → use in computed directly (no ngOnChanges!)
+  displayName = computed(() =&gt; this.user().name.toUpperCase());
+}
+// parent: &lt;user-card [user]="u" showEmail (remove)="onRemove($event)"&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>export class Greeting {
+  name = input('Guest');                 // default 'Guest'
+  greeting = computed(() =&gt; `Hello, ${this.name()}!`);
+}
+// parent: &lt;app-greeting [name]="'Karan'"&gt;  →  Hello, Karan!</code></pre>
+
+<h3 class="part">9. Advanced Example — model() two-way</h3>
+<div class="code-label">custom counter with two-way binding</div>
+<pre><code>@Component({
+  selector: 'app-counter',
+  template: `&lt;button (click)="dec()"&gt;-&lt;/button&gt; {{ value() }} &lt;button (click)="inc()"&gt;+&lt;/button&gt;`,
+})
+export class CounterInput {
+  value = model(0);                       // writable, two-way
+  inc() { this.value.update(v =&gt; v + 1); }  // child writes → parent updates
+  dec() { this.value.update(v =&gt; v - 1); }
+}
+// parent: &lt;app-counter [(value)]="count"&gt;  ← two-way, no @Output needed</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>input.required&lt;User&gt;()</code> — parent bind na kare toh compile error; type non-undefined.</li>
+<li><code>input(false, { transform: booleanAttribute })</code> — attribute presence → boolean.</li>
+<li><code>computed(() =&gt; this.user()...)</code> — input reactive, seedhe computed mein (no ngOnChanges).</li>
+<li><code>output&lt;number&gt;()</code> + <code>.emit()</code> — EventEmitter-free events.</li>
+<li><code>model(0)</code> — writable two-way; child <code>.set()</code>/<code>.update()</code> → parent sync.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Signal input pe <code>.set()</code> karne ki koshish — <code>input()</code> read-only hai (writable chahiye toh <code>model()</code>).</li>
+<li>Input react karne ke liye <code>ngOnChanges</code> use karna — ab computed/effect se; ngOnChanges legacy.</li>
+<li>Template mein input signal call bhoolna (<code>{{ name }}</code> vs <code>{{ name() }}</code>).</li>
+<li><code>input.required</code> ka value constructor mein padhna — abhi bind nahi hua ho sakta; field-level computed ya later use.</li>
+<li>Transform ke liye custom fn na use karke raw string attribute handle karna (<code>booleanAttribute</code>/<code>numberAttribute</code> built-in hain).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Naye components mein signal inputs (<code>input</code>/<code>input.required</code>) over <code>@Input()</code>.</li>
+<li>Input pe derived logic → <code>computed</code> (na ki <code>ngOnChanges</code>).</li>
+<li>Two-way needed → <code>model()</code>; events → <code>output()</code>.</li>
+<li><code>booleanAttribute</code>/<code>numberAttribute</code> transforms for attribute coercion.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Signal inputs fine-grained CD ka part — input change sirf dependent computeds/template ko update karta, poora component nahi. <code>ngOnChanges</code> (jo har CD pe check hota) ka overhead khatam. computed memoization input-derived values ko efficient rakhta. Overall zoneless-friendly.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Required not bound</td><td>Compile-time error (template type-check) — runtime surprise nahi.</td></tr>
+<tr><td>Transform errors</td><td>Transform fn har set pe chalta — pure + fast rakho.</td></tr>
+<tr><td>model + parent readonly</td><td>Two-way ke liye parent ka signal/property writable hona chahiye.</td></tr>
+<tr><td>Mixing decorator + signal</td><td>Ek hi component mein dono chal sakte (migration), par consistency behtar.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Signal input <code>@Input()</code> se kaise behtar?</summary><div class="ans"><p>Signal input reactive hai — value change automatically computed/effect/template ko flow karti, <code>ngOnChanges</code> ki zaroorat nahi. Type-safe required inputs (<code>input.required</code>). Read-only by default (parent owns). Transform/alias declaratively. Decorator input ek plain property tha jispe react karna clunky (ngOnChanges).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>input()</code> vs <code>model()</code>?</summary><div class="ans"><p><code>input()</code> read-only signal — parent se child ko data (one-way), child likh nahi sakta. <code>model()</code> writable signal with two-way binding (<code>[(value)]</code>) — child <code>.set()</code>/<code>.update()</code> kare toh parent ko propagate hota. <code>model()</code> purane <code>@Input</code>+<code>@Output</code> pair (banana ↔ bananaChange) ko ek mein replace karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Input change pe kuch derive karna hai — pehle kya karte the, ab kya?</summary><div class="ans"><p>Pehle: <code>ngOnChanges(changes)</code> mein manually detect + recompute (verbose, error-prone). Ab: input ek signal hai, toh seedhe <code>computed(() =&gt; transform(this.myInput()))</code> — input badle toh computed auto-recompute. <code>ngOnChanges</code> ki zaroorat khatam.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek custom form control chahiye jismein parent aur child dono value badal sakein (two-way). Signal API se kaise?</summary><div class="ans"><p><code>model()</code> use karo: <code>value = model&lt;string&gt;('')</code>. Child <code>this.value.set(x)</code> se update kare — automatically parent ko propagate hoga. Parent <code>[(value)]="parentSignal"</code> se bind kare. Ye <code>@Input value</code> + <code>@Output valueChange</code> pattern ko ek writable signal mein replace karta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>input&lt;T&gt;()</code> read-only reactive input (replaces <code>@Input</code>). <code>input.required&lt;T&gt;()</code> = must-bind, non-undefined.</li>
+<li>React via <code>computed</code>/<code>effect</code> (no <code>ngOnChanges</code>). <code>{ alias, transform }</code> (booleanAttribute/numberAttribute).</li>
+<li><code>model()</code> = writable two-way (<code>[(x)]</code>); <code>output()</code> = events (no EventEmitter).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.9 · Reactive user-card</div><p>Ek <code>user-card</code> banao with <code>input.required&lt;User&gt;()</code>, ek <code>booleanAttribute</code> input, ek <code>output</code>. <code>computed</code> se displayName derive karo (no ngOnChanges). Parent se bind karke verify.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-14.10 · Two-way counter (model)</div><p><code>model()</code> se ek two-way counter component banao. Parent <code>[(value)]</code> se bind kare; child aur parent dono se value change karke sync prove karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Signal Queries</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>viewChild · viewChildren · contentChild · contentChildren · required · read option · vs @ViewChild decorator · timing · reactive queries</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Signal queries child elements/components/directives ko <strong>signals</strong> ke roop mein grab karte hain — <code>@ViewChild</code>/<code>@ContentChild</code> decorators ka signal replacement. <code>chart = viewChild&lt;ChartComponent&gt;('chart')</code> ek signal deta jo template ke us element pe point karta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Kabhi component ko apne child element ka reference chahiye — DOM measure karna, child method call karna, focus set karna. Purane decorator queries ka result <code>ngAfterViewInit</code> ke baad milta tha (timing-sensitive) aur reactive nahi tha. Signal queries reactive + cleaner timing dete hain.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Child references ko signal reactivity mein laana — result ek signal hai jo computed/effect mein use ho sakta. Timing simplification (viewChild CD ke dauraan resolve). Required queries type-safe (guaranteed present).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Reactive reference signal</div><p>Query ek signal return karta jo Angular query result se populate hota. <code>viewChild</code>/<code>viewChildren</code> component ke apne template ke elements dhoondte; <code>contentChild</code>/<code>contentChildren</code> projected content (<code>&lt;ng-content&gt;</code>) ke. Result view init hone ke baad available hota — signal pehle <code>undefined</code> ho sakta phir populate. <code>viewChild.required()</code> guarantee karta (undefined nahi, warna error). Kyunki result signal hai, use <code>effect</code>/<code>computed</code> mein use karke reactively react kar sakte ho jab child available ho.</p></div>
+
+<div class="dg-title">Diagram — view vs content</div>
+<pre class="diagram">
+ viewChild/viewChildren   ─▶ elements in THIS component's own template
+ contentChild/contentChildren ─▶ projected content (&lt;ng-content&gt;) from parent
+
+ &lt;my-cmp&gt;                    my-cmp template:
+   &lt;p #projected&gt;...        ┌────────────────────┐
+ &lt;/my-cmp&gt;                  │ &lt;h1 #own&gt;...&lt;/h1&gt;   │ ← viewChild('own')
+   ▲ contentChild('projected')│ &lt;ng-content&gt;      │
+                             └────────────────────┘
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ template renders ─▶ query signal populates ─▶ read via signal() / effect
+ (viewChild resolves during CD; effect on it runs when child available)
+</pre>
+
+<h3 class="part">6. Architecture — query family</h3>
+<table>
+<tr><td><code>viewChild&lt;T&gt;('ref')</code></td><td>Single element/component in own template. <code>T | undefined</code>.</td></tr>
+<tr><td><code>viewChild.required&lt;T&gt;('ref')</code></td><td>Guaranteed present (else error). Type <code>T</code>.</td></tr>
+<tr><td><code>viewChildren&lt;T&gt;('ref')</code></td><td>All matching — signal of readonly array.</td></tr>
+<tr><td><code>contentChild</code> / <code>contentChildren</code></td><td>Projected (<code>ng-content</code>) equivalents.</td></tr>
+<tr><td><code>{ read: ElementRef }</code></td><td>What to read (component instance vs ElementRef vs directive).</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">focus an input via viewChild</div>
+<pre><code>import { Component, viewChild, ElementRef, effect } from '@angular/core';
+
+@Component({
+  selector: 'app-search',
+  template: `&lt;input #box placeholder="Search"&gt;`,
+})
+export class Search {
+  box = viewChild.required&lt;ElementRef&lt;HTMLInputElement&gt;&gt;('box');
+
+  constructor() {
+    // effect runs when the view child is available → focus it
+    effect(() =&gt; this.box().nativeElement.focus());
+  }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">typescript</div>
+<pre><code>@Component({ template: `&lt;app-chart #chart&gt;&lt;/app-chart&gt;` })
+export class Dashboard {
+  chart = viewChild&lt;ChartComponent&gt;('chart');   // signal&lt;ChartComponent | undefined&gt;
+  refresh() { this.chart()?.redraw(); }          // call child method
+}</code></pre>
+
+<h3 class="part">9. Advanced Example — viewChildren + computed</h3>
+<div class="code-label">typescript</div>
+<pre><code>@Component({
+  template: `@for (t of tabs(); track t.id) { &lt;app-tab #tab&gt;...&lt;/app-tab&gt; }`,
+})
+export class TabGroup {
+  tabPanels = viewChildren&lt;TabComponent&gt;('tab');       // signal of readonly array
+  tabCount  = computed(() =&gt; this.tabPanels().length);  // reactive derived count
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>viewChild.required(...)</code> — guaranteed reference; undefined nahi.</li>
+<li><code>{ read: ElementRef }</code> (implied via generic) — component vs DOM element choose.</li>
+<li><code>effect(() =&gt; this.box()...)</code> — child available hote hi effect chale (reactive timing).</li>
+<li><code>viewChildren</code> → signal of array; <code>computed</code> se count/derived.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Query result ko constructor mein padhna — abhi populate nahi hua; <code>effect</code>/after-view use karo.</li>
+<li><code>viewChild</code> (own template) vs <code>contentChild</code> (projected) confuse — projected content viewChild se nahi milta.</li>
+<li>Optional query ka result bina null-check use karna (<code>chart().redraw()</code> jab undefined ho) — <code>?.</code> ya required.</li>
+<li>Query signal ko call na karna (<code>this.box</code> vs <code>this.box()</code>) — signal hai.</li>
+<li><code>@if</code>/<code>@for</code> ke andar element — conditionally present; signal undefined/empty ho sakta.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Naye code mein signal queries over <code>@ViewChild</code> decorators.</li>
+<li>Guaranteed element → <code>viewChild.required</code> (type-safe, no null-check).</li>
+<li>Query pe react karna ho → <code>effect</code>/<code>computed</code> (reactive, no lifecycle guessing).</li>
+<li>DOM chahiye toh <code>{ read: ElementRef }</code>; component instance chahiye toh default.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Signal queries reactive — child available/change hone pe hi dependent effect/computed chalte, na ki har CD pe manual check. Timing simplification lifecycle bugs (result undefined in wrong hook) kam karta. Bade lists (viewChildren) pe query signal efficiently array update karta.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Conditional element</td><td><code>@if</code> ke andar → query undefined jab hidden; reactive signal update hota jab dikhe.</td></tr>
+<tr><td>read option</td><td>Same element ka component instance / ElementRef / directive — <code>{ read }</code> se choose.</td></tr>
+<tr><td>Dynamic lists</td><td><code>viewChildren</code> signal <code>@for</code> items add/remove pe update.</td></tr>
+<tr><td>Descendants</td><td>contentChildren <code>{ descendants: true }</code> for nested projected content.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> <code>viewChild</code> vs <code>contentChild</code>?</summary><div class="ans"><p><code>viewChild</code> component ke <em>apne template</em> ke elements grab karta. <code>contentChild</code> parent se projected content (<code>&lt;ng-content&gt;</code> ke through aaya) grab karta. Own view → viewChild; projected → contentChild. Dono ke plural (<code>viewChildren</code>/<code>contentChildren</code>) multiple ke liye.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Signal queries decorator queries se kaise behtar?</summary><div class="ans"><p>Result ek signal hai — reactive, computed/effect mein directly use ho sakta, aur child available/change hone pe auto-react. Timing simpler (viewChild CD ke dauraan resolve, lifecycle-hook guessing kam). <code>required</code> variant type-safe (guaranteed present). Decorator version static property + <code>ngAfterViewInit</code> timing pe depend karta tha.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Component load hote hi ek input pe focus karna hai. Signal query se kaise?</summary><div class="ans"><p><code>box = viewChild.required&lt;ElementRef&lt;HTMLInputElement&gt;&gt;('box')</code>, phir constructor mein <code>effect(() =&gt; this.box().nativeElement.focus())</code>. Effect tab chalega jab query signal populate hoga (child available), toh timing-safe focus — <code>ngAfterViewInit</code> guessing ki zaroorat nahi. required se null-check bhi nahi.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>viewChild</code>/<code>viewChildren</code> = own template; <code>contentChild</code>/<code>contentChildren</code> = projected (<code>ng-content</code>).</li>
+<li>Result is a SIGNAL — use in <code>effect</code>/<code>computed</code>; <code>.required()</code> guarantees present.</li>
+<li><code>{ read }</code> for ElementRef vs instance. React on availability via effect (no lifecycle guessing).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.11 · Auto-focus input</div><p><code>viewChild.required(ElementRef)</code> + <code>effect</code> se load pe input focus karo. Ek <code>@if</code> ke andar rakhkar dekho signal kaise undefined→populated transition karta.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-14.12 · Tab group with viewChildren</div><p><code>@for</code> se tabs render karo, <code>viewChildren</code> se sab grab karo, <code>computed</code> se <code>tabCount</code> derive karo. Tab add/remove pe count reactively update ho.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Signal Store (NgRx)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>signalStore · withState · withComputed · withMethods · withHooks · patchState · signalStoreFeature · rxMethod · signalState · providedIn</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>NgRx <strong>SignalStore</strong> (<code>@ngrx/signals</code>) signals ke upar ek lightweight, extensible state-management layer hai. <code>signalStore(...)</code> ek injectable service banata jismein state (signals), computed (derived signals), aur methods (actions) ek jagah — builder-style <code>with*</code> features se. Redux-style boilerplate ke bina structured state.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Plain signals chhote/local state ke liye great, par bade shared state (multiple components, business logic, async) ke liye structure chahiye — warna scattered signals + services ka mess. Classic NgRx (actions/reducers/effects/selectors) powerful par heavy boilerplate. SignalStore beech ka sweet spot: structured, extensible, kam boilerplate, signals-native.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Shared/feature-level state ka organization — state + derived + actions co-located, reusable features, less boilerplate than Redux-style. Signal-native (sab kuch signals, template mein direct read, fine-grained CD).</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Builder pattern — order matters</div><p><code>signalStore</code> ek sequence of <em>features</em> (<code>withState</code>, <code>withComputed</code>, <code>withMethods</code>, <code>withHooks</code>, <code>withProps</code>) leta hai, RxJS <code>pipe</code> ki tarah — har feature store ko incrementally build karta aur pichle sabko access kar sakta (isliye <strong>order matters</strong>). <code>withState</code> state ko signals mein badalta; <code>withComputed</code> derived signals add karta; <code>withMethods</code> actions (jo <code>patchState</code> se state update karte). State updates <code>patchState(store, partial | updaterFn)</code> se — <strong>immutable</strong>. Same-key member override pe dev-mode warning.</p></div>
+
+<div class="dg-title">Diagram — store composition</div>
+<pre class="diagram">
+ signalStore(
+   { providedIn: 'root' },
+   withState({ count: 0 }),          ─▶ count: Signal&lt;number&gt;
+   withComputed(s =&gt; ({              ─▶ double: Signal (derived)
+     double: computed(() =&gt; s.count()*2) })),
+   withMethods(s =&gt; ({               ─▶ actions
+     inc: () =&gt; patchState(s, { count: s.count()+1 }) })),
+   withHooks({ onInit, onDestroy }),  ─▶ lifecycle
+ )   // ↑ each feature sees everything defined ABOVE it
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ inject(Store) ─▶ read store.count() / store.double() (signals)
+        ─▶ call store.inc() ─▶ patchState (immutable) ─▶ signals update
+        ─▶ template + computeds react (fine-grained)
+</pre>
+
+<h3 class="part">6. Architecture — the features</h3>
+<table>
+<tr><td><code>signalStore(...)</code></td><td>Creates injectable store. <code>{ providedIn:'root' }</code> = singleton.</td></tr>
+<tr><td><code>withState(initial)</code></td><td>State slices → signals.</td></tr>
+<tr><td><code>withComputed(s =&gt; ({...}))</code></td><td>Derived signals (private with <code>_</code> prefix).</td></tr>
+<tr><td><code>withMethods(s =&gt; ({...}))</code></td><td>Actions; <code>inject()</code> services; <code>patchState</code>.</td></tr>
+<tr><td><code>withHooks({onInit,onDestroy})</code></td><td>Lifecycle (e.g. initial fetch).</td></tr>
+<tr><td><code>patchState(store, patch)</code></td><td>Immutable update (object or updater fn).</td></tr>
+<tr><td><code>signalStoreFeature</code> / <code>rxMethod</code> / <code>withEntities</code></td><td>Reusable custom features / RxJS side-effects / entity CRUD.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">books.store.ts</div>
+<pre><code>import { computed, inject } from '@angular/core';
+import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
+
+type BooksState = { books: Book[]; loading: boolean; query: string };
+
+export const BooksStore = signalStore(
+  { providedIn: 'root' },
+  withState&lt;BooksState&gt;({ books: [], loading: false, query: '' }),
+
+  withComputed(({ books, query }) =&gt; ({
+    filtered: computed(() =&gt; books().filter(b =&gt; b.title.includes(query()))),
+    count: computed(() =&gt; books().length),
+  })),
+
+  withMethods((store, api = inject(BooksApi)) =&gt; ({
+    setQuery(q: string) { patchState(store, { query: q }); },
+    async load() {
+      patchState(store, { loading: true });
+      const books = await api.getAll();
+      patchState(store, { books, loading: false });
+    },
+  })),
+
+  withHooks({ onInit(store) { store.load(); } }),
+);
+// component: private store = inject(BooksStore);  template: {{ store.filtered() }}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">counter store</div>
+<pre><code>export const CounterStore = signalStore(
+  { providedIn: 'root' },
+  withState({ count: 0 }),
+  withMethods((store) =&gt; ({
+    inc() { patchState(store, { count: store.count() + 1 }); },
+    reset() { patchState(store, { count: 0 }); },
+  })),
+);</code></pre>
+
+<h3 class="part">9. Advanced Example — reusable custom feature</h3>
+<div class="code-label">withRequestStatus (composable feature)</div>
+<pre><code>import { signalStoreFeature, withState, withComputed } from '@ngrx/signals';
+
+export function withRequestStatus() {
+  return signalStoreFeature(
+    withState&lt;{ status: 'idle' | 'pending' | 'done' }&gt;({ status: 'idle' }),
+    withComputed(({ status }) =&gt; ({
+      isPending: computed(() =&gt; status() === 'pending'),
+    })),
+  );
+}
+// plug into any store: signalStore(withRequestStatus(), withState(...), ...)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>{ providedIn: 'root' }</code> — singleton injectable store.</li>
+<li><code>withState&lt;T&gt;(initial)</code> — har key ek signal ban jaati.</li>
+<li><code>withComputed(({books,query}) =&gt; ...)</code> — pichhle state signals ko destructure, derived add.</li>
+<li><code>withMethods((store, api=inject(...)) =&gt; ...)</code> — actions; service inject; <code>patchState</code>.</li>
+<li><code>patchState(store, { ... })</code> — immutable partial update.</li>
+<li><code>withHooks.onInit</code> — store init pe initial load.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>State ko directly mutate karna — hamesha <code>patchState</code> (immutable).</li>
+<li>Feature order galat — <code>withComputed</code> jo baad-wale state pe depend kare toh <code>withState</code> pehle hona chahiye.</li>
+<li>Same key ko do features mein define karke unintended override (dev warning aati hai — dhyaan do).</li>
+<li>Ek monolithic giant store — feature-based split karo (<code>signalStoreFeature</code>).</li>
+<li>Async ke liye <code>patchState</code> pehle loading, phir await, phir result — loading flag bhoolna.</li>
+<li>RxJS-heavy side-effects ke liye <code>rxMethod</code> na use karke manual subscribe.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Shared/feature state → SignalStore; chhota local state → plain signals.</li>
+<li>Derived data → <code>withComputed</code> (memoized selectors).</li>
+<li>Reusable logic → <code>signalStoreFeature</code> (withRequestStatus, withLoading).</li>
+<li><code>patchState</code> for all updates (immutable). Split stores by feature.</li>
+<li>RxJS side-effects → <code>rxMethod</code>; entity CRUD → <code>withEntities</code>.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>SignalStore signals pe khada — fine-grained CD (sirf affected consumers update). <code>withComputed</code> memoized selectors redundant calc rokte. Feature-split stores lazy-loadable + focused. Classic NgRx ke muqable kam boilerplate + no action/reducer indirection = simpler + often faster dev. <code>patchState</code> immutable so change detection precise.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Private members</td><td><code>_</code> prefix se private computed/state — bahar expose nahi.</td></tr>
+<tr><td>Store scope</td><td><code>{ providedIn:'root' }</code> global; component-provided → per-instance (local store).</td></tr>
+<tr><td>Deep state</td><td>Nested objects — <code>patchState</code> with updater fn + spread; deep updates verbose.</td></tr>
+<tr><td>signalState</td><td>Lighter alternative for simple cases (no methods/computed builder).</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> NgRx SignalStore classic NgRx Store se kaise alag?</summary><div class="ans"><p>SignalStore signals-native + lightweight: state/computed/methods ek builder mein co-located, kam boilerplate, no actions/reducers/effects indirection. Classic Store Redux-style (actions → reducers → selectors → effects) — zyada boilerplate, RxJS-heavy. SignalStore modern default for most apps; classic for very large/strict-unidirectional needs.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>withState</code>, <code>withComputed</code>, <code>withMethods</code> ka order kyun matter karta?</summary><div class="ans"><p>Features pipe ki tarah sequentially compose hote — har feature apne se <em>pehle</em> define kiye members ko access kar sakta. <code>withComputed</code> jo state pe depend karta hai, uske pehle <code>withState</code> chahiye; <code>withMethods</code> jo computed use kare, uske pehle <code>withComputed</code>. Galat order → member available nahi.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> State kaise update karte ho aur kyun <code>patchState</code>?</summary><div class="ans"><p><code>patchState(store, { key: value })</code> ya <code>patchState(store, s =&gt; ({ ...s, ... }))</code>. Ye immutable update ensure karta — naya state object, purana untouched — jisse signals sahi se change detect karein aur time-travel/predictability bani rahe. Direct mutation signals ko confuse karta (referential equality).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Multiple stores mein same "loading/error status" logic repeat ho raha. DRY kaise?</summary><div class="ans"><p><code>signalStoreFeature</code> se ek reusable custom feature banao — <code>withRequestStatus()</code> jo <code>withState({status})</code> + <code>withComputed({isPending, isFulfilled})</code> + status updaters bundle kare. Phir kisi bhi store mein <code>signalStore(withRequestStatus(), ...)</code> plug karo. Composition se DRY.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>signalStore(withState, withComputed, withMethods, withHooks)</code> — builder, ORDER matters, signals-native.</li>
+<li>Updates via <code>patchState(store, patch)</code> (immutable). Derived → <code>withComputed</code> (memoized selectors).</li>
+<li>Reusable → <code>signalStoreFeature</code>. Less boilerplate than classic NgRx. Shared state; plain signals for local.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.13 · Books store</div><p>Ek <code>signalStore</code> banao with <code>withState</code> (books/loading/query), <code>withComputed</code> (filtered/count), <code>withMethods</code> (setQuery/load via injected API), <code>withHooks</code> (load onInit). Component se consume karo (<code>store.filtered()</code>).</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-14.14 · Reusable feature</div><p><code>signalStoreFeature</code> se <code>withRequestStatus()</code> (idle/pending/done + isPending computed + updaters) banao. Do alag stores mein plug karke DRY prove karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Signals vs RxJS</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>sync vs async · when to use which · toSignal · toObservable · interop patterns · pull vs push · not a replacement · hybrid apps</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Signals aur RxJS dono reactive hain, par alag problems ke liye. <strong>Signals = synchronous state</strong> (current value, derived state, UI). <strong>RxJS = asynchronous streams</strong> (events over time, HTTP, WebSocket, complex async coordination). Ye section decide karna sikhata hai <em>kab kaunsa</em>, aur dono ko <code>toSignal</code>/<code>toObservable</code> se bridge karna.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Signals aane ke baad confusion: "kya RxJS dead hai? sab signals se karun?" Nahi. Dono complementary hain. Galat tool = pain (signals se async coordination hard, RxJS se simple sync state overkill). Sahi choice = clean code. Interview mein ye ek favourite discussion hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>"Kaunsa reactive tool kahan" ka decision. Aur hybrid reality: aksar dono chahiye — HTTP (RxJS) ka result signal state mein (<code>toSignal</code>), ya signal change pe debounced stream (<code>toObservable</code>).</p>
+
+<h3 class="part">4. Internal Working — pull vs push</h3>
+<div class="panel why"><div class="ptitle">Core mental model</div><p>• <strong>Signals = "pull" + synchronous.</strong> Value hamesha <em>current</em> — jab chaho <code>sig()</code> se pull karo. Koi "time" dimension nahi; bas latest state. Glitch-free, memoized.
+<br>• <strong>RxJS = "push" + asynchronous.</strong> Stream <em>over time</em> values push karta — 0..many, kab aayenge pata nahi. Rich operators (debounce, retry, switchMap, combineLatest) time/async coordinate karte.
+<br>Signals lack: time-based operators (debounce, throttle), multi-value-over-time async, cancellation semantics. RxJS lacks: synchronous "current value" simplicity, template-friendliness (no <code>| async</code>). Isliye complementary.</p></div>
+
+<div class="dg-title">Diagram — decision</div>
+<pre class="diagram">
+ Synchronous "what is the value NOW?" ─────▶ SIGNAL
+   (UI state, derived values, form state, toggles, counters)
+
+ Asynchronous "values OVER TIME" ─────────▶ RxJS
+   (HTTP, WebSocket, debounced search, retry, event streams)
+
+ Bridge:  observable$ ──toSignal()──▶ signal     (consume stream as state)
+          signal ──toObservable()──▶ observable$  (react with operators)
+</pre>
+
+<h3 class="part">5. Execution Flow — interop</h3>
+<pre class="diagram">
+ HTTP (RxJS) ─▶ toSignal(http$) ─▶ signal in template {{ data() }}
+ search signal ─▶ toObservable ─▶ debounceTime+switchMap(http) ─▶ toSignal ─▶ results()
+</pre>
+
+<h3 class="part">6. Architecture — when to use which</h3>
+<table>
+<tr><td><b>Use SIGNALS for</b></td><td>UI/local state, derived state (computed), form values, toggles, counters, template binding, shared feature state (SignalStore).</td></tr>
+<tr><td><b>Use RxJS for</b></td><td>HTTP, WebSocket/SSE, debounced/throttled search, retry/cancel, event streams, complex multi-stream async (combineLatest/forkJoin), typeahead.</td></tr>
+<tr><td><code>toSignal(obs$)</code></td><td>Observable → signal (auto subscribe/unsubscribe). Consume async as state.</td></tr>
+<tr><td><code>toObservable(sig)</code></td><td>Signal → observable. Apply RxJS operators to signal changes.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — interop both ways</h3>
+<div class="code-label">RxJS search → signal state</div>
+<pre><code>import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+
+query = signal('');                         // signal (UI state)
+
+results = toSignal(                          // ← back to signal for template
+  toObservable(this.query).pipe(             // ← signal to stream
+    debounceTime(300),                       // RxJS: time-based
+    distinctUntilChanged(),
+    switchMap(q =&gt; this.api.search(q)),       // RxJS: cancellation
+  ),
+  { initialValue: [] as Result[] }
+);
+// template: {{ results() }} — no | async, no manual subscribe</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<div class="code-label">HTTP as signal</div>
+<pre><code>// consume an HTTP observable as a signal
+users = toSignal(this.http.get&lt;User[]&gt;('/api/users'), { initialValue: [] });
+// template: @for (u of users(); track u.id) { ... }  — no | async</code></pre>
+
+<h3 class="part">9. Advanced Example — decision cheat</h3>
+<div class="code-label">right tool per case</div>
+<pre><code>// ✅ SIGNAL — synchronous UI state
+sidebarOpen = signal(false);
+fullName = computed(() =&gt; `${first()} ${last()}`);
+
+// ✅ RxJS — async coordination (then bridge to signal)
+livePrice = toSignal(this.ws.priceStream$.pipe(throttleTime(500)), { initialValue: 0 });
+
+// ❌ don't force async coordination into signals (no debounce/switchMap)
+// ❌ don't use RxJS BehaviorSubject for simple local toggles (overkill)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>toObservable(signal)</code> — signal changes ko stream banata (RxJS operators lagane ko).</li>
+<li><code>debounceTime/switchMap</code> — RxJS ki taakat (signals mein nahi).</li>
+<li><code>toSignal(obs$, { initialValue })</code> — stream ko wapas signal (template-friendly, auto-cleanup).</li>
+<li>Result: synchronous <code>results()</code> — no <code>| async</code>, no leak.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>"Sab kuch signals" — async coordination (debounce/retry/switchMap) signals mein force karna painful.</li>
+<li>Simple local toggle ke liye BehaviorSubject + <code>| async</code> — overkill; signal use karo.</li>
+<li><code>toSignal</code> bina <code>initialValue</code> jab stream sync value na de — undefined issues.</li>
+<li>Signal ko RxJS ki tarah subscribe karne ki koshish (signal sync — seedhe call).</li>
+<li>Computed mein async ghusaana — RxJS + <code>toSignal</code> ya <code>resource()</code> use karo.</li>
+<li>Interop overuse — har jagah bridge; jahan ek hi tool kaafi wahan simple rakho.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Synchronous state/derived/UI → signals. Async streams/coordination → RxJS.</li>
+<li>Async result ko UI mein → <code>toSignal</code> (template-friendly, auto-cleanup).</li>
+<li>Signal pe time-based/async logic → <code>toObservable</code> + operators → back to <code>toSignal</code>.</li>
+<li>Dono ko complementary samjho — "vs" nahi, "and". Right tool per job.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Signals sync state ke liye lighter (no subscription machinery, fine-grained CD, template mein no <code>| async</code>). RxJS async ke liye efficient (cancellation via switchMap, debounce se fewer calls). Galat tool perf/complexity cost deta. <code>toSignal</code> auto subscribe/unsubscribe leak-free. Hybrid apps mein sahi split = clean + fast.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>toSignal timing</td><td>Async stream ka pehla value aane tak <code>initialValue</code> (ya undefined) — handle karo.</td></tr>
+<tr><td>toObservable emit</td><td>Signal ke changes emit hote (glitch-free batching ke baad).</td></tr>
+<tr><td>resource()/httpResource</td><td>Newer signal-native async — kuch RxJS-for-HTTP cases replace karta.</td></tr>
+<tr><td>Injection context</td><td><code>toSignal</code>/<code>toObservable</code> injection context (ya passed injector) chahiye.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Signals ne RxJS ko replace kar diya?</summary><div class="ans"><p>Nahi — complementary hain. Signals synchronous state (current value, derived, UI) ke liye; RxJS asynchronous streams (HTTP, events over time, debounce/retry/switchMap coordination) ke liye. Signals mein time-based operators aur multi-value-over-time nahi. Dono saath use hote (interop se bridge).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Signals kab, RxJS kab?</summary><div class="ans"><p><strong>Signals</strong>: UI/local state, computed derived state, form values, toggles, template binding, shared feature state (SignalStore). <strong>RxJS</strong>: HTTP, WebSocket, debounced search, retry/cancellation, event streams, multi-stream coordination (combineLatest/forkJoin), typeahead. Sync "value now" → signal; async "over time" → RxJS.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>toSignal</code> aur <code>toObservable</code> kya karte hain?</summary><div class="ans"><p><code>toSignal(obs$)</code> — Observable ko signal mein badalta (auto subscribe + unsubscribe, template-friendly, no <code>| async</code>). <code>toObservable(sig)</code> — signal ko observable banata taaki RxJS operators (debounce/switchMap) laga sako. Interop bridge — aksar signal→toObservable→operators→toSignal pattern.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Search box (signal) chahiye jo debounced HTTP kare aur result template mein dikhe bina <code>| async</code>. Kaise?</summary><div class="ans"><p>Signal → RxJS → signal: <code>query = signal('')</code>; phir <code>results = toSignal(toObservable(query).pipe(debounceTime(300), distinctUntilChanged(), switchMap(q =&gt; api.search(q))), { initialValue: [] })</code>. RxJS debounce/cancellation deta (signals mein nahi), <code>toSignal</code> wapas template-friendly signal deta — no <code>| async</code>, no leak.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Signals = SYNC state (pull, current value, derived, UI). RxJS = ASYNC streams (push, over time, HTTP/events).</li>
+<li>Complementary, not "vs". Signals lack time-operators (debounce/switchMap); RxJS lacks sync simplicity.</li>
+<li>Bridge: <code>toSignal(obs$)</code> (stream→state, no <code>| async</code>), <code>toObservable(sig)</code> (state→operators).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-14.15 · HTTP as signal</div><p><code>toSignal</code> se ek HTTP list ko signal banao aur template mein bina <code>| async</code> render karo. <code>initialValue</code> handle karo (loading state).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-14.16 · Signal search bridge</div><p>Signal <code>query</code> → <code>toObservable</code> → <code>debounceTime</code>+<code>distinctUntilChanged</code>+<code>switchMap(http)</code> → <code>toSignal</code> results. Prove karo debounce+cancel kaam karta aur template mein <code>| async</code> nahi chahiye.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-14.17 · Right-tool audit</div><p>5 mini-features do (toggle, derived total, HTTP list, live WS price, typeahead). Har ek ke liye signal ya RxJS (ya hybrid) choose karke justify karo. Galat-tool version bhi likhkar pain dikhao.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 14 complete.</b><br>
+  signal → computed → effect → linkedSignal → inputs → queries → SignalStore → Signals vs RxJS.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. Angular v17→v20+ (effect stable v20, linkedSignal ~v20, allowSignalWrites removed v19). Signals ab Angular ka reactive core + zoneless foundation. Agla chapter: <b>Change Detection &amp; Zoneless</b> ya <b>Angular Resource API (resource / httpResource)</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch14_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

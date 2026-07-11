@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 17 — Authentication &amp; Security | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 8 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 17 — <span>Auth</span> &amp; Security</h1>
+  <p class="subtitle">"User kaun hai?" (authentication) aur "isse kya karne ki permission hai?" (authorization) — har real app ki reedh ki haddi. Is chapter mein <em>WHY-first</em>: pehle token ki anatomy (<strong>JWT</strong>), phir woh framework jo tokens issue karta (<strong>OAuth 2.1 / OIDC</strong>), phir sessions ko zinda rakhne wala <strong>refresh token</strong>, phir Angular-side plumbing (<strong>interceptors</strong> jo token attach karte, <strong>guards</strong> jo routes protect karte), phir <strong>RBAC</strong> (roles/permissions), ek production-grade <strong>token-refresh flow</strong> (concurrent 401 handling), aur aakhir mein <strong>security best practices</strong> (XSS, CSRF, token storage). Ye MAANG/product interviews ka high-signal, real-world topic hai.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Auth: <b>JWT · OAuth 2.1 · OIDC</b> · Angular <b>v17→v20+</b></span>
+    <span class="chip">Sections: <b>8</b> · Parts: <b>136</b></span>
+    <span class="chip">Progress: <b>localStorage-saved</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">JWT (JSON Web Tokens)</a><div class="sub">structure · header.payload.signature · claims · signing · HS256 vs RS256 · stateless · not encrypted</div></li>
+    <li><a href="#s2">OAuth 2.1 &amp; OpenID Connect</a><div class="sub">framework · Authorization Code + PKCE · roles · access vs id token · implicit is dead</div></li>
+    <li><a href="#s3">Refresh Tokens</a><div class="sub">access vs refresh · lifetimes · rotation · reuse detection · secure storage</div></li>
+    <li><a href="#s4">HTTP Interceptors</a><div class="sub">HttpInterceptorFn · attach Bearer token · withInterceptors · order · 401 handling</div></li>
+    <li><a href="#s5">Route Guards</a><div class="sub">CanActivateFn · CanMatchFn · inject() · redirect to login · returnUrl · lazy protection</div></li>
+    <li><a href="#s6">RBAC (Role-Based Access Control)</a><div class="sub">roles · permissions · role guards · UI-level directives · least privilege</div></li>
+    <li><a href="#s7">Token Refresh Flow</a><div class="sub">interceptor catches 401 · refresh · retry · concurrent-request queue · the mutex</div></li>
+    <li><a href="#s8">Security Best Practices</a><div class="sub">XSS · sanitization · CSRF/XSRF · token storage · BFF · CSP · HTTPS</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>JWT (JSON Web Tokens)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>structure (header.payload.signature) · base64url · claims (iss/sub/aud/exp/iat) · signing · HS256 vs RS256 · stateless auth · NOT encrypted · verification</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>JWT (JSON Web Token) ek compact, self-contained token hai jo do parties ke beech <strong>claims</strong> (statements about a user) securely transmit karta. Ye teen base64url-encoded parts ka dot-separated string hai: <code>header.payload.signature</code>. Login ke baad server ek JWT deta; client har request mein bhejta; server signature verify karke bharosa karta.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>HTTP stateless hai — har request independent. Server ko har request pe "ye user kaun hai" pata hona chahiye. Purana tareeka: server-side session (server memory/DB mein session store, cookie mein session-id). JWT stateless alternative deta: user ki identity + claims token ke andar, cryptographically signed — server ko kuch store nahi karna, sirf signature verify karo.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Stateful server sessions ki scaling problem. Sessions server memory/DB mein rehti — multiple servers pe sticky sessions ya shared store chahiye. JWT self-contained (identity token mein hi) + signed hai, toh koi bhi server bina shared session store ke verify kar sakta — horizontal scaling + microservices friendly.</p>
+
+<h3 class="part">4. Internal Working — the 3 parts</h3>
+<div class="panel why"><div class="ptitle">header . payload . signature</div><p><strong>Header</strong> (base64url JSON): algorithm + type, jaise <code>{ "alg": "HS256", "typ": "JWT" }</code>. <strong>Payload</strong> (base64url JSON): the <em>claims</em> — user data + metadata, jaise <code>{ "sub": "123", "email": "a@b.com", "roles": ["admin"], "exp": 1735689600 }</code>. <strong>Signature</strong>: header+payload ko secret/private-key se sign karke banaya — <code>HMACSHA256(base64url(header) + "." + base64url(payload), secret)</code> (HS256 ke liye). Server jab token receive karta, woh header+payload se signature <em>dobara compute</em> karke received signature se match karta — match hua toh token untampered + trustworthy. <strong>Critical:</strong> payload sirf base64url-encoded hai, <em>encrypted NAHI</em> — koi bhi decode karke padh sakta. Signature tampering rokti (integrity), confidentiality nahi deti.</p></div>
+
+<div class="dg-title">Diagram — JWT anatomy</div>
+<pre class="diagram">
+ eyJhbGciOiJIUzI1NiJ9  .  eyJzdWIiOiIxMjMiLCJyb2xlcyI6WyJhZG1pbiJdfQ  .  SflKx...
+ └──── HEADER ────┘      └──────────── PAYLOAD (claims) ────────────┘   └ SIGNATURE ┘
+ { alg:HS256, typ:JWT }   { sub:"123", roles:["admin"], exp:... }        HMAC(h+"."+p, secret)
+
+ verify: recompute signature from header+payload+secret === received signature ?
+   match → trust the claims ;  mismatch → reject (tampered)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ login(user, pass) ─▶ server validates ─▶ signs JWT ─▶ returns to client
+ client stores token ─▶ each request: Authorization: Bearer &lt;token&gt;
+ server: verify signature + exp ─▶ valid → extract claims → authorize
+                                  invalid/expired → 401
+</pre>
+
+<h3 class="part">6. Architecture — claims &amp; algorithms</h3>
+<table>
+<tr><td>Registered claims</td><td><code>iss</code> (issuer), <code>sub</code> (subject/user id), <code>aud</code> (audience), <code>exp</code> (expiry), <code>iat</code> (issued-at), <code>nbf</code> (not-before), <code>jti</code> (id).</td></tr>
+<tr><td>Custom claims</td><td>App-specific: <code>roles</code>, <code>email</code>, <code>tenantId</code>, etc.</td></tr>
+<tr><td>HS256 (symmetric)</td><td>One shared secret signs &amp; verifies. Simple; secret must stay server-side.</td></tr>
+<tr><td>RS256 (asymmetric)</td><td>Private key signs, public key verifies. Better for distributed systems / microservices.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — reading a JWT in Angular</h3>
+<div class="code-label">decoding claims client-side (read-only, never trust for security)</div>
+<pre><code>// decode payload to read claims (e.g. show username, check exp for UX)
+function decodeJwtPayload(token: string): any {
+  const payload = token.split('.')[1];              // header.PAYLOAD.signature
+  const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/')); // base64url → base64
+  return JSON.parse(json);
+}
+
+const claims = decodeJwtPayload(accessToken);
+const isExpired = claims.exp * 1000 &lt; Date.now();    // exp is in seconds
+// NOTE: client-side decode is for UX only. The SERVER must verify the
+// signature — client can't be trusted to enforce auth.</code></pre>
+
+<h3 class="part">8. Beginner Example — the payload is readable</h3>
+<div class="code-label">why you must NOT put secrets in a JWT</div>
+<pre><code>// anyone can paste a JWT into jwt.io (or atob the middle part) and read:
+// { "sub": "123", "email": "user@app.com", "roles": ["admin"], "exp": 1735689600 }
+// → NEVER put passwords, card numbers, or secrets in the payload.
+// signing prevents TAMPERING, not READING. It's signed, not encrypted.</code></pre>
+
+<h3 class="part">9. Advanced Example — HS256 vs RS256 choice</h3>
+<div class="code-label">who can verify?</div>
+<pre><code>// HS256: same secret signs AND verifies.
+//   → every service that verifies needs the SECRET (which can also SIGN).
+//   → fine for a monolith; risky to share the signing secret widely.
+
+// RS256: auth server holds PRIVATE key (signs). Others get PUBLIC key (verify only).
+//   → microservices verify without the ability to mint tokens.
+//   → public keys often published at a JWKS endpoint (/.well-known/jwks.json).
+// Rule of thumb: distributed/multi-service → RS256.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>JWT = 3 dot-separated base64url parts: header, payload, signature.</li>
+<li>Payload holds claims (user id, roles, <code>exp</code>) — readable, not secret.</li>
+<li>Signature = crypto over header+payload with secret/private-key.</li>
+<li>Server verifies by recomputing signature + checking <code>exp</code>.</li>
+<li>Client can decode for UX, but only the server's verification is authoritative.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>JWT payload ko "secret" samajhna — ye readable hai (base64url, not encrypted). Sensitive data mat daalo.</li>
+<li>Client-side decode pe auth-decisions lena — server MUST verify signature; client bypass ho sakta.</li>
+<li><code>alg: none</code> accept karna (server-side) — unsigned token accept = massive vuln.</li>
+<li>Long-lived JWTs (no short <code>exp</code>) — stateless tokens easily revoke nahi hote; short expiry + refresh use karo.</li>
+<li>HS256 secret ko multiple services mein share karna — koi bhi token mint kar sakta.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Short-lived access JWTs (minutes) + refresh tokens (S-03) — revocation window chhota.</li>
+<li>Server pe hamesha verify: signature, <code>exp</code>, <code>iss</code>, <code>aud</code>.</li>
+<li>Distributed systems → RS256 (public-key verify, private-key sign).</li>
+<li>Minimal claims — sirf zaroori (small token, less exposure).</li>
+<li>Client-side decode sirf UX ke liye (username dikhana), security ke liye nahi.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>JWT ka perf win: <strong>stateless verification</strong> — server ko session lookup (DB/cache hit) nahi karna, bas signature verify (CPU-only, fast). Ye horizontal scaling + microservices mein bada fayda. Trade-off: token size (claims zyada → bade headers har request pe). RS256 verify HS256 se thoda mehenga (asymmetric), par public-key caching se manageable. Minimal claims rakho.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Revocation</td><td>Stateless JWT easily revoke nahi hota — short expiry + refresh-token invalidation, ya blocklist.</td></tr>
+<tr><td>Clock skew</td><td><code>exp</code>/<code>nbf</code> checks mein thodi tolerance (leeway) — server clocks slightly differ.</td></tr>
+<tr><td>Key rotation</td><td><code>kid</code> (key id) header se multiple keys support; JWKS endpoint.</td></tr>
+<tr><td>JWE</td><td>Agar payload confidentiality chahiye → JWE (encrypted), na ki plain JWT.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> JWT kya hai aur kis 3 parts se banta?</summary><div class="ans"><p>JSON Web Token — ek compact, self-contained, signed token jo user claims transmit karta. Teen base64url parts, dot-separated: <strong>header</strong> (alg + typ), <strong>payload</strong> (claims — user id, roles, exp), aur <strong>signature</strong> (header+payload ka crypto over secret/private-key). Server signature verify karke claims pe bharosa karta — stateless auth.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> JWT encrypted hota hai? Payload mein password rakh sakte?</summary><div class="ans"><p>Nahi — standard JWT <strong>signed</strong> hota, encrypted nahi. Payload sirf base64url-encoded hai, koi bhi decode karke padh sakta (jwt.io pe paste karke). Signature <em>tampering</em> rokti (integrity), <em>reading</em> nahi (confidentiality). Isliye passwords/secrets/sensitive data payload mein kabhi mat daalo. Agar confidentiality chahiye toh JWE (encrypted variant) use karo.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> HS256 vs RS256 — kab kaunsa?</summary><div class="ans"><p>HS256 symmetric — ek shared secret sign aur verify dono karta; jo verify kar sakta woh sign bhi kar sakta. Monolith ke liye theek. RS256 asymmetric — auth server private key se sign karta, baaki services public key se sirf verify karte (mint nahi kar sakte). Distributed systems/microservices mein RS256 better — signing capability centralized rehti, public keys (JWKS endpoint) se widely verify.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Frontend dev JWT decode karke <code>roles</code> check kar raha aur admin UI dikha raha. Backend pe bhi check hai. Kya ye sahi hai?</summary><div class="ans"><p>UI dikhane ke liye client-side decode theek hai (UX — admin button dikhana). Par ye <strong>security boundary nahi</strong> — client-side check bypass ho sakta (attacker JWT edit kar sakta ya API directly call kar sakta). Asli enforcement <strong>backend pe</strong> honi chahiye: har protected API signature verify kare aur roles/permissions check kare. Client-side check sirf UX; server-side check security. Dono chahiye, par kabhi client pe akele bharosa mat karo.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>JWT = <code>header.payload.signature</code> (base64url, dot-separated). Signed, NOT encrypted — payload is readable.</li>
+<li>Claims: <code>iss/sub/aud/exp/iat</code> + custom (roles). Stateless: server verifies signature, stores nothing.</li>
+<li>HS256 (shared secret) vs RS256 (private-sign/public-verify, for distributed). Short expiry + refresh. Server-side verify is authoritative.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.1 · Decode &amp; inspect</div><p>Ek JWT ko manually decode karo (split by <code>.</code>, base64url-decode payload). Claims print karo aur <code>exp</code> se expiry check karo. Prove karo payload readable hai (encryption nahi).</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-17.2 · Tamper detection (concept)</div><p>Ek JWT ka payload edit karke (roles admin bana ke) dikhao ki signature ab mismatch karegi. Samjhao server kaise reject karega aur kyun client-side edit useless hai.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>OAuth 2.1 &amp; OpenID Connect</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>OAuth framework · roles · Authorization Code + PKCE · access vs id token · OIDC · implicit/password grants removed · scopes · client credentials</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>OAuth 2.0 (aur iska modern consolidation <strong>OAuth 2.1</strong>) ek <em>authorization framework</em> hai — ye define karta hai ki ek app kaise securely ek user ki taraf se kisi resource (API) tak access le. <strong>OpenID Connect (OIDC)</strong> OAuth ke upar ek thin <em>authentication</em> layer hai jo "user kaun hai" batata (via an <code>id_token</code>). Simple: OAuth = <em>authorization</em> (kya access), OIDC = <em>authentication</em> (kaun ho).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Users ko apna password har app ko dena assurance nahi (phishing, breach). OAuth delegated authorization deta: user identity provider (Google, Auth0, apna auth server) pe login karta, aur app ko sirf ek <em>token</em> milta — password kabhi app ke paas nahi jaata. "Login with Google" isi ka example. Standardized, secure, revocable.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Password sharing + insecure custom auth. OAuth ek battle-tested standard deta jahan credentials ek trusted authorization server ke paas rehte, apps ko scoped, expiring tokens milte, aur user kabhi bhi access revoke kar sakta — bina password badle. Custom auth ke roll-your-own vulnerabilities se bachta.</p>
+
+<h3 class="part">4. Internal Working — the roles &amp; the Authorization Code + PKCE flow</h3>
+<div class="panel why"><div class="ptitle">4 roles + the recommended flow</div><p><strong>Roles:</strong> Resource Owner (user), Client (tumhari app), Authorization Server (issues tokens, e.g. Auth0/Keycloak/Google), Resource Server (the API). <strong>SPAs ke liye recommended flow = Authorization Code + PKCE:</strong> (1) app ek random <code>code_verifier</code> banata, uska SHA-256 hash <code>code_challenge</code> auth server ko bhejta; (2) user auth server pe login karta; (3) auth server ek short-lived, single-use <code>authorization code</code> app ko redirect karta; (4) app us code + original <code>code_verifier</code> ko token endpoint pe bhejta; (5) auth server verifier ka hash challenge se match karke tokens deta (access + optionally id + refresh). PKCE (RFC 7636) ensure karta ki code intercept karne wala bhi tokens na le sake (uske paas verifier nahi). OAuth 2.1 <strong>PKCE mandatory</strong> karta aur <strong>implicit flow (token in URL) hata deta</strong>.</p></div>
+
+<div class="dg-title">Diagram — Authorization Code + PKCE</div>
+<pre class="diagram">
+ app: verifier=random; challenge=SHA256(verifier)
+   │  1. /authorize?...&amp;code_challenge=challenge
+   ▼
+ [Authorization Server]  ← user logs in
+   │  2. redirect back with ?code=ABC (short-lived, single-use)
+   ▼
+ app: 3. POST /token { code:ABC, code_verifier:verifier }
+   ▼
+ [Authorization Server] verifies SHA256(verifier)==challenge
+   │  4. returns { access_token, id_token, refresh_token }
+   ▼
+ app uses access_token as: Authorization: Bearer &lt;access_token&gt;
+</pre>
+
+<h3 class="part">5. Execution Flow — tokens you get back</h3>
+<pre class="diagram">
+ access_token  → sent to APIs (authorization: "what can I access")   [often a JWT]
+ id_token      → OIDC: WHO the user is (name/email claims)           [always a JWT]
+ refresh_token → get new access tokens without re-login (S-03)
+ scope=openid  → triggers OIDC (you get an id_token)
+</pre>
+
+<h3 class="part">6. Architecture — grant types (what to use)</h3>
+<table>
+<tr><td>Authorization Code + PKCE</td><td><b>USE for SPAs, mobile, web apps.</b> The recommended flow for all user-facing clients.</td></tr>
+<tr><td>Client Credentials</td><td>Machine-to-machine (no user) — server-to-server with a secret.</td></tr>
+<tr><td>Device Authorization</td><td>Devices without a good browser (TVs, CLIs).</td></tr>
+<tr><td>Implicit</td><td><b>❌ REMOVED in OAuth 2.1</b> — token in URL fragment, leaks. Never use for new apps.</td></tr>
+<tr><td>Password (ROPC)</td><td><b>❌ REMOVED in OAuth 2.1</b> — app handles user's raw password. Avoid.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">using a library (angular-oauth2-oidc / Auth0 SDK) — don't roll your own</div>
+<pre><code>// conceptual config for Authorization Code + PKCE (library handles the crypto)
+this.oauth.configure({
+  issuer: 'https://auth.example.com',
+  clientId: 'spa-client',
+  redirectUri: window.location.origin + '/callback',
+  responseType: 'code',              // Authorization Code flow
+  scope: 'openid profile email api', // openid → OIDC id_token
+  useSilentRefresh: false,           // prefer refresh tokens / BFF
+});
+// after redirect back, library exchanges code + verifier → tokens.
+// ⚠️ Prefer a vetted library or the BFF pattern over hand-rolling OAuth.</code></pre>
+
+<h3 class="part">8. Beginner Example — OAuth vs OIDC in one line</h3>
+<div class="code-label">the distinction</div>
+<pre><code>// OAuth 2.x  → AUTHORIZATION: "this app may access the orders API on your behalf"
+//              you get an access_token for the API.
+// OIDC       → AUTHENTICATION: "this user is Karan, email karan@x.com"
+//              you get an id_token (a JWT with identity claims).
+// scope 'openid' is what turns an OAuth request into an OIDC one.</code></pre>
+
+<h3 class="part">9. Advanced Example — why PKCE, why not implicit</h3>
+<div class="code-label">the security reasoning</div>
+<pre><code>// IMPLICIT (dead): /authorize returns #access_token=... IN THE URL
+//   → token leaks via browser history, logs, Referer header. No PKCE possible.
+
+// AUTH CODE + PKCE: returns a single-use CODE, exchanged server-side-style for tokens.
+//   even if an attacker steals the code, without the code_verifier it's useless.
+//   OAuth 2.1 mandates PKCE (S256) for ALL clients — public and confidential.</code></pre>
+
+<h3 class="part">10. Code Explanation — flow recap</h3>
+<ol>
+<li>App generates <code>code_verifier</code> + <code>code_challenge</code> (SHA-256).</li>
+<li>User logs in at the authorization server.</li>
+<li>Server returns a short-lived, single-use authorization <code>code</code>.</li>
+<li>App exchanges code + verifier → access/id/refresh tokens.</li>
+<li>PKCE proves same app initiated + completed — code theft useless.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Implicit flow use karna (purane tutorials) — OAuth 2.1 mein removed; token URL mein leak.</li>
+<li>SPA mein client secret embed karna — JS bundle se extract ho sakta (public client, no secret).</li>
+<li>PKCE skip karna — code interception/injection attacks.</li>
+<li>OAuth (authorization) ko authentication samajhna — user identity ke liye OIDC (<code>openid</code> scope + id_token).</li>
+<li>Redirect URI ko loose match rakhna — exact match honi chahiye (open redirect vuln).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>SPAs → <strong>Authorization Code + PKCE</strong> (S256). Kabhi implicit nahi.</li>
+<li>Vetted library ya BFF pattern (S-08) use karo — OAuth khud roll mat karo.</li>
+<li>Exact redirect URI matching; har environment register.</li>
+<li>Least-privilege scopes (<code>orders.read</code>, na ki <code>full_access</code>).</li>
+<li>User identity chahiye → OIDC (<code>openid</code> scope, verify id_token).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>OAuth ka overhead mostly ek-baar-ka login redirect + token exchange (network round-trips). Uske baad access token (usually JWT) se stateless API calls — fast. Refresh tokens (S-03) re-login avoid karte (better UX). Token caching (in-memory) redundant exchanges rokti. Perf se zyada yahan <em>security</em> primary concern hai; correct flow choose karna performance se important.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>State parameter</td><td>CSRF protection for the flow — random <code>state</code> verify on callback.</td></tr>
+<tr><td>Callback URL cleanup</td><td><code>history.replaceState</code> se code URL se hatao (history/Referer leak).</td></tr>
+<tr><td>Silent renew vs refresh</td><td>Iframe silent-renew legacy; refresh tokens / BFF preferred now.</td></tr>
+<tr><td>Multi-tenant</td><td><code>iss</code>/<code>aud</code> per-tenant validate.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> OAuth aur OIDC mein farak?</summary><div class="ans"><p>OAuth 2.x ek <strong>authorization</strong> framework hai — decide karta ki app kis resource (API) tak user ki taraf se access le sakta (access_token deta). OpenID Connect (OIDC) OAuth ke upar ek <strong>authentication</strong> layer — batata "user kaun hai" (id_token deta, user claims ke saath). <code>openid</code> scope OAuth request ko OIDC banata. Short: OAuth = kya access, OIDC = kaun ho.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> SPA ke liye kaunsa OAuth flow aur kyun?</summary><div class="ans"><p><strong>Authorization Code + PKCE.</strong> Auth server ek single-use code deta (token nahi), jise app <code>code_verifier</code> ke saath exchange karta tokens ke liye. PKCE (SHA-256 challenge/verifier) ensure karta ki code intercept karne wala bhi tokens na le. OAuth 2.1 PKCE ko mandatory karta aur implicit flow (jo token URL mein deta tha — leak-prone) ko remove karta. SPAs public clients hain (secret embed nahi kar sakte), toh PKCE hi secret ki jagah leta.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Implicit flow kyun deprecated/removed hua?</summary><div class="ans"><p>Implicit flow access token ko directly URL fragment mein return karta tha (<code>#access_token=...</code>). Ye token browser history, server logs, aur Referer header mein leak ho sakta; sender-constrain nahi ho sakta; aur token endpoint bypass karne se PKCE se protect nahi ho sakta. Authorization Code + PKCE ye saari problems solve karta (code single-use, tokens URL mein nahi, PKCE protection) aur SPAs mein utna hi achha kaam karta — isliye OAuth 2.1 implicit ko poori tarah hata deta.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek purana SPA implicit flow + client secret JS bundle mein use kar raha. Do problems aur fix?</summary><div class="ans"><p>Problem 1: <strong>Implicit flow</strong> — token URL fragment mein leak (history/logs/referer); OAuth 2.1 mein removed. Problem 2: <strong>client secret in JS bundle</strong> — koi bhi extract karke app impersonate kar sakta (SPAs public clients, secret rakh hi nahi sakte). Fix: Authorization Code + PKCE pe migrate karo (no secret needed — PKCE verifier iski jagah), ya behtar BFF pattern adopt karo (backend secret + tokens handle kare, browser ko token na mile). Modern SDKs (Auth0 v2+ etc.) already ye default karte.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>OAuth = authorization framework (4 roles: owner/client/auth-server/resource-server). OIDC = auth layer on top (id_token, <code>openid</code> scope).</li>
+<li>SPAs → Authorization Code + PKCE (S256). OAuth 2.1 mandates PKCE, removes Implicit + Password grants.</li>
+<li>access_token → APIs; id_token → identity; refresh_token → renew. Never embed a client secret in a SPA.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.3 · PKCE by hand</div><p>Ek <code>code_verifier</code> (random) + <code>code_challenge</code> (SHA-256 base64url) generate karo (Web Crypto API). Samjhao kaise ye code-interception attack rokta hai.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-17.4 · Flow diagram</div><p>Authorization Code + PKCE ka poora sequence diagram banao (app ↔ auth server ↔ API), har token (access/id/refresh) ka role label karke. Implicit se contrast karo (kyun woh insecure).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Refresh Tokens</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>access vs refresh token · short vs long lifetimes · rotation · reuse detection (token family) · inactivity expiry · secure storage · revocation</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Refresh token ek long-lived credential hai jiska ek hi kaam hai: naya <strong>access token</strong> lena jab purana expire ho jaaye — bina user ko dobara login karwaye. Access token short-lived (minutes) hota; refresh token long-lived (days/weeks). Jab access token expire, app refresh token ko auth server ko bhejta aur naya access token (aur usually naya refresh token) paata.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Do competing goals: <strong>security</strong> chahti short-lived access tokens (chori ho toh window chhota), par <strong>UX</strong> chahti user bar-bar login na kare. Refresh token ye balance deta — access token 5-15 min ka rakho (chota risk window), aur jab woh expire ho, refresh token se silently naya le lo (user ko pata bhi nahi chalta).</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Security-vs-UX tension. Sirf long-lived access tokens = chori pe bada damage. Sirf short-lived (no refresh) = user har 10 min login kare (terrible UX). Refresh token: access token short (security), session long (UX via silent renewal). Plus refresh tokens revoke karke ek session end kar sakte (better control).</p>
+
+<h3 class="part">4. Internal Working — rotation &amp; reuse detection</h3>
+<div class="panel why"><div class="ptitle">Rotation: har refresh pe naya refresh token</div><p>Modern secure setups mein <strong>refresh token rotation</strong> hoti: jab tum refresh token exchange karte ho, auth server ek naya access token <em>aur</em> ek naya refresh token deta, aur purana refresh token invalidate kar deta (single-use). Isse agar refresh token chori ho, uski life bahut chhoti. <strong>Reuse detection:</strong> agar ek <em>already-rotated</em> (purana) refresh token dobara use hota — matlab kisi ne chori kiya aur original + attacker dono use kar rahe — auth server poore "token family" ko invalidate kar deta (dono logged out), theft detect karke. Plus <strong>inactivity expiry</strong> (jaise 7 din use na ho toh invalid) absolute expiry se alag. Ye layered defense refresh tokens ko zyada safe banata.</p></div>
+
+<div class="dg-title">Diagram — rotation &amp; reuse detection</div>
+<pre class="diagram">
+ login ─▶ access(5m) + refresh_A
+ access expires ─▶ POST refresh_A ─▶ access' + refresh_B  (refresh_A now INVALID)
+ access' expires ─▶ POST refresh_B ─▶ access'' + refresh_C (refresh_B now INVALID)
+
+ ⚠ attacker replays refresh_A (already rotated) ─▶ server sees REUSE
+    ─▶ invalidate the WHOLE family (A,B,C...) ─▶ everyone re-authenticates
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ request with access token ─▶ 401 (expired)
+   ─▶ app: POST /token { grant_type: refresh_token, refresh_token }
+   ─▶ new access (+ new refresh via rotation)
+   ─▶ retry original request with new access ─▶ success (user unaware)
+</pre>
+
+<h3 class="part">6. Architecture — lifetimes &amp; storage</h3>
+<table>
+<tr><td>Access token</td><td>Short-lived (5–15 min). Sent to APIs. In-memory (JS variable) ideally.</td></tr>
+<tr><td>Refresh token</td><td>Long-lived (days). Only to the auth server's token endpoint. <b>HttpOnly cookie / BFF</b> ideally.</td></tr>
+<tr><td>Rotation</td><td>Each use issues a new refresh token; old invalidated.</td></tr>
+<tr><td>Reuse detection</td><td>Old (rotated) token reused → invalidate whole family.</td></tr>
+<tr><td>Revocation</td><td>Server can revoke a refresh token to end a session.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — the refresh call</h3>
+<div class="code-label">auth.service.ts — refresh method</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private http = inject(HttpClient);
+  private accessToken: string | null = null;   // in-memory (safer than localStorage)
+
+  refresh(): Observable&lt;string&gt; {
+    // refresh token ideally sent via HttpOnly cookie (withCredentials), not body
+    return this.http.post&lt;{ accessToken: string }&gt;(
+      '/auth/refresh', {}, { withCredentials: true }   // cookie carries refresh token
+    ).pipe(
+      tap(res =&gt; this.accessToken = res.accessToken),  // store new access in memory
+      map(res =&gt; res.accessToken),
+    );
+  }
+  getAccessToken() { return this.accessToken; }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — the lifetime mental model</h3>
+<div class="code-label">why two tokens</div>
+<pre><code>// access token  = a day-pass badge (expires in minutes; used everywhere)
+// refresh token = your membership card (kept safe; used only to get new day-passes)
+// stolen access token → useless in minutes.
+// refresh token → kept most secure (httpOnly cookie / server), rotated on each use.</code></pre>
+
+<h3 class="part">9. Advanced Example — the concurrent refresh problem (preview of S-07)</h3>
+<div class="code-label">why naive refresh breaks with rotation</div>
+<pre><code>// two requests fire at once, both get 401 (access expired):
+//   req A → refresh(refresh_1) → gets refresh_2   ✅
+//   req B → refresh(refresh_1) → FAILS (refresh_1 already rotated!) ❌ → logs user out
+// FIX (S-07): a single shared in-flight refresh; other requests WAIT for it,
+//   then retry with the one new token. Never fire parallel refreshes.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Access token short-lived, in-memory; refresh token long-lived, secure.</li>
+<li>Refresh via <code>withCredentials:true</code> — HttpOnly cookie carries refresh token.</li>
+<li>New access token store karo (memory); rotation se naya refresh bhi set hota (cookie).</li>
+<li>Rotation → har refresh single-use; reuse → family invalidated.</li>
+<li>Concurrent refreshes rotation todte — single shared refresh chahiye (S-07).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Refresh token ko localStorage mein rakhna — XSS se chori. HttpOnly cookie / BFF prefer.</li>
+<li>Long-lived access token (refresh ki zaroorat na pade) — chori pe bada damage window.</li>
+<li>Rotation ke saath concurrent refreshes fire karna → user unexpectedly logged out (S-07).</li>
+<li>Rotation/reuse-detection na karna — chori hua refresh token indefinitely valid.</li>
+<li>Refresh token ko regular API calls mein bhejna — sirf auth server ke token endpoint pe.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Access short (5-15 min, in-memory); refresh long (HttpOnly/Secure/SameSite cookie ya BFF).</li>
+<li>Refresh token rotation + reuse detection enable karo.</li>
+<li>Inactivity expiry (unused N days → invalid) + absolute expiry.</li>
+<li>Single shared refresh (mutex) — concurrent 401s handle (S-07).</li>
+<li>Logout pe refresh token server-side revoke karo.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Refresh flow user ke liye seamless — background renewal, no re-login (great UX). Perf cost minimal (occasional token-endpoint call). Short access tokens API-side stateless verification rakhte (no per-request DB). Rotation slight server-side state (track current family), par security worth it. Single-flight refresh (S-07) redundant parallel refresh calls bhi rokti.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multi-tab</td><td>Concurrent tabs rotating same token → reuse-detection false positive; centralize refresh (BFF/shared).</td></tr>
+<tr><td>Offline/expired refresh</td><td>Refresh expired/revoked → force re-login.</td></tr>
+<tr><td>Silent renewal</td><td>Refresh token ideal; legacy iframe silent-renew fragile.</td></tr>
+<tr><td>Revocation lag</td><td>Access token stateless — revoke tak short expiry se valid reh sakta.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Access token aur refresh token mein farak?</summary><div class="ans"><p>Access token short-lived (minutes) hota aur har API request mein bheja jaata (authorization). Refresh token long-lived (days) hota aur sirf ek kaam ke liye — naya access token lena jab purana expire ho, bina re-login. Ye security (short access = chota chori-window) aur UX (long session, silent renewal) balance karta.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Refresh token rotation aur reuse detection kya hai?</summary><div class="ans"><p><strong>Rotation:</strong> har refresh exchange pe auth server naya access <em>aur</em> naya refresh token deta, purana refresh invalidate (single-use). Chori hua token ki life chhoti. <strong>Reuse detection:</strong> agar koi already-rotated (purana) refresh token dobara use kare — indicating theft (original + attacker dono use kar rahe) — server poore token family ko invalidate kar deta, sabko re-auth pe bhejta. Ye stolen-token damage drastically limit karta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Refresh token kahan store karna chahiye?</summary><div class="ans"><p>Ideally HttpOnly, Secure, SameSite cookie mein (JS access nahi kar sakta → XSS-safe), ya BFF pattern mein server-side session mein (browser ko refresh token milta hi nahi). localStorage/sessionStorage <strong>avoid</strong> — koi bhi same-origin JS (XSS) padh sakta. Access token in-memory (JS variable) theek hai kyunki short-lived, par refresh token (long-lived, powerful) ko sabse zyada protect karo.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Users randomly logged out ho rahe. Logs mein "refresh token reuse" errors. Kya ho raha?</summary><div class="ans"><p>Probably concurrent refresh: jab access token expire hota aur multiple requests ek saath 401 paate, har ek refresh token se refresh try karta. Rotation ke saath pehla success (token rotate ho gaya), baaki purane (ab-invalid) token se refresh karte → reuse-detection trigger → family invalidate → logout. Fix: single shared in-flight refresh (mutex) — ek hi refresh chale, baaki uska wait karein aur naye token se retry karein (S-07). Multi-tab ho toh BFF/centralized refresh best.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Access = short (min, in-memory, to APIs). Refresh = long (days, HttpOnly cookie/BFF, only to token endpoint).</li>
+<li>Rotation: each refresh → new refresh token, old invalidated. Reuse of old → invalidate whole family (theft defense).</li>
+<li>Concurrent refresh + rotation = accidental logout → use single shared refresh (S-07). Revoke on logout.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.5 · Refresh service</div><p>Ek <code>AuthService</code> banao jo access token in-memory rakhe aur ek <code>refresh()</code> method ho (cookie-based, <code>withCredentials</code>). Expiry simulate karke silent renewal demonstrate karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-17.6 · Reuse detection (concept)</div><p>Rotation + reuse-detection ko diagram + pseudo-code se model karo. Dikhao ek stolen rotated token replay hone pe poora family kaise invalidate hota.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>HTTP Interceptors</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>HttpInterceptorFn · attach Bearer token · withInterceptors · provideHttpClient · order matters · immutable clone · 401 handling · functional vs class</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>HTTP interceptor ek function hai jo har outgoing HTTP request (aur incoming response) ke beech mein baithta hai — use inspect ya transform kar sakta before it goes out / comes back. Auth ke context mein iska primary kaam: <strong>har request mein automatically <code>Authorization: Bearer &lt;token&gt;</code> header attach karna</strong>, taaki har service mein manually na karna pade.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Har API call mein manually auth header lagana repetitive + error-prone (ek jagah bhool gaye = 401). Interceptor ek central chokepoint deta — ek jagah token attach karo, poori app ke har request pe apply. Same jagah errors (401/403) bhi centrally handle kar sakte. DRY + consistent.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Cross-cutting HTTP concerns (auth headers, error handling, logging, retries) ko har call mein duplicate karna. Interceptor inhe ek reusable pipeline stage mein centralize karta — auth token har request pe, error handling har response pe, bina har service ko chhue.</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">A chain; requests are immutable</div><p>Modern Angular mein interceptors <strong>functional</strong> hain: <code>HttpInterceptorFn</code> — ek function jo <code>(req, next)</code> leta. Tum <code>provideHttpClient(withInterceptors([a, b, c]))</code> se register karte, aur woh ek <strong>chain</strong> banate — request <code>a → b → c → backend</code> se guzarti, response ulta wapas. <code>HttpRequest</code> <strong>immutable</strong> hai — header add karne ke liye <code>req.clone({ setHeaders })</code> se naya request banao, phir <code>next(cloned)</code> call karo. <code>next</code> chain ka agla handler hai (ya backend). Order <strong>matters</strong>: auth interceptor error interceptor se pehle (token attach ho, phir error handle). <code>inject()</code> function interceptor ke andar services access karne deta.</p></div>
+
+<div class="dg-title">Diagram — the interceptor chain</div>
+<pre class="diagram">
+ request ─▶ authInterceptor ─▶ errorInterceptor ─▶ [Backend]
+              (add Bearer)        (catch 401/403)        │
+ response ◀── errorInterceptor ◀── (handle errors) ◀─────┘
+ req.clone({ setHeaders }) → immutable; next(req) → pass along the chain
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ http.get('/api/x') ─▶ authInterceptor: clone + add Authorization header
+   ─▶ next(cloned) ─▶ errorInterceptor: next().pipe(catchError(...))
+   ─▶ backend ─▶ response flows back up the chain ─▶ component
+</pre>
+
+<h3 class="part">6. Architecture — the API</h3>
+<table>
+<tr><td><code>HttpInterceptorFn</code></td><td>Functional interceptor: <code>(req, next) =&gt; next(req)</code>. Modern default.</td></tr>
+<tr><td><code>provideHttpClient(withInterceptors([...]))</code></td><td>Register functional interceptors (order = array order).</td></tr>
+<tr><td><code>req.clone({ setHeaders })</code></td><td>Immutable header add (never mutate <code>req</code>).</td></tr>
+<tr><td><code>inject(Service)</code></td><td>Access DI inside the interceptor function.</td></tr>
+<tr><td>Class-based <code>HttpInterceptor</code></td><td>Legacy — functional is recommended for new code.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">auth.interceptor.ts — attach the Bearer token</div>
+<pre><code>import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from './auth.service';
+
+export const authInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  const auth = inject(AuthService);
+  const token = auth.getAccessToken();
+
+  // don't attach to auth endpoints / external URLs
+  if (!token || req.url.includes('/auth/')) return next(req);
+
+  const authReq = req.clone({                         // immutable clone
+    setHeaders: { Authorization: `Bearer ${token}` },
+  });
+  return next(authReq);
+};
+
+// app.config.ts
+provideHttpClient(withInterceptors([authInterceptor, errorInterceptor]));
+//                                   ↑ order: auth first, then error handling</code></pre>
+
+<h3 class="part">8. Beginner Example — a logging interceptor</h3>
+<div class="code-label">the shape of an interceptor</div>
+<pre><code>export const loggingInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  console.log('→', req.method, req.url);
+  return next(req).pipe(
+    tap(event =&gt; { /* inspect response events */ })
+  );
+};</code></pre>
+
+<h3 class="part">9. Advanced Example — an error interceptor (401 → logout)</h3>
+<div class="code-label">error.interceptor.ts</div>
+<pre><code>export const errorInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return next(req).pipe(
+    catchError((err: HttpErrorResponse) =&gt; {
+      if (err.status === 401) { auth.logout(); router.navigate(['/login']); }
+      if (err.status === 403) { router.navigate(['/forbidden']); }
+      return throwError(() =&gt; err);
+    })
+  );
+};
+// (a smarter 401 handler that REFRESHES instead of logging out → S-07)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li><code>HttpInterceptorFn</code> — <code>(req, next)</code> function.</li>
+<li><code>inject(AuthService)</code> — token access (DI inside interceptor).</li>
+<li><code>req.clone({ setHeaders })</code> — immutable; naya request with header.</li>
+<li><code>next(authReq)</code> — modified request ko chain mein aage bhejo.</li>
+<li>Register: <code>withInterceptors([auth, error])</code> — order = execution order.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li><code>req</code> ko directly mutate karna (<code>req.headers.set</code>) — immutable; <code>clone</code> use karo.</li>
+<li>Token ko auth/login endpoints pe bhi attach karna — infinite loops / wrong behavior. Skip logic rakho.</li>
+<li>Interceptor order galat — auth error ke baad (token attach hi nahi hoga before send in some flows).</li>
+<li><code>next(req)</code> return na karna — request hang.</li>
+<li>External/3rd-party URLs pe apna Bearer token bhejना — token leak. URL check karo.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Functional interceptors (<code>HttpInterceptorFn</code> + <code>withInterceptors</code>) — modern default.</li>
+<li>Always <code>req.clone(...)</code> — never mutate.</li>
+<li>Token sirf apne API origins pe attach (URL allowlist); auth endpoints skip.</li>
+<li>Order: auth → error (→ refresh logic in the error/auth interceptor, S-07).</li>
+<li>Ek interceptor = ek responsibility (auth, error, logging alag).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Interceptors lightweight — per-request function call. Token attach O(1). Perf ka dhyaan: heavy sync work interceptor mein har request pe chalega (avoid). Retry/refresh logic mein infinite loops se bacho (guard flags). Central error handling redundant per-call error code hatakar cleaner + consistent. Functional interceptors better tree-shaking dete class-based se.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multiple interceptors</td><td>Run in array order (request), reverse (response).</td></tr>
+<tr><td>Skip conditions</td><td>Auth endpoints, external URLs, public routes — conditionally skip token.</td></tr>
+<tr><td>401 refresh</td><td>Error interceptor can trigger refresh + retry (S-07) instead of logout.</td></tr>
+<tr><td>SSR</td><td>Interceptors run server-side too — guard browser-only APIs.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> HTTP interceptor auth mein kya karta hai?</summary><div class="ans"><p>Har outgoing HTTP request ke beech mein baithkar automatically <code>Authorization: Bearer &lt;token&gt;</code> header attach karta — taaki har service mein manually na karna pade. Ek central jagah token lagta poori app ke requests pe. Same interceptor (ya ek dusra) responses pe errors (401/403) bhi centrally handle kar sakta.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Interceptor mein request mutate kyun nahi karte?</summary><div class="ans"><p><code>HttpRequest</code> immutable hai — directly mutate nahi kar sakte. Header add karne ke liye <code>req.clone({ setHeaders: {...} })</code> se naya request banate, phir <code>next(cloned)</code>. Immutability predictability deti (request object safe pass hota chain mein, koi shared-mutation bug nahi) aur Angular ka design contract hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Interceptor order kyun matter karta hai?</summary><div class="ans"><p><code>withInterceptors([a, b])</code> mein requests <code>a → b → backend</code> order mein guzarti, responses ulta. Auth interceptor error interceptor se pehle rakhte taaki token attach ho, phir error handling wrap kare. Refresh logic (S-07) mein order + placement critical — token attach, phir 401 catch karke refresh + retry. Galat order = token missing ya errors mishandled.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Tumhara auth interceptor login request pe bhi Bearer token laga raha, aur ek external analytics API pe bhi. Kya problems?</summary><div class="ans"><p>Login/refresh endpoints pe purana (possibly expired) token bhejna wrong behavior ya loops de sakta — login ko token ki zaroorat nahi. External API pe apna Bearer token bhejna <strong>token leak</strong> hai (third-party ab tumhara token dekh sakta). Fix: interceptor mein skip logic — auth endpoints (<code>req.url.includes('/auth/')</code>) aur non-own-origin URLs pe token attach mat karo. Sirf apne API origins ka allowlist rakho.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li><code>HttpInterceptorFn</code> = <code>(req, next)</code>. Register with <code>provideHttpClient(withInterceptors([...]))</code>. Order = execution order.</li>
+<li>Immutable: <code>req.clone({ setHeaders: { Authorization: \`Bearer \${t}\` } })</code>, then <code>next(cloned)</code>.</li>
+<li>Skip auth endpoints + external URLs (token leak). Auth interceptor before error. Functional &gt; class-based.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.7 · Auth interceptor</div><p>Ek functional <code>authInterceptor</code> banao jo Bearer token attach kare, par auth-endpoints aur external URLs skip kare. <code>req.clone</code> use karo. Ek <code>errorInterceptor</code> add karke 401→login redirect karo. Order verify karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-17.8 · Chain observation</div><p>Teen interceptors (log, auth, error) banao aur console logs se prove karo request/response chain kis order mein guzarti (forward vs reverse).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Route Guards</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>CanActivateFn · CanMatchFn · inject() · functional guards · redirect to login · returnUrl · UrlTree · lazy-load protection · CanDeactivate</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Route guards functions hain jo decide karte hain ki koi navigation allow ho ya nahi. Auth ke context mein: "kya ye user is protected route pe ja sakta?" Agar logged-in nahi → login pe redirect. Modern Angular mein ye <strong>functional guards</strong> hain — <code>CanActivateFn</code>, <code>CanMatchFn</code> — jo <code>inject()</code> se services access karte.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Kuch routes sirf authenticated (ya specific-role) users ke liye hone chahiye — dashboard, admin panel, profile. Bina guard, koi bhi URL type karke protected page pe pahunch sakta (client-side). Guard navigation ko intercept karke unauthorized access rokta aur user ko login/forbidden pe bhejta.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Unprotected client-side routes. Guard ek declarative "is route ke liye ye condition honi chahiye" deta — auth check ek jagah, route config mein clean. (Yaad rahe: client-side guard sirf UX/navigation control hai; asli data protection backend pe.)</p>
+
+<h3 class="part">4. Internal Working (Engine ke andar kya hota hai?)</h3>
+<div class="panel why"><div class="ptitle">Functional guards + return types</div><p>Ek functional guard ek function hai jo <code>true</code> (allow), <code>false</code> (block), ya ek <code>UrlTree</code> (redirect) return karta — ya inka <code>Observable</code>/<code>Promise</code> (async checks ke liye). Router navigation se pehle guard chalata: <code>CanActivateFn</code> route activate hone se pehle, <code>CanMatchFn</code> route <em>match</em> (aur lazy chunk load) hone se pehle. <code>inject()</code> function guard ke andar DI deta (AuthService, Router) — no constructor. Redirect ke liye <code>router.createUrlTree(['/login'], { queryParams: { returnUrl } })</code> ek <code>UrlTree</code> return karo — router us pe navigate karega. Class-based guards ab bhi kaam karte par functional recommended (less boilerplate, better tree-shaking, cleaner DI).</p></div>
+
+<div class="dg-title">Diagram — guard decision</div>
+<pre class="diagram">
+ navigate('/dashboard') ─▶ CanActivateFn runs
+     auth.isLoggedIn() ?
+        true  ─▶ return true  ─▶ route activates
+        false ─▶ return router.createUrlTree(['/login'], {returnUrl:'/dashboard'})
+                 ─▶ router redirects to /login
+ CanMatchFn: runs BEFORE lazy chunk loads → blocks download too
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ route: { path:'admin', canActivate:[authGuard], loadComponent:... }
+ user navigates ─▶ authGuard: inject(AuthService).isLoggedIn()
+   yes ─▶ true ─▶ activate
+   no  ─▶ UrlTree('/login?returnUrl=/admin') ─▶ redirect
+ after login ─▶ read returnUrl ─▶ navigate back
+</pre>
+
+<h3 class="part">6. Architecture — the guard types</h3>
+<table>
+<tr><td><code>CanActivateFn</code></td><td>Can this route be activated? (most common auth guard)</td></tr>
+<tr><td><code>CanMatchFn</code></td><td>Can this route match? Runs BEFORE lazy-load — blocks the chunk download too.</td></tr>
+<tr><td><code>CanActivateChildFn</code></td><td>Guard child routes without guarding the parent.</td></tr>
+<tr><td><code>CanDeactivateFn</code></td><td>Can the user leave? (unsaved-changes prompt)</td></tr>
+<tr><td>Return</td><td><code>boolean | UrlTree | Observable&lt;...&gt; | Promise&lt;...&gt;</code>.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">auth.guard.ts — functional</div>
+<pre><code>import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
+import { AuthService } from './auth.service';
+
+export const authGuard: CanActivateFn = (route, state) =&gt; {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (auth.isLoggedIn()) return true;
+
+  // redirect to login, remember where the user wanted to go
+  return router.createUrlTree(['/login'], {
+    queryParams: { returnUrl: state.url },
+  });
+};
+
+// routes
+export const routes: Routes = [
+  { path: 'dashboard', canActivate: [authGuard], loadComponent: () =&gt; import('./dashboard') },
+  { path: 'admin', canMatch: [authGuard], loadChildren: () =&gt; import('./admin.routes') }, // blocks chunk
+];</code></pre>
+
+<h3 class="part">8. Beginner Example — the simplest guard</h3>
+<div class="code-label">one-liner auth guard</div>
+<pre><code>export const loggedInGuard: CanActivateFn = () =&gt;
+  inject(AuthService).isLoggedIn() || inject(Router).createUrlTree(['/login']);
+// true → allow; UrlTree → redirect</code></pre>
+
+<h3 class="part">9. Advanced Example — async guard + CanMatch for lazy protection</h3>
+<div class="code-label">observable guard (waits for auth state)</div>
+<pre><code>export const authGuard: CanActivateFn = (route, state) =&gt; {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.isLoggedIn$.pipe(          // Observable&lt;boolean&gt;
+    take(1),
+    map(loggedIn =&gt; loggedIn
+      ? true
+      : router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } })),
+  );
+};
+// canMatch on a lazy route → if not allowed, the JS chunk is never downloaded (perf + security)</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Functional guard = a function returning <code>boolean | UrlTree | Observable</code>.</li>
+<li><code>inject(AuthService/Router)</code> — DI inside (no constructor).</li>
+<li><code>isLoggedIn()</code> true → <code>true</code> (allow).</li>
+<li>false → <code>createUrlTree(['/login'], {returnUrl})</code> — redirect + remember target.</li>
+<li><code>canMatch</code> lazy routes pe — chunk download bhi block (perf + security).</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Guards ko "security" samajhna — ye client-side navigation control hai; asli protection backend pe.</li>
+<li>Async auth state pe sync guard — <code>Observable</code>/<code>take(1)</code> use karo warna race (undefined state).</li>
+<li>Lazy admin route pe sirf <code>canActivate</code> — chunk phir bhi download hota; <code>canMatch</code> se block.</li>
+<li>Redirect pe <code>returnUrl</code> na rakhna — login ke baad user wahan wapas nahi jaata (bad UX).</li>
+<li><code>false</code> return karke koi redirect na dena — user stuck (blank/stays).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Functional guards (<code>CanActivateFn</code>/<code>CanMatchFn</code>) + <code>inject()</code>.</li>
+<li>Redirect via <code>UrlTree</code> with <code>returnUrl</code> (login ke baad wapas).</li>
+<li>Lazy routes → <code>canMatch</code> (chunk download bhi rukta).</li>
+<li>Async auth → Observable guard (<code>take(1)</code>, wait for resolved state).</li>
+<li>Guard sirf client-UX; server pe hamesha authorize.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p><code>canMatch</code> ka perf + security double-win: unauthorized users ke liye lazy chunk <em>download hi nahi</em> hota (bundle na bheja, code chhupaya). Functional guards better tree-shaking dete. Async guards jaldi resolve karo (<code>take(1)</code>) — navigation block na ho. Guards light rakho (no heavy work) — navigation UX smooth.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>canActivate vs canMatch</td><td>Activate: route reach hone pe. Match: route match + lazy-load se pehle (stronger).</td></tr>
+<tr><td>Multiple guards</td><td>All must pass; any <code>false</code>/UrlTree short-circuits.</td></tr>
+<tr><td>Parameterized guard</td><td>Factory: <code>roleGuard('admin')</code> returns a <code>CanActivateFn</code> (S-06).</td></tr>
+<tr><td>Class-based interop</td><td>Router accepts both; <code>() =&gt; inject(MyGuard).canActivate()</code> bridges legacy.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Route guard kya karta hai?</summary><div class="ans"><p>Ye decide karta ki koi navigation allow ho ya nahi. Auth mein: <code>CanActivateFn</code> check karta user logged-in hai — nahi toh login pe redirect (<code>UrlTree</code>). Return: <code>true</code> (allow), <code>false</code> (block), <code>UrlTree</code> (redirect), ya inka Observable/Promise (async). <code>inject()</code> se services access. Note: client-side guard UX ke liye — asli security backend pe.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> <code>canActivate</code> vs <code>canMatch</code> — kab kaunsa?</summary><div class="ans"><p><code>canActivate</code> route activate hone se pehle chalta (component load ke aas-paas). <code>canMatch</code> route <em>match</em> hone se pehle — matlab lazy route ka JS chunk <strong>download hone se pehle</strong>. Lazy-loaded protected routes (jaise admin module) pe <code>canMatch</code> use karo: unauthorized user ke liye chunk download hi nahi hota (perf + code hidden). Normal auth check ke liye <code>canActivate</code> theek.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Functional guards class-based se better kyun?</summary><div class="ans"><p>Kam boilerplate (no <code>@Injectable</code> class, no interface implement), better tree-shaking (smaller bundles), <code>inject()</code> se seedha DI, aur easily parameterizable (factory function jo <code>CanActivateFn</code> return kare — jaise <code>roleGuard('admin')</code>). Angular team naye apps ke liye functional recommend karti. Class-based ab bhi kaam karte (router dono accept karta) par functional modern default.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Guard mein <code>auth.isLoggedIn()</code> app-load pe kabhi-kabhi <code>false</code> deta bhale user logged-in ho (auth state abhi async load ho rahi). Fix?</summary><div class="ans"><p>Problem: sync <code>isLoggedIn()</code> call ho raha jab auth state (jaise token restore / user fetch) abhi resolve nahi hui — race condition. Fix: guard ko async banao — ek <code>Observable&lt;boolean&gt;</code> (jaise <code>isLoggedIn$</code>) pe depend karo jo resolved auth state emit kare, <code>take(1)</code> + <code>map</code> se true/UrlTree return karo. Ab guard tab tak wait karta jab tak auth state settle na ho, phir sahi decision leta.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Functional guards: <code>CanActivateFn</code>/<code>CanMatchFn</code>, use <code>inject()</code>. Return <code>true | false | UrlTree | Observable&lt;...&gt;</code>.</li>
+<li>Redirect: <code>router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } })</code>.</li>
+<li><code>canMatch</code> for lazy routes → blocks chunk download too. Guards = client UX; server = real authz.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.9 · Auth guard + returnUrl</div><p>Ek <code>authGuard</code> banao jo unauthenticated user ko <code>/login?returnUrl=...</code> pe bheje, aur login ke baad user ko wapas us route pe le jaaye. Lazy admin route pe <code>canMatch</code> use karke chunk-block prove karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-17.10 · Async guard</div><p>Ek Observable-based guard banao jo app-load pe auth state resolve hone tak wait kare (<code>take(1)</code>), phir decide kare. Race condition (sync version) reproduce karke fix demonstrate karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>RBAC (Role-Based Access Control)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>roles vs permissions · role guards (parameterized) · UI-level control (directives) · least privilege · roles in JWT claims · server-side enforcement · RBAC vs ABAC</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>RBAC (Role-Based Access Control) authorization ka ek model hai jahan users ko <strong>roles</strong> assign hoti hain (admin, editor, viewer), aur roles ke saath <strong>permissions</strong> jude hote (kya kar sakte). "Ye user kya kar sakta" ka jawab role se aata. Authentication (kaun ho) ke baad ka step: authorization (kya karne ki ijaazat).</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Sab authenticated users equal nahi — ek admin sab kar sakta, ek viewer sirf padh sakta. Har user ke liye individual permissions manage karna unmanageable. Roles ek abstraction dete: permissions ko roles mein group karo, users ko roles do — scalable, manageable authorization.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Fine-grained, scalable authorization. Individual-user permissions chaos ban jaate. RBAC roles ke through structure deta — ek jagah role→permissions define, users ko roles assign, aur routes/UI/APIs ko role/permission se guard. Least-privilege enforce karna aasan.</p>
+
+<h3 class="part">4. Internal Working — roles in claims, checked everywhere</h3>
+<div class="panel why"><div class="ptitle">Roles flow: token → guard/UI → API</div><p>Login ke baad user ke roles usually JWT claims mein aate (<code>{ "roles": ["admin"], "permissions": ["orders.write"] }</code>). Angular-side, ek <code>AuthService</code> in roles ko expose karta. Phir teen jagah check hota: (1) <strong>Route guards</strong> — parameterized <code>roleGuard('admin')</code> jo route data ya argument se required role check kare; (2) <strong>UI-level</strong> — ek structural directive (<code>*hasRole</code>) ya signal-based check jo buttons/sections role ke hisaab se dikhaye/chhupaaye; (3) sabse important — <strong>server-side</strong>, jahan har protected API endpoint role/permission verify kare. Client-side checks sirf UX (irrelevant options chhupana) — bypass ho sakte, isliye <strong>enforcement backend pe</strong>. <strong>Roles vs permissions:</strong> role = collection of permissions; fine-grained checks permissions pe (<code>orders.write</code>), coarse checks roles pe (<code>admin</code>).</p></div>
+
+<div class="dg-title">Diagram — RBAC layers</div>
+<pre class="diagram">
+ JWT: { roles:['editor'], permissions:['posts.edit'] }
+        │
+   ┌────┼─────────────────────┐
+   ▼    ▼                      ▼
+ route guard   UI directive   API endpoint  ← REAL enforcement
+ roleGuard('editor')  *hasRole="'editor'"   @PreAuthorize("posts.edit")
+ (UX/nav)      (hide/show)    (security boundary)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ login ─▶ JWT with roles ─▶ AuthService.roles
+   route: canActivate:[roleGuard('admin')] ─▶ role check ─▶ allow/redirect
+   template: @if (auth.hasRole('admin')) { &lt;button&gt;Delete&lt;/button&gt; }
+   API call ─▶ server checks role/permission ─▶ 403 if not allowed
+</pre>
+
+<h3 class="part">6. Architecture — where to check</h3>
+<table>
+<tr><td>Route guard (role)</td><td>Parameterized <code>roleGuard(role)</code> — block whole routes by role.</td></tr>
+<tr><td>UI directive / signal</td><td><code>*hasRole</code> / <code>auth.hasRole()</code> — hide/show elements (UX only).</td></tr>
+<tr><td>Server-side</td><td><b>The real boundary</b> — every protected endpoint checks role/permission.</td></tr>
+<tr><td>Roles vs permissions</td><td>Role = bundle of permissions; check permissions for fine-grained control.</td></tr>
+<tr><td>RBAC vs ABAC</td><td>RBAC by role; ABAC by attributes (context/resource) — more granular.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">parameterized role guard + hasRole directive</div>
+<pre><code>// role.guard.ts — factory returns a CanActivateFn
+export function roleGuard(required: string): CanActivateFn {
+  return (route, state) =&gt; {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+    return auth.hasRole(required)
+      ? true
+      : router.createUrlTree(['/forbidden']);
+  };
+}
+// route: { path:'admin', canActivate:[roleGuard('admin')], ... }
+
+// hasRole.directive.ts — hide/show UI by role (UX only)
+@Directive({ selector: '[hasRole]', standalone: true })
+export class HasRoleDirective {
+  private auth = inject(AuthService);
+  private tpl = inject(TemplateRef);
+  private vcr = inject(ViewContainerRef);
+  @Input() set hasRole(role: string) {
+    this.vcr.clear();
+    if (this.auth.hasRole(role)) this.vcr.createEmbeddedView(this.tpl);
+  }
+}
+// template: &lt;button *hasRole="'admin'"&gt;Delete&lt;/button&gt;</code></pre>
+
+<h3 class="part">8. Beginner Example — hasRole in AuthService</h3>
+<div class="code-label">typescript</div>
+<pre><code>@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private roles = signal&lt;string[]&gt;([]);          // from JWT claims
+  hasRole(role: string) { return this.roles().includes(role); }
+  hasAny(...rs: string[]) { return rs.some(r =&gt; this.roles().includes(r)); }
+}
+// template: @if (auth.hasRole('admin')) { ... }   (signal → OnPush/zoneless friendly)</code></pre>
+
+<h3 class="part">9. Advanced Example — permission-based (finer than roles)</h3>
+<div class="code-label">check permissions, not just roles</div>
+<pre><code>// roles are coarse; permissions are precise
+hasPermission(perm: string) { return this.permissions().includes(perm); }
+
+// route: canActivate:[permissionGuard('orders.delete')]
+// template: &lt;button *hasPermission="'orders.delete'"&gt;Delete Order&lt;/button&gt;
+// benefit: change what a role can do WITHOUT touching every guard —
+//   just update the role→permission mapping (usually server-side).</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Roles/permissions JWT claims se → <code>AuthService</code> (signals).</li>
+<li><code>roleGuard(required)</code> factory → parameterized <code>CanActivateFn</code>.</li>
+<li><code>hasRole</code> directive UI elements ko role se hide/show (UX).</li>
+<li>Permission-based checks (<code>orders.delete</code>) role se finer.</li>
+<li>Server har protected API pe role/permission enforce — real boundary.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Sirf client-side role check — bypass ho sakta; server-side enforcement zaroori.</li>
+<li>UI hide karke "secure" samajhna — hidden button ka API abhi bhi callable; backend check karo.</li>
+<li>Roles hard-code karna sab jagah — role→permission mapping centralize karo.</li>
+<li>Over-broad roles (sab admin) — least privilege violate; granular roles/permissions.</li>
+<li>Roles ko client-side JWT se trust karke enforce — token claims sirf server-verified pe bharosa.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Least privilege — minimal roles/permissions per user.</li>
+<li>Client-side checks (guard/UI) sirf UX ke liye; <strong>enforce server-side</strong> har API pe.</li>
+<li>Permission-based (fine-grained) prefer karo pure roles se — flexible.</li>
+<li>Role→permission mapping centralize (usually backend); UI usse derive.</li>
+<li>Signals se <code>hasRole</code> — OnPush/zoneless friendly reactive UI.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>RBAC checks lightweight (array/set lookups). Client-side <code>hasRole</code> signal-based rakho — reactive + OnPush-friendly (role change pe UI auto-update). <code>canMatch</code>-based role guards unauthorized lazy chunks bhi block karte (perf + security). Server-side permission checks per-request, par usually cached/claims-based — negligible. Perf se zyada yahan correctness/security primary.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Role hierarchy</td><td>admin ⊃ editor ⊃ viewer — hierarchy logic (admin implies lower).</td></tr>
+<tr><td>Multi-role users</td><td>User has several roles — <code>hasAny</code> / union of permissions.</td></tr>
+<tr><td>Dynamic roles</td><td>Role change mid-session — refresh token/claims to reflect.</td></tr>
+<tr><td>RBAC vs ABAC</td><td>Context-dependent (own-resource-only) → ABAC / policy checks.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> RBAC kya hai?</summary><div class="ans"><p>Role-Based Access Control — authorization model jahan users ko roles (admin/editor/viewer) assign hoti aur roles ke saath permissions jude hote. "User kya kar sakta" role se decide hota. Ye authentication (kaun ho) ke baad ka step — authorization (kya karne ki ijaazat). Roles permissions ko group karke scalable access-control dete.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Angular mein RBAC kahan-kahan enforce karte ho?</summary><div class="ans"><p>Teen layers: (1) <strong>Route guards</strong> — parameterized <code>roleGuard('admin')</code> se protected routes block; (2) <strong>UI</strong> — <code>*hasRole</code> directive ya <code>auth.hasRole()</code> se buttons/sections hide/show (UX); (3) sabse important — <strong>server-side</strong>, har protected API endpoint role/permission verify kare. Client-side (1,2) sirf UX; real enforcement backend pe (bypass-proof).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Roles vs permissions — farak aur kab kaunsa?</summary><div class="ans"><p>Role ek collection of permissions hai (jaise "editor" = <code>posts.read</code> + <code>posts.edit</code>). Coarse checks ke liye roles (<code>admin</code>), fine-grained ke liye permissions (<code>orders.delete</code>). Permission-based better scale karta — role kya kar sakta ye badalna ho toh sirf role→permission mapping update karo, har guard/check nahi. Roles readability, permissions granularity dete.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek "editor" ne DevTools se <code>*hasRole="'admin'"</code> wala delete-button unhide kiya aur delete API call kar di. Delete ho gaya. Kya galat tha?</summary><div class="ans"><p>Fundamental galti: authorization sirf <strong>client-side</strong> enforce hui (UI hide). UI hide karna security nahi — hidden button ka API abhi bhi directly callable hai (DevTools/curl se). Delete API endpoint ne <strong>server-side role/permission check nahi kiya</strong>. Fix: har protected API endpoint pe server-side authorization — verified JWT claims se role/permission check, aur unauthorized pe 403. Client-side checks sirf UX (irrelevant options chhupana); asli boundary hamesha backend pe.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>RBAC = users→roles→permissions. Roles coarse, permissions fine-grained. Roles usually in JWT claims.</li>
+<li>Enforce at: route guards (<code>roleGuard(role)</code>), UI (<code>*hasRole</code>, UX only), and — critically — SERVER-SIDE (real boundary).</li>
+<li>Least privilege. Client checks are bypassable — backend must authorize every protected call.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.11 · Role guard + directive</div><p>Ek parameterized <code>roleGuard(role)</code> aur ek <code>*hasRole</code> structural directive banao. Ek admin route + admin-only button dono role se protect karo. Signals se <code>hasRole</code> reactive banao.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-17.12 · Permissions over roles</div><p>Role-based checks ko permission-based (<code>orders.delete</code>) mein refactor karo. Dikhao ki role ki capability badalna ab sirf mapping update se hota (guards untouched).</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Token Refresh Flow</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>interceptor catches 401 · call refresh · retry original request · concurrent-request queuing · the single-flight mutex · shareReplay · avoiding refresh storms · logout on failure</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Token refresh flow woh production-grade mechanism hai jo access token expire hone pe <em>automatically</em> naya le aata aur failed request ko retry karta — user ko kuch pata nahi chalta. Angular mein ye usually ek <strong>interceptor</strong> mein implement hota: <code>401</code> catch karo → refresh karo → original request naye token ke saath retry karo. Asli challenge: jab <em>multiple</em> requests ek saath 401 paate.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Access token short-lived (S-03) — beech kaam mein expire ho sakta. Bina auto-refresh, user ko random 401s ya forced logout milega (bad UX). Refresh flow seamlessly session continue karta. Par naive implementation (har 401 pe alag refresh) rotation ke saath toot jaata (S-03) — isliye ek carefully-designed <strong>single-flight</strong> flow chahiye.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Do problems: (1) expired-token requests ka silent recovery; (2) <strong>concurrent refresh storm</strong> — jab access expire hote hi 5 requests ek saath 401 paate, sabhi refresh trigger kar dete → 5 parallel refreshes → rotation invalidate + duplicate work + possible logout. Proper flow ek hi refresh chalata; baaki uska wait karte, phir naye token se retry.</p>
+
+<h3 class="part">4. Internal Working — the single-flight refresh</h3>
+<div class="panel why"><div class="ptitle">One refresh in flight; others queue</div><p>Core idea: ek shared state (jaise ek <code>BehaviorSubject&lt;string|null&gt;</code> for the current/new token, plus an <code>isRefreshing</code> flag). Jab ek request 401 paata: (1) agar koi refresh <em>already chal raha</em>, ye request us pending refresh ko <em>wait</em> karta (subject ke naye-token emit hone tak), phir naye token se retry; (2) agar koi refresh nahi chal raha, ye request refresh <em>start</em> karta (<code>isRefreshing=true</code>, subject ko <code>null</code>), refresh Observable ko <code>shareReplay</code>/shared rakhta taaki concurrent callers same result paayein, aur success pe naya token subject pe emit karke sab waiting requests ko unblock karta. Refresh <strong>fail</strong> hone pe → logout + login redirect. Ye "single-flight" (ek hi refresh at a time) pattern rotation-safe hai — parallel refreshes nahi hote.</p></div>
+
+<div class="dg-title">Diagram — concurrent 401 handling</div>
+<pre class="diagram">
+ t0: access token expires
+ req A ─401─▶ no refresh running → START refresh (isRefreshing=true, token$=null)
+ req B ─401─▶ refresh already running → WAIT on token$
+ req C ─401─▶ refresh already running → WAIT on token$
+        refresh completes → token$.next(newToken), isRefreshing=false
+ req A,B,C ─▶ all retry with newToken ─▶ success
+ (only ONE refresh call happened → rotation-safe, no accidental logout)
+</pre>
+
+<h3 class="part">5. Execution Flow</h3>
+<pre class="diagram">
+ next(req).pipe(catchError(err =&gt;
+   err.status===401
+     ? isRefreshing
+         ? token$.pipe(filter(t=&gt;!!t), take(1), switchMap(t =&gt; next(retryWith(req,t))))
+         : (isRefreshing=true, token$.next(null),
+            auth.refresh().pipe(
+              switchMap(t =&gt; { isRefreshing=false; token$.next(t); return next(retryWith(req,t)); }),
+              catchError(e =&gt; { auth.logout(); return throwError(()=&gt;e); })))
+     : throwError(()=&gt;err)))
+</pre>
+
+<h3 class="part">6. Architecture — the pieces</h3>
+<table>
+<tr><td><code>isRefreshing</code> flag</td><td>Is a refresh currently in flight?</td></tr>
+<tr><td><code>token$</code> (BehaviorSubject)</td><td>Emits the new token; waiting requests subscribe.</td></tr>
+<tr><td>Catch 401</td><td>In the interceptor's <code>catchError</code>.</td></tr>
+<tr><td>Retry</td><td>Clone the original request with the new token, <code>next(retry)</code>.</td></tr>
+<tr><td>Fail → logout</td><td>Refresh fails (refresh token dead) → logout + redirect.</td></tr>
+<tr><td>Guard loops</td><td>Skip refresh for the refresh endpoint itself; avoid infinite retry.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">refresh.interceptor.ts — single-flight (simplified)</div>
+<pre><code>let isRefreshing = false;
+const token$ = new BehaviorSubject&lt;string | null&gt;(null);
+
+export const refreshInterceptor: HttpInterceptorFn = (req, next) =&gt; {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return next(req).pipe(
+    catchError((err: HttpErrorResponse) =&gt; {
+      // only handle 401s, and never for the refresh call itself
+      if (err.status !== 401 || req.url.includes('/auth/refresh')) {
+        return throwError(() =&gt; err);
+      }
+      if (isRefreshing) {
+        // a refresh is already running → wait for the new token, then retry
+        return token$.pipe(
+          filter((t): t is string =&gt; t !== null),
+          take(1),
+          switchMap(t =&gt; next(addToken(req, t))),
+        );
+      }
+      // start a single refresh
+      isRefreshing = true;
+      token$.next(null);
+      return auth.refresh().pipe(
+        switchMap(newToken =&gt; {
+          isRefreshing = false;
+          token$.next(newToken);                 // unblock waiting requests
+          return next(addToken(req, newToken));   // retry this one
+        }),
+        catchError(e =&gt; {
+          isRefreshing = false;
+          auth.logout(); router.navigate(['/login']);
+          return throwError(() =&gt; e);
+        }),
+      );
+    }),
+  );
+};
+
+function addToken(req: HttpRequest&lt;unknown&gt;, token: string) {
+  return req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+}</code></pre>
+
+<h3 class="part">8. Beginner Example — the naive (broken) version</h3>
+<div class="code-label">why this fails with rotation</div>
+<pre><code>// ❌ naive: every 401 refreshes independently
+catchError(err =&gt; err.status === 401
+  ? auth.refresh().pipe(switchMap(t =&gt; next(addToken(req, t))))
+  : throwError(() =&gt; err))
+// 3 concurrent 401s → 3 parallel refresh() calls.
+// with rotation: 1st rotates the token, 2nd &amp; 3rd send the now-stale refresh token
+// → reuse detection → whole family invalidated → user logged out. BAD.</code></pre>
+
+<h3 class="part">9. Advanced Example — proactive refresh (avoid 401s entirely)</h3>
+<div class="code-label">refresh BEFORE expiry</div>
+<pre><code>// alternative/complement: refresh proactively when the token is ~1 min from expiry,
+// so requests rarely hit a 401 at all.
+scheduleRefresh(expiresAt: number) {
+  const delay = expiresAt - Date.now() - 60_000;  // 1 min before expiry
+  timer(Math.max(delay, 0)).pipe(
+    switchMap(() =&gt; this.auth.refresh())
+  ).subscribe();
+}
+// reactive (catch-401) + proactive (pre-expiry) together = smoothest UX.</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>401 catch karo (refresh endpoint ko skip — loop rokta).</li>
+<li>Agar refresh chal raha (<code>isRefreshing</code>) → <code>token$</code> pe wait, phir retry.</li>
+<li>Warna refresh start: <code>isRefreshing=true</code>, <code>token$.next(null)</code>.</li>
+<li>Success → <code>token$.next(newToken)</code> (waiters unblock) + is request ko retry.</li>
+<li>Fail → logout + login redirect.</li>
+<li>Ek hi refresh at a time → rotation-safe.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Naive per-401 refresh → parallel refreshes → rotation breaks → logout (the classic bug).</li>
+<li>Refresh endpoint ke 401 ko refresh karne ki koshish → infinite loop. Skip karo.</li>
+<li><code>isRefreshing</code> flag reset na karna on error → subsequent requests permanently stuck waiting.</li>
+<li>Waiting requests ko naye token se retry karna bhoolna (purane token se retry → phir 401).</li>
+<li>Refresh fail pe logout na karna → user broken state mein.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Single-flight refresh — ek refresh at a time; baaki wait + retry with new token.</li>
+<li>Refresh endpoint ke requests ko skip karo (loop-proof).</li>
+<li>Refresh fail → logout + redirect; flag hamesha reset (success aur error dono).</li>
+<li>Proactive pre-expiry refresh + reactive 401-catch dono (smoothest UX).</li>
+<li>Multi-tab → BFF/centralized refresh (cross-tab rotation issues avoid).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Single-flight ka bada win: N concurrent 401s pe sirf <strong>ek</strong> refresh call (N nahi) — network + server load kam, aur rotation-safe. Proactive refresh 401 round-trips hi avoid karta (requests pehli baar mein succeed). <code>shareReplay</code>/shared subject waiting requests ko efficiently unblock karta. Refresh storm (dozens of parallel refreshes) rokna server-side + client-side dono pe healthy.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Multi-tab</td><td>Har tab apna interceptor → cross-tab parallel refresh; BFF/broadcast-channel se coordinate.</td></tr>
+<tr><td>Refresh also 401s</td><td>Refresh token dead → logout (don't retry).</td></tr>
+<tr><td>Non-401 errors</td><td>Pass through untouched (only 401 triggers refresh).</td></tr>
+<tr><td>Race on flag</td><td>Module-level state shared across the app — reset carefully in all paths.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-med">MEDIUM</span> Token refresh flow interceptor mein kaise kaam karta?</summary><div class="ans"><p>Interceptor response ka <code>401</code> (expired access token) catch karta, <code>AuthService.refresh()</code> call karta naya access token lene, aur phir original failed request ko naye token ke saath <strong>retry</strong> karta — user ko bina pata chale. Refresh fail (refresh token dead) → logout + login redirect. Key nuance: concurrent 401s ko carefully handle karna (single-flight).</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Jab multiple requests ek saath 401 paate, kya problem aur solution?</summary><div class="ans"><p>Problem: har request independently refresh trigger karti → multiple parallel refresh calls. Rotation ke saath (S-03) pehla refresh token rotate kar deta, baaki purane (ab-invalid) token se refresh karte → reuse-detection → poora family invalidate → unexpected logout. Solution: <strong>single-flight</strong> — ek <code>isRefreshing</code> flag + shared <code>token$</code> subject. Pehla 401 refresh start karta; baaki 401s us pending refresh ka wait karte (subject pe), phir sab naye token se retry karte. Sirf ek refresh chalti — rotation-safe.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Proactive vs reactive refresh?</summary><div class="ans"><p><strong>Reactive:</strong> 401 aane par refresh karo (interceptor catches expired-token errors). <strong>Proactive:</strong> token expire hone se pehle (jaise 1 min pehle, <code>exp</code> se schedule karke) refresh kar lo — requests 401 hit hi na karein. Reactive robust safety-net hai; proactive smoother (fewer failed requests). Best: dono saath — proactive normal case handle kare, reactive edge cases (clock skew, missed schedule) pakde.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Dashboard load pe 6 API calls ek saath jaati hain. Access token expired hai. Users kabhi-kabhi is moment pe logout ho jaate. Root cause + fix?</summary><div class="ans"><p>Root cause: 6 requests ek saath 401 paate, aur naive interceptor har ek pe alag <code>refresh()</code> call karta → 6 parallel refreshes. Rotation ke saath pehla token rotate karta, baaki 5 stale refresh token se → reuse-detection → family invalidate → logout. Fix: single-flight refresh — pehla request refresh start kare (<code>isRefreshing=true</code>), baaki 5 shared <code>token$</code> pe wait karein, refresh complete hone pe sab naye token se retry karein. Ek refresh, no reuse, no logout. (Optional: proactive pre-expiry refresh se ye moment hi avoid ho.)</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>Interceptor: catch 401 → refresh → retry original request with new token. Fail → logout.</li>
+<li>Concurrent 401s → SINGLE-FLIGHT: <code>isRefreshing</code> flag + shared <code>token$</code>; others wait then retry. (Naive parallel refresh + rotation = logout bug.)</li>
+<li>Skip refresh endpoint (loop-proof); reset flag on success AND error. Proactive + reactive = smoothest.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.13 · Single-flight refresh interceptor</div><p>Ek refresh interceptor banao jo 401 pe single-flight refresh kare (<code>isRefreshing</code> + <code>token$</code>). 5 concurrent 401s simulate karke prove karo sirf ek refresh call hoti aur sab requests retry hote.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-17.14 · Reproduce the logout bug</div><p>Naive per-401 refresh + rotation-simulating backend se unexpected-logout bug reproduce karo. Phir single-flight se fix karke difference dikhao. Proactive refresh bhi add karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Security Best Practices</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>XSS &amp; Angular sanitization · CSRF/XSRF &amp; HttpClient protection · token storage (in-memory / httpOnly / BFF) · HTTPS · CSP · least privilege · dependency hygiene</b></p>
+
+<h3 class="part">1. What is it? (Kya hai ye?)</h3>
+<p>Security best practices woh cross-cutting defenses hain jo poori app ko common web attacks se bachati hain — mukhya taur pe <strong>XSS</strong> (malicious script injection), <strong>CSRF</strong> (forged requests), aur <strong>token theft</strong> (insecure storage). Ye ek "feature" nahi, ek discipline hai jo har layer pe apply hoti.</p>
+
+<h3 class="part">2. Why do we need it? (Zaroorat kyun hai?)</h3>
+<p>Ek achhi auth flow bhi bekaar hai agar attacker XSS se token chura le, ya CSRF se user ki taraf se actions kar de, ya token localStorage se leak ho jaaye. Security best practices ye ensure karti ki tumhara auth infrastructure actually secure ho — sirf "kaam kare" nahi, "safely kaam kare".</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<p>Real-world attack vectors. XSS (script injection → token theft/actions), CSRF (cross-site forged requests), token leakage (insecure storage), man-in-the-middle (no HTTPS). Best practices in vectors ko systematically close karti — defense in depth.</p>
+
+<h3 class="part">4. Internal Working — the big three &amp; Angular's defenses</h3>
+<div class="panel why"><div class="ptitle">XSS, CSRF, token storage</div>
+<p><strong>XSS (Cross-Site Scripting):</strong> attacker malicious JS inject karta (jaise ek comment field mein <code>&lt;script&gt;</code>) jo victim ke browser mein chalta — tokens chura sakta, actions kar sakta. <strong>Angular ki defense:</strong> by default Angular saara interpolated content ko <em>contextually auto-sanitize/escape</em> karta — <code>{{ userInput }}</code> safe render hota (script execute nahi hota). Danger tab jab tum <code>[innerHTML]</code> ya <code>bypassSecurityTrust*</code> se ise bypass karte ho with untrusted data.</p>
+<p><strong>CSRF/XSRF (Cross-Site Request Forgery):</strong> attacker site victim ke browser se tumhare API pe forged request bhejwaata (cookies auto-attach hote). <strong>Angular's HttpClient defense:</strong> ek <code>XSRF-TOKEN</code> cookie padhta aur <code>X-XSRF-TOKEN</code> header mein bhejta — server dono match karke verify karta (double-submit). Cross-site attacker cookie padh nahi sakta (same-origin), toh header set nahi kar sakta.</p>
+<p><strong>Token storage:</strong> localStorage/sessionStorage XSS se readable — tokens wahan mat rakho. Access token in-memory; refresh token HttpOnly cookie / BFF (S-03).</p></div>
+
+<div class="dg-title">Diagram — defense in depth</div>
+<pre class="diagram">
+ XSS   → Angular auto-sanitizes {{}}; avoid bypassSecurityTrust*/innerHTML; add CSP
+ CSRF  → HttpClient XSRF-TOKEN cookie → X-XSRF-TOKEN header (double-submit)
+ Theft → access token in-memory; refresh in HttpOnly cookie / BFF; never localStorage
+ Wire  → HTTPS everywhere; Secure + SameSite cookies
+</pre>
+
+<h3 class="part">5. Execution Flow — Angular's XSRF protection</h3>
+<pre class="diagram">
+ server sets cookie: XSRF-TOKEN=abc (readable by same-origin JS)
+ HttpClient (mutating request) ─▶ reads cookie ─▶ sends header X-XSRF-TOKEN: abc
+ server ─▶ compares cookie vs header ─▶ match → trust ; mismatch → reject
+ (cross-site attacker can't read the cookie → can't set the header → blocked)
+</pre>
+
+<h3 class="part">6. Architecture — the checklist</h3>
+<table>
+<tr><td>XSS</td><td>Trust Angular's auto-escaping; avoid <code>bypassSecurityTrust*</code> with user input; add CSP.</td></tr>
+<tr><td>CSRF</td><td><code>provideHttpClient(withXsrfConfiguration({...}))</code>; SameSite cookies.</td></tr>
+<tr><td>Token storage</td><td>Access in-memory; refresh HttpOnly/Secure/SameSite cookie or BFF.</td></tr>
+<tr><td>BFF</td><td>Backend handles tokens; browser gets only a session cookie — no tokens in JS.</td></tr>
+<tr><td>Transport</td><td>HTTPS everywhere; HSTS; Secure cookies.</td></tr>
+<tr><td>Other</td><td>Least-privilege scopes/roles; validate on server; keep deps patched; CSP headers.</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<div class="code-label">XSRF config + safe sanitization</div>
+<pre><code>// app.config.ts — configure XSRF cookie/header names to match your backend
+provideHttpClient(
+  withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' }),
+);
+
+// sanitization: trust Angular by default
+// template: {{ userComment }}         ✅ auto-escaped (script won't run)
+// template: [innerHTML]="userComment" ⚠️ Angular still sanitizes, but risky patterns
+
+// ONLY bypass with content YOU control, never user input:
+constructor(private sanitizer: DomSanitizer) {}
+safeVideo = this.sanitizer.bypassSecurityTrustResourceUrl(TRUSTED_EMBED_URL); // trusted only</code></pre>
+
+<h3 class="part">8. Beginner Example — the token storage decision</h3>
+<div class="code-label">where to keep tokens</div>
+<pre><code>// ❌ localStorage.setItem('token', jwt)   → any XSS script can steal it
+// ⚠️ sessionStorage                        → still XSS-readable (shorter life)
+// ✅ access token in a JS variable (in-memory) → not persisted, gone on reload
+// ✅✅ refresh token in HttpOnly cookie / BFF  → JS can't read it at all (XSS-safe)</code></pre>
+
+<h3 class="part">9. Advanced Example — the BFF pattern</h3>
+<div class="code-label">the most secure SPA auth architecture</div>
+<pre><code>// BFF (Backend-for-Frontend): a thin server your SPA talks to.
+//   - BFF does the OAuth flow, holds access + refresh tokens SERVER-SIDE
+//   - browser only gets an HttpOnly session cookie (no tokens in JS at all)
+//   - SPA calls its BFF; BFF attaches the real token and proxies to APIs
+// result: XSS cannot steal tokens (they never reach the browser).
+//   the industry direction for sensitive SPAs.
+// Angular side: just call your BFF with withCredentials: true (cookie auth).</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ol>
+<li>Angular <code>{{ }}</code> auto-escapes — XSS default-protected; <code>bypassSecurityTrust*</code> sirf trusted content pe.</li>
+<li><code>withXsrfConfiguration</code> — CSRF double-submit (cookie ↔ header).</li>
+<li>Access token in-memory; refresh HttpOnly cookie (JS-inaccessible).</li>
+<li>BFF — tokens server-side, browser ko sirf session cookie (most secure).</li>
+<li>HTTPS + Secure/SameSite cookies + CSP — transport &amp; injection defense.</li>
+</ol>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">Traps</div>
+<ul style="margin-bottom:0">
+<li>Tokens localStorage mein — XSS ki #1 loot. In-memory/httpOnly/BFF use karo.</li>
+<li><code>bypassSecurityTrustHtml(userInput)</code> — XSS ka direct gateway. User input kabhi bypass mat karo.</li>
+<li>CSRF protection off / SameSite cookies na set karna.</li>
+<li>Client-side auth checks pe akele bharosa — server pe enforce.</li>
+<li>HTTP (no TLS), outdated dependencies (known CVEs), over-broad scopes.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">Do this</div>
+<ul style="margin-bottom:0">
+<li>Angular ki auto-sanitization pe bharosa; <code>bypassSecurityTrust*</code> sirf trusted content.</li>
+<li>CSRF: <code>withXsrfConfiguration</code> + Secure/SameSite=Strict cookies.</li>
+<li>Tokens: access in-memory, refresh HttpOnly cookie / BFF — never localStorage.</li>
+<li>HTTPS everywhere; CSP headers; least-privilege; deps patched.</li>
+<li>Server-side validate + authorize everything (client is never the boundary).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Security ka perf overhead minimal — sanitization compile-time/optimized, XSRF header ek small addition, HTTPS negligible on modern hardware. BFF ek extra hop add karta (proxy) par security worth it aur caching se optimize hota. CSP koi runtime cost nahi. Point: security ke liye perf compromise almost kabhi justify nahi — modern defenses cheap hain.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<table>
+<tr><td>Trusted Types</td><td>Browser API (Angular supports) — DOM-XSS ko aur strongly prevent.</td></tr>
+<tr><td>SameSite=None</td><td>Cross-site cookies need <code>Secure</code>; understand implications.</td></tr>
+<tr><td>SSR + tokens</td><td>Server-render pe token handling careful (no leak into HTML).</td></tr>
+<tr><td>Third-party scripts</td><td>Any included script can read in-memory tokens — CSP + audit deps.</td></tr>
+</table>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Angular XSS se kaise bachata hai by default?</summary><div class="ans"><p>Angular saara interpolated content (<code>{{ userInput }}</code>) ko by default contextually auto-sanitize/escape karta — injected <code>&lt;script&gt;</code> execute nahi hota, text ke roop mein render hota. Ye built-in protection hai. Danger tab jab tum ise bypass karte ho — <code>bypassSecurityTrustHtml/Url/...</code> ya risky <code>[innerHTML]</code> patterns with untrusted (user) data. Rule: Angular ki sanitization pe bharosa, bypass sirf trusted content pe.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Tokens localStorage mein kyun nahi rakhne chahiye?</summary><div class="ans"><p>localStorage (aur sessionStorage) same-origin JavaScript se readable hai — matlab agar app mein koi XSS vulnerability ho, attacker ka injected script easily token chura sakta. Better: access token in-memory (JS variable — persist nahi hota, XSS window chhota), aur refresh token HttpOnly cookie mein (JS access hi nahi kar sakta) ya BFF pattern mein server-side. Goal: powerful tokens ko JavaScript ki reach se bahar rakhna.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Angular HttpClient CSRF se kaise bachata?</summary><div class="ans"><p>Double-submit cookie pattern: server ek <code>XSRF-TOKEN</code> cookie set karta; HttpClient (mutating requests pe) us cookie ko padhkar <code>X-XSRF-TOKEN</code> header mein bhejta; server dono compare karke verify karta. Cross-site attacker victim ki cookies auto-send karwa sakta, par same-origin-policy ki wajah se cookie <em>padh</em> nahi sakta — toh matching header set nahi kar sakta → request reject. <code>withXsrfConfiguration</code> se cookie/header names configure hote.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Ek senior review mein tumhara localStorage-JWT setup reject ho gaya. "BFF use karo" bola gaya. BFF kya hai aur ye kyun zyada secure?</summary><div class="ans"><p>BFF (Backend-for-Frontend) ek thin backend hai jise tumhara SPA baat karta. BFF khud OAuth flow karta aur access + refresh tokens <strong>server-side</strong> rakhta; browser ko sirf ek HttpOnly session cookie milta (koi token JS mein nahi). SPA apne BFF ko call karta (cookie auth), BFF real token attach karke actual APIs ko proxy karta. Kyun secure: tokens browser ke JavaScript tak <em>pahunchte hi nahi</em>, toh XSS unhe chura hi nahi sakta — localStorage-JWT ka core risk poori tarah eliminate. Ye sensitive SPAs ke liye industry direction hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul style="margin-bottom:0">
+<li>XSS: Angular auto-sanitizes <code>{{}}</code>; never <code>bypassSecurityTrust*</code> with user input; add CSP.</li>
+<li>CSRF: HttpClient <code>XSRF-TOKEN</code> cookie → <code>X-XSRF-TOKEN</code> header (double-submit) + SameSite cookies.</li>
+<li>Tokens: access in-memory, refresh HttpOnly cookie / BFF — never localStorage. HTTPS everywhere; enforce on server.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises (No solutions — khud karo!)</h3>
+<div class="mc"><div class="mct">MC-17.15 · XSS &amp; sanitization</div><p>Ek component banao jo user input render kare. Prove karo <code>{{ }}</code> safe hai (script na chale) par <code>bypassSecurityTrustHtml(userInput)</code> XSS gateway hai. Ek trusted-only bypass ka safe example likho.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-17.16 · Security audit</div><p>Ek insecure auth setup (localStorage JWT, no CSRF, implicit flow, client-only checks) do. Har issue identify karke secure version propose karo (in-memory/BFF, XSRF config, Auth Code+PKCE, server-side authz). Ek short audit doc likho.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+
+<div class="footer-note">
+  <b>Soch ka Safar · Chapter 17 complete.</b><br>
+  JWT → OAuth 2.1 &amp; OIDC → Refresh Tokens → Interceptors → Guards → RBAC → Token Refresh Flow → Security Best Practices.<br>
+  Har topic 17-point framework se. Progress upar localStorage mein save hai. Standards-accurate (OAuth 2.1: PKCE mandatory, implicit/password removed; RFC 9700 BCP; refresh rotation + reuse detection; in-memory/HttpOnly/BFF token storage) aur Angular v17→v20+ (functional guards &amp; interceptors, HttpClient XSRF, auto-sanitization). Ab tum ek production-grade, secure auth system end-to-end design kar sakte ho — token anatomy se lekar concurrent-refresh mutex aur XSS/CSRF defense tak. Ye interviews ka high-signal real-world topic hai. Agla chapter: <b>Angular Testing (Vitest / Jest / Testing Library)</b> ya <b>Performance &amp; Optimization (lazy loading, @defer, hydration)</b>?
+</div>
+
+</div><!-- /.wrap -->
+
+<script>
+(function(){
+  /* ---- progress (localStorage) ---- */
+  var KEY='ng_ch17_progress_v1', state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){ b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); }); });
+  render();
+
+  /* ---- lightweight syntax highlighting (emits kw/fn/cm/st/nm) ---- */
+  var KW=/\b(import|from|export|const|let|var|function|return|class|extends|implements|interface|type|new|async|await|if|else|for|of|in|this|null|undefined|true|false|as|public|private|readonly|void|boolean|string|number|get)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function hl(raw){
+    var parts=[], re=/(\/\/[^\n]*)|(`[^`]*`|'[^']*'|"[^"]*")/g, last=0, m;
+    while((m=re.exec(raw))){
+      if(m.index>last) parts.push({t:'c',v:raw.slice(last,m.index)});
+      if(m[1]) parts.push({t:'cm',v:m[1]}); else parts.push({t:'st',v:m[2]});
+      last=re.lastIndex;
+    }
+    if(last<raw.length) parts.push({t:'c',v:raw.slice(last)});
+    return parts.map(function(p){
+      var e=esc(p.v);
+      if(p.t==='cm') return '<span class="cm">'+e+'</span>';
+      if(p.t==='st') return '<span class="st">'+e+'</span>';
+      return e
+        .replace(KW,'<span class="kw">$&</span>')
+        .replace(/(^|[^\w"])(@[A-Za-z]+)/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^-\w">])([A-Z][A-Za-z0-9]+)\b/g,'$1<span class="fn">$2</span>')
+        .replace(/(^|[^\w"#.])(\d+)\b/g,'$1<span class="nm">$2</span>');
+    }).join('');
+  }
+  document.querySelectorAll('pre code').forEach(function(code){
+    code.innerHTML = hl(code.textContent);
+  });
+})();
+</script>
+
+</body>
+</html>

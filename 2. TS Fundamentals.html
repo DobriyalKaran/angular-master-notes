@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 2 — TypeScript Complete Guide for Angular Developers | Soch ka Safar</title>
+<style>
+:root{
+  --bg:#0c0c11; --bg2:#12121a; --card:#15151f; --card2:#1a1a26;
+  --border:#26263a; --border2:#33334d;
+  --accent:#ff2d6f; --accent-soft:#ff6b9d; --accent-dim:rgba(255,45,111,.12);
+  --text:#e9e9f2; --muted:#9a9ab0; --dim:#6b6b85;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+  --code-bg:#101018; --mono:'Cascadia Code','Fira Code',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.65;font-size:15.5px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+/* ===== Header ===== */
+header{padding:56px 0 30px;border-bottom:2px solid var(--accent);margin-bottom:28px}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+h1{font-size:clamp(26px,4.5vw,40px);line-height:1.2;font-weight:800}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);margin-top:12px;max-width:720px}
+.meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.chip{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.chip b{color:var(--accent-soft)}
+
+/* ===== Progress bar ===== */
+.progress-shell{position:sticky;top:0;z-index:50;background:rgba(12,12,17,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 0}
+.progress-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));border-radius:99px;transition:width .3s}
+.plabel{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ===== TOC ===== */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:36px}
+.toc h2{font-size:15px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 24px}
+.toc li{counter-increment:toc;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc a{color:var(--text);text-decoration:none;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.toc a:hover{color:var(--accent-soft)}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-family:var(--mono);font-size:12px}
+.toc .sub{color:var(--dim);font-size:12px;margin-left:30px}
+
+/* ===== Sections ===== */
+section.topic{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:30px 30px 24px;margin-bottom:40px;scroll-margin-top:70px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-num{font-family:var(--mono);color:var(--accent);font-size:13px;border:1px solid var(--accent);border-radius:8px;padding:3px 9px;margin-top:6px}
+section.topic>h2, .sec-head h2{font-size:clamp(20px,3vw,27px);font-weight:800;flex:1;min-width:240px}
+.done-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;margin-top:4px}
+.done-toggle input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.covers{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.covers b{color:var(--muted)}
+
+h3.part{font-size:16.5px;margin:30px 0 12px;padding-left:12px;border-left:3px solid var(--accent);color:var(--accent-soft);font-weight:700}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--text)}
+p{margin:0 0 12px;color:var(--text)}
+p.mut, li.mut{color:var(--muted)}
+strong{color:#fff}
+em{color:var(--accent-soft);font-style:normal;font-weight:600}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:7px}
+a{color:var(--info)}
+
+/* ===== Panels ===== */
+.panel{border-radius:12px;padding:16px 18px;margin:14px 0;border:1px solid var(--border);background:var(--card2)}
+.panel .ptitle{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.why{border-left:4px solid var(--accent)} .why .ptitle{color:var(--accent)}
+.good-p{border-left:4px solid var(--good)} .good-p .ptitle{color:var(--good)}
+.bad-p{border-left:4px solid var(--bad)} .bad-p .ptitle{color:var(--bad)}
+.warn-p{border-left:4px solid var(--warn)} .warn-p .ptitle{color:var(--warn)}
+.info-p{border-left:4px solid var(--info)} .info-p .ptitle{color:var(--info)}
+.panel p:last-child{margin-bottom:0}
+
+/* ===== Code ===== */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0 16px;font-size:13.2px;line-height:1.6}
+code{font-family:var(--mono)}
+p code, li code, td code, summary code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--accent-soft)}
+pre code{color:#d8d8e8;background:none;border:none;padding:0}
+pre .cm{color:#5d5d78}
+pre .kw{color:var(--accent-soft)}
+pre .st{color:#a7e08f}
+pre .fn{color:#7cc7ff}
+pre .nm{color:#f8c471}
+.code-label{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 -6px}
+
+/* ===== Diagrams ===== */
+pre.diagram{background:#0a0a10;border:1px dashed var(--border2);color:var(--accent-soft);font-size:12.5px;line-height:1.5;text-align:left}
+.dg-title{font-size:11px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:16px 0 -6px}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+th{background:var(--accent-dim);color:var(--accent-soft);text-align:left;padding:9px 12px;border:1px solid var(--border2);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:9px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ===== Interview Q&A ===== */
+details{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden}
+details summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:flex-start}
+details summary::before{content:'▸';color:var(--accent);flex-shrink:0;transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .ans{padding:2px 18px 16px 36px;color:var(--muted);font-size:13.8px;border-top:1px dashed var(--border)}
+details .ans p{color:var(--muted)}
+details .ans pre{font-size:12.5px}
+.qtag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:99px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
+.q-easy{background:rgba(74,222,128,.12);color:var(--good);border:1px solid rgba(74,222,128,.3)}
+.q-med{background:rgba(251,191,36,.12);color:var(--warn);border:1px solid rgba(251,191,36,.3)}
+.q-hard{background:rgba(248,113,113,.12);color:var(--bad);border:1px solid rgba(248,113,113,.3)}
+.q-scen{background:rgba(96,165,250,.12);color:var(--info);border:1px solid rgba(96,165,250,.3)}
+
+/* ===== Revision notes ===== */
+.revision{background:linear-gradient(180deg,var(--accent-dim),transparent);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;margin:16px 0}
+.revision .ptitle{color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.revision ul{margin-bottom:0}
+.revision li{font-size:13.8px}
+
+/* ===== Machine coding ===== */
+.mc{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin:10px 0}
+.mc .mct{font-weight:700;color:var(--accent-soft);font-size:14px;margin-bottom:6px}
+.mc p{font-size:13.6px;color:var(--muted);margin-bottom:6px}
+.mc .lvl{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+
+.footer-note{text-align:center;color:var(--dim);font-size:12.5px;margin-top:50px;padding-top:24px;border-top:1px solid var(--border)}
+.footer-note b{color:var(--accent)}
+@media(max-width:640px){section.topic{padding:22px 16px} .wrap{padding:0 12px 60px}}
+</style>
+</head>
+<body>
+
+<div class="progress-shell">
+  <div class="progress-inner">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="plabel" id="plabel">0 / 9 sections done</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soch ka Safar · Angular Mentorship Series</div>
+  <h1>Chapter 2 — <span>TypeScript Complete Guide</span> for Angular Developers</h1>
+  <p class="subtitle">Angular ka har code TypeScript hai — lekin zyada tar devs TS ko "JS + types" samajh ke surface pe rehte hain. Is chapter mein hum type system ko ek <em>compile-time programming language</em> ki tarah seekhenge: structural typing se lekar conditional types tak, har concept Angular ke real usage se joda hua. Interview mein TS depth = instant seniority signal.</p>
+  <div class="meta-row">
+    <span class="chip">Target: <b>0–5 yrs Product Companies</b></span>
+    <span class="chip">Language: <b>Hinglish</b></span>
+    <span class="chip">Sections: <b>9</b> · Topics: <b>16</b></span>
+    <span class="chip">Prereq: <b>Chapter 1 (JS Essentials)</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>📚 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Type System Fundamentals</a><div class="sub">Structural typing · Inference · any/unknown/never/void · Narrowing</div></li>
+    <li><a href="#s2">Interfaces &amp; Type Aliases</a><div class="sub">extends vs intersection · Declaration merging · Index signatures</div></li>
+    <li><a href="#s3">Enums (aur unke Modern Alternatives)</a><div class="sub">Numeric/String/const enums · Reverse mapping · Literal unions</div></li>
+    <li><a href="#s4">Functions in TypeScript</a><div class="sub">Signatures · Overloads · this param · void ka secret</div></li>
+    <li><a href="#s5">Classes, Access Modifiers &amp; Abstract Classes</a><div class="sub">Parameter properties (Angular DI idiom!) · abstract as DI token</div></li>
+    <li><a href="#s6">Generics</a><div class="sub">Constraints · keyof · Defaults · Signal&lt;T&gt;, FormControl&lt;T&gt;</div></li>
+    <li><a href="#s7">Utility Types &amp; Type Operators</a><div class="sub">keyof/typeof · Partial/Pick/Omit/Record/ReturnType/Awaited</div></li>
+    <li><a href="#s8">Advanced Types — Mapped, Conditional, infer, Template Literals</a><div class="sub">Type-level programming — SDE-3 territory</div></li>
+    <li><a href="#s9">Modules, Declaration Files &amp; Decorators</a><div class="sub">.d.ts · declare global · Angular decorators ka sach</div></li>
+  </ol>
+</nav>
+
+<section class="topic" id="s1">
+<div class="sec-head">
+  <span class="sec-num">S-01</span>
+  <h2>Type System Fundamentals</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s1"> Done</label>
+</div>
+<p class="covers">Covers: <b>Structural typing · Type inference · any vs unknown vs never vs void · Narrowing · strict mode · Type erasure</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>TypeScript = JavaScript + ek <strong>static type layer</strong> jo sirf compile time pe exist karti hai. Types code ke <em>shapes ka contract</em> hain — "is variable mein aisa data hoga" ka promise jo compiler enforce karta hai. Run hone se pehle saare types <strong>erase</strong> ho jaate hain — browser ko pure JS milta hai. TS runtime nahi badalta, sirf likhne ka experience aur safety badalta hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Java background se aa rahe ho toh ye argument already jeete hue ho: <em>compiler ko galti pakadne do, user ko nahi.</em> JS mein <code>user.nmae</code> (typo) runtime pe <code>undefined</code> deta hai — production mein, kisi customer ke browser mein. TS mein wahi typo editor mein red underline hai, commit hone se pehle. Angular ne TS ko day-1 se isi liye adopt kiya: framework-scale codebase bina types ke maintain karna impossible tha.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Runtime type errors → compile-time errors</strong> — bugs ki sabse badi category shift-left.</li>
+<li><strong>Documentation that can't lie</strong> — function signature hi contract hai; comments purane ho jaate hain, types nahi (compile hi nahi hoga).</li>
+<li><strong>Refactoring confidence</strong> — field rename karo, compiler har broken usage dikha dega. 500-file Angular app mein ye superpower hai.</li>
+<li><strong>Tooling</strong> — autocomplete, go-to-definition, safe renames — sab type information se aate hain.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p><strong>Structural typing (duck typing with a compiler):</strong> Java <em>nominal</em> hai — type ka <em>naam</em> matter karta hai (<code>implements</code> likhna padta hai). TS <em>structural</em> hai — <strong>shape</strong> matter karti hai. Agar object mein required properties hain, wo type se compatible hai, chahe usne kabhi us interface ka naam suna bhi na ho.</p>
+<pre><code><span class="kw">interface</span> <span class="nm">Point</span> { x: <span class="nm">number</span>; y: <span class="nm">number</span>; }
+<span class="kw">const</span> p = { x: <span class="st">1</span>, y: <span class="st">2</span>, label: <span class="st">'home'</span> };
+<span class="kw">const</span> pt: <span class="nm">Point</span> = p;   <span class="cm">// ✅ shape match — extra props variable assignment mein OK</span>
+<span class="cm">// Java hota toh: "p Point implement nahi karta" — TS ko naam se matlab nahi</span></code></pre>
+<p><strong>Inference + widening:</strong> compiler expressions se types <em>khud nikaalta</em> hai. <code>let s = 'hi'</code> → type <code>string</code> (widened — badal sakta hai). <code>const s = 'hi'</code> → type <code>'hi'</code> (literal — badal hi nahi sakta, toh narrow rakha).</p>
+<p><strong>Control flow narrowing:</strong> compiler tumhare <code>if</code>/<code>typeof</code>/<code>instanceof</code> checks ko <em>padhta</em> hai aur har branch mein type ko narrow kar deta hai — runtime checks se compile-time knowledge.</p>
+<div class="dg-title">Diagram — The Big Four special types</div>
+<pre class="diagram">
+  any      = type system ka OFF switch. Sab allowed, kuch checked nahi. ☠
+  unknown  = "pata nahi kya hai" — SAFE any. Use karne se pehle
+             narrow karna COMPULSORY. ✅
+  void     = "return value ka koi matlab nahi" (functions ke liye)
+  never    = "ye value kabhi exist hi nahi karegi" — impossible states,
+             infinite loops, throw-only fns, aur EXHAUSTIVENESS checks
+
+  Assignability:      any ⟷ sab kuch (dono taraf — isi liye khatarnaak)
+                      sab kuch → unknown ✅   unknown → kuch nahi (bina narrow)
+                      never → sab kuch ✅     kuch bhi → never ❌
+</pre>
+
+<h3 class="part">5. Execution Flow — TS file se browser tak</h3>
+<pre class="diagram">
+  .ts source
+    │  tsc / Angular compiler (type-check phase)
+    │    types verify → errors report → TYPES ERASE
+    ▼
+  plain .js (esbuild bundle)
+    ▼
+  browser — yahan koi interface, koi annotation NAHI hai
+  ► Consequence: `if (x instanceof MyInterface)` likh hi nahi sakte —
+    interface runtime pe exist nahi karta. Runtime checks VALUES pe hote hain.
+</pre>
+
+<h3 class="part">6. Architecture — strict mode flags (Angular defaults)</h3>
+<table>
+<tr><th>Flag</th><th>Kya pakadta hai</th></tr>
+<tr><td><code>strictNullChecks</code></td><td><code>null</code>/<code>undefined</code> ab har type ka hidden member nahi — "Cannot read property of undefined" ki maut</td></tr>
+<tr><td><code>noImplicitAny</code></td><td>Jahan inference fail ho, wahan silent <code>any</code> nahi — explicit type maango</td></tr>
+<tr><td><code>strictPropertyInitialization</code></td><td>Class field bina initialize ke declare — error (Angular <code>@Input</code> ke saath famous friction)</td></tr>
+<tr><td><code>strictTemplates</code> (Angular)</td><td>HTML templates bhi type-checked! <code>{{ user.nmae }}</code> template mein bhi red</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// api.service.ts — unknown ka production use</span>
+<span class="fn">handleError</span>(err: <span class="nm">unknown</span>) {           <span class="cm">// catch/interceptor se kuch bhi aa sakta hai</span>
+  <span class="kw">if</span> (err <span class="kw">instanceof</span> HttpErrorResponse) {
+    <span class="kw">return this</span>.<span class="fn">mapHttpError</span>(err.status);   <span class="cm">// yahan err ka type narrow ho gaya</span>
+  }
+  <span class="kw">if</span> (err <span class="kw">instanceof</span> Error) <span class="kw">return</span> err.message;
+  <span class="kw">return</span> <span class="st">'Unknown error'</span>;
+}
+<span class="cm">// `any` hota toh err.status kahin bhi likh dete — 500 aane pe pata chalta
+// ki wo TypeError tha, HttpErrorResponse nahi. unknown ne narrow FORCE kiya.</span></code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">let</span> price = <span class="st">499</span>;            <span class="cm">// inferred: number — annotation ki zaroorat NAHI</span>
+price = <span class="st">'free'</span>;             <span class="cm">// ❌ Type 'string' is not assignable to 'number'</span>
+
+<span class="kw">function</span> <span class="fn">greet</span>(name: <span class="nm">string</span>): <span class="nm">string</span> {
+  <span class="kw">return</span> <span class="st">`Hello ${name}`</span>;
+}
+<span class="fn">greet</span>(<span class="st">42</span>);                  <span class="cm">// ❌ compile time pe pakda — runtime tak gaya hi nahi</span>
+
+<span class="kw">let</span> maybe: <span class="nm">string</span> | <span class="nm">null</span> = <span class="fn">localStorage</span>.<span class="fn">getItem</span>(<span class="st">'token'</span>);
+maybe.<span class="fn">length</span>;               <span class="cm">// ❌ strictNullChecks: 'maybe' is possibly 'null'</span>
+<span class="kw">if</span> (maybe) maybe.<span class="fn">length</span>;    <span class="cm">// ✅ narrowed: string</span></code></pre>
+
+<h3 class="part">9. Advanced Example — never se exhaustiveness checking</h3>
+<pre><code><span class="kw">type</span> <span class="nm">PaymentStatus</span> = <span class="st">'created'</span> | <span class="st">'authorized'</span> | <span class="st">'captured'</span> | <span class="st">'failed'</span>;
+
+<span class="kw">function</span> <span class="fn">statusLabel</span>(s: <span class="nm">PaymentStatus</span>): <span class="nm">string</span> {
+  <span class="kw">switch</span> (s) {
+    <span class="kw">case</span> <span class="st">'created'</span>:    <span class="kw">return</span> <span class="st">'Order placed'</span>;       <span class="cm">// L1</span>
+    <span class="kw">case</span> <span class="st">'authorized'</span>: <span class="kw">return</span> <span class="st">'Payment authorized'</span>;
+    <span class="kw">case</span> <span class="st">'captured'</span>:   <span class="kw">return</span> <span class="st">'Payment complete'</span>;
+    <span class="kw">case</span> <span class="st">'failed'</span>:     <span class="kw">return</span> <span class="st">'Payment failed'</span>;
+    <span class="kw">default</span>: {
+      <span class="kw">const</span> exhaustive: <span class="nm">never</span> = s;                 <span class="cm">// L2</span>
+      <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="st">`Unhandled: ${exhaustive}`</span>); <span class="cm">// L3</span>
+    }
+  }
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Har <code>case</code> ke andar <code>s</code> ka type narrow hai — sirf wo ek literal. Control flow analysis in action.</li>
+<li><strong>L2:</strong> Magic line. Agar saare cases handle ho gaye, toh <code>default</code> mein <code>s</code> ka type <code>never</code> hai (kuch bacha hi nahi) — assignment ✅. Kal koi <code>'refunded'</code> status add kare union mein, toh default mein <code>s</code> ka type <code>'refunded'</code> hoga — <code>never</code> ko assign nahi hota — <strong>compile error exactly us switch pe jo update karna bhoola.</strong></li>
+<li><strong>L3:</strong> Runtime safety net bhi — defense in depth. Ye pattern Razorpay-clone ke payment states mein literally life-saver hai; production mein naya status aaya aur UI handle karna bhool gaye wala bug compile-time pe mar jaata hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li><code>any</code> ko "temporary fix" bolke daalna — <code>any</code> infectious hai; usse nikli har value bhi unchecked. Legacy boundary pe bhi <code>unknown</code> use karo.</li>
+<li><code>as</code> casting se compiler ko chup karana: <code>(data as User).name</code> — compiler ko jhooth bola, runtime pe sach samne aayega. <code>as</code> = "mujhe tumse zyada pata hai" ka claim; 90% baar galat hota hai.</li>
+<li><code>!</code> (non-null assertion) ki barsaat: <code>user!.profile!.email!</code> — teen jagah "trust me bro". Optional chaining + narrowing use karo.</li>
+<li>Har cheez pe explicit annotation likhna: <code>const x: number = 5</code> — noise hai; inference ko kaam karne do. Annotate karo <em>boundaries</em> pe: function params, return types (public APIs), class fields.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li><code>strict: true</code> non-negotiable — naya Angular project default deta hai; legacy migrate karna ho toh flag-by-flag.</li>
+<li>External data (API responses, localStorage, URL params) ko <code>unknown</code> maano aur boundary pe validate karo — types compile-time promise hain, network runtime reality hai.</li>
+<li>Return types public functions pe explicit likho — implementation change hone pe contract accidentally na badle.</li>
+<li><code>satisfies</code> operator (TS 4.9+): validation without widening — <code>const config = {...} satisfies AppConfig</code> — check bhi hua, literal types bhi bache.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Runtime cost: <strong>zero</strong> — types erase hote hain, bundle mein ek byte nahi jaata. Asli cost <em>build time</em> pe hai: complex types (Section 8 wale) type-checker ko slow kar sakte hain. Angular CLI isliye type-checking ko alag process mein aur incremental rakhta hai. Team-scale tip: <code>tsc --noEmit --extendedDiagnostics</code> se check time profile hota hai; giant unions (1000+ members) aur deeply recursive conditional types hi usually culprits hote hain.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><strong>Excess property check:</strong> object <em>literal</em> ko directly assign karo toh extra properties error hain (<code>const p: Point = {x:1, y:2, z:3}</code> ❌), par variable ke through allowed (upar wala example ✅). Fresh literals pe TS strict, purani values pe structural.</li>
+<li><code>const obj = { status: 'active' }</code> — <code>status</code> ka type <code>string</code> hai (widened), <code>'active'</code> nahi! Union expect karne wali jagah fail hoga. Fix: <code>as const</code> ya <code>satisfies</code>.</li>
+<li><code>typeof null === 'object'</code> — JS ka historic bug TS narrowing mein bhi bite karta hai; <code>typeof x === 'object'</code> null exclude <em>nahi</em> karta.</li>
+<li>Empty interface <code>{}</code> ka matlab "empty object" nahi — "kuch bhi non-null" hai. <code>const x: {} = 42</code> ✅ (surprise!). Object chahiye toh <code>Record&lt;string, unknown&gt;</code>.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> any aur unknown mein difference — kab kaunsa?</summary><div class="ans"><p>Dono "kuch bhi ho sakta hai" bolte hain, par <code>any</code> checking band kar deta hai (kuch bhi karo, koi error nahi) jabki <code>unknown</code> use karne se <em>pehle</em> narrowing force karta hai. Rule: incoming untyped data = <code>unknown</code>; <code>any</code> = last resort with eslint-disable comment jaisa shame.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> TypeScript runtime pe kya karta hai?</summary><div class="ans"><p>Kuch nahi — trick question hai! Types compile pe erase; browser pure JS chalata hai. Isi liye interfaces pe <code>instanceof</code> nahi lagta aur API response apne aap validate nahi hota. Runtime validation chahiye toh code likhna padta hai (type guards, zod jaisi libs).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Structural vs nominal typing — aur iska ek practical consequence?</summary><div class="ans"><p>Nominal (Java): compatibility naam/declaration se. Structural (TS): shape se — same properties = compatible, bina kisi <code>implements</code> ke. Consequence: (1) test mocks banana easy — poori class implement kiye bina shape-compatible object kaafi; (2) gotcha: do logically-alag types same shape ke hon (<code>UserId = string</code>, <code>OrderId = string</code>) toh interchangeable ho jaate hain — branded types se fix hota hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> never type ke 3 real uses batao.</summary><div class="ans"><p>(1) Exhaustiveness check — switch ke default mein <code>never</code> assignment, union badhne pe compile error. (2) Functions jo return hi nahi karte (<code>throw</code>-only, infinite loop) — callers ko pata hai aage code unreachable. (3) Conditional types mein "is branch ko union se hatao" ka tool — <code>Exclude</code> internally <code>never</code> return karke members filter karta hai (Section 8).</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Type widening kya hai, kab hota hai, aur as const exactly kya karta hai?</summary><div class="ans"><p>Widening = literal type ko general banane ka inference behavior: <code>let x = 'a'</code> mein <code>'a'</code> → <code>string</code>, kyunki <code>let</code> reassignable hai. <code>const</code> primitives pe literal preserve hota hai, par <em>object properties</em> phir bhi widen hoti hain (object mutable hai). <code>as const</code> teen kaam karta hai: har property literal type, sab <code>readonly</code>, arrays → readonly tuples. Isi se <code>const ROLES = ['admin','user'] as const</code> + <code>typeof ROLES[number]</code> = <code>'admin' | 'user'</code> — single source of truth pattern (Section 3 mein enum alternative yahi hai).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> API response type mismatch se production bug aaya — TS ne kyun nahi pakda, aur process fix kya hoga?</summary><div class="ans"><p>Root cause samjhao: <code>this.http.get&lt;User&gt;(url)</code> mein <code>User</code> sirf <em>assertion</em> hai — HttpClient runtime pe kuch validate nahi karta; backend ne field rename kiya, TS khush, UI toota. Fixes ladder: (1) boundary validation — zod/valibot schema se parse, ya haath ka type guard; (2) contract source of truth — OpenAPI spec se types generate (backend-frontend drift structurally impossible); (3) CI mein contract tests. Punch line: "types compile-time contract hain; network boundary pe runtime enforcement lagana architecture ka kaam hai" — ye framing SDE-3 level hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>TS = compile-time layer, runtime pe erase. Structural typing — shape matters, naam nahi.</li>
+<li>any = off switch; unknown = safe any (narrow first); void = return ignore; never = impossible + exhaustiveness.</li>
+<li>Narrowing: typeof / instanceof / in / truthiness / equality — compiler if-branches padhta hai.</li>
+<li>let widens, const preserves (primitives). <code>as const</code> = deep literal + readonly. <code>satisfies</code> = check without widening.</li>
+<li>Boundaries pe annotate + validate; andar inference pe bharosa.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-1.1 · parseApiResponse&lt;T&gt;</div><p>Ek function jo <code>unknown</code> input le, ek validator function le, aur ya toh typed value return kare ya descriptive error throw kare. <code>User</code> ke liye haath se type guard likho — koi library nahi.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-1.2 · Exhaustive reducer</div><p>4 action types wala ek mini state reducer likho jisme <code>never</code>-based exhaustiveness ho. Phir 5th action add karke dekho compiler kahan-kahan chillata hai — list banao.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-1.3 · Widening lab</div><p>10 declarations likho (let/const/object/array/as const/satisfies mix) aur har ek ka inferred type predict karo — phir editor hover se verify. 10/10 tak repeat.</p><div class="lvl">LEVEL: EASY</div></div>
+</section>
+<section class="topic" id="s2">
+<div class="sec-head">
+  <span class="sec-num">S-02</span>
+  <h2>Interfaces &amp; Type Aliases</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s2"> Done</label>
+</div>
+<p class="covers">Covers: <b>interface vs type · extends vs intersection · Declaration merging · Optional/readonly · Index signatures · Unions</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p><strong>Interface</strong> = object shape ka named contract. <strong>Type alias</strong> = <em>kisi bhi</em> type ka naam — object shape, union, primitive, tuple, function, conditional... sab kuch. Interface sirf object-ish shapes describe karta hai; type alias poore type system ka naming tool hai. Dono runtime pe erase (Section 1 yaad hai).</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Bina named types ke har function signature mein <code>{id: number; name: string; email: string}</code> repeat hota — DRY violation type level pe. Named types se: (1) domain vocabulary banti hai (<code>Order</code>, <code>PaymentIntent</code> — code business language bolta hai), (2) ek jagah change, har jagah propagate, (3) IDE mein hover karo aur poora contract dikhe.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Shape duplication</strong> → single source of truth.</li>
+<li><strong>API contracts</strong> — frontend-backend ke beech ka agreement code mein likha hua.</li>
+<li><strong>Union modeling</strong> (type alias exclusive) — "ye value in 4 mein se ek hai" ko first-class banana; discriminated unions impossible states ko unrepresentable bana dete hain.</li>
+</ul>
+
+<h3 class="part">4. Internal Working — interface vs type ka asli difference</h3>
+<table>
+<tr><th>Aspect</th><th>interface</th><th>type alias</th></tr>
+<tr><td>Kya naam de sakta hai</td><td>Object shapes, function shapes, class contracts</td><td>Kuch bhi — unions, tuples, primitives, conditionals, mapped</td></tr>
+<tr><td>Extend</td><td><code>extends</code> keyword</td><td><code>&amp;</code> intersection</td></tr>
+<tr><td><strong>Declaration merging</strong></td><td>✅ Same naam ke do interfaces auto-merge</td><td>❌ Duplicate naam = error</td></tr>
+<tr><td>Error quality (conflicts pe)</td><td><code>extends</code> conflict pe turant clear error</td><td><code>&amp;</code> conflicting props ko chupchaap <code>never</code> bana deta hai — error use hone pe, door</td></tr>
+<tr><td>Class ke saath</td><td><code>implements</code> natural fit</td><td>Object-type alias bhi implement ho sakta hai</td></tr>
+</table>
+<p><strong>Declaration merging internals:</strong> compiler same scope mein same naam ke saare interface declarations ko <em>ek</em> combined type maanta hai. Ye "feature" nahi, <em>mechanism</em> hai jisse poora <code>.d.ts</code> ecosystem chalta hai — <code>Window</code> pe property add karna, library types augment karna (Section 9 mein full use).</p>
+
+<h3 class="part">5. Execution Flow — compiler kaise dekhta hai</h3>
+<pre class="diagram">
+  const u: User = fetchResult;
+     │
+     ▼
+  Compiler: User ka declaration(s) collect karo
+     (interface ho toh saare merged declarations)
+     ▼
+  fetchResult ki structure vs User ki structure — member-by-member
+     required props present? types assignable? readonly respect?
+     ▼
+  ✅ compatible → aage badho     ❌ → squiggly + kaunsi property kyun fail
+</pre>
+
+<h3 class="part">6. Architecture — Discriminated Union (is section ka crown jewel)</h3>
+<pre><code><span class="cm">// Har variant mein ek COMMON literal field = discriminant</span>
+<span class="kw">type</span> <span class="nm">ApiState</span>&lt;T&gt; =
+  | { status: <span class="st">'idle'</span> }
+  | { status: <span class="st">'loading'</span> }
+  | { status: <span class="st">'success'</span>; data: T }          <span class="cm">// data SIRF yahan exist karta hai</span>
+  | { status: <span class="st">'error'</span>; message: <span class="nm">string</span> };   <span class="cm">// message SIRF yahan</span></code></pre>
+<pre class="diagram">
+  if (state.status === 'success')  ──►  is branch mein state ka type:
+                                        { status: 'success'; data: T }
+                                        state.data ✅   state.message ❌ compile error
+
+  Purana style: { loading: boolean; data?: T; error?: string }
+  → 8 combinations possible, 4 hi valid. "loading=true AUR data bhi hai"
+    jaisi IMPOSSIBLE states bhi representable = bugs ka ghar.
+  Discriminated union: impossible states ka TYPE hi nahi banta.
+</pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// models/order.model.ts — API contract</span>
+<span class="kw">export interface</span> <span class="nm">Order</span> {
+  <span class="kw">readonly</span> id: <span class="nm">string</span>;             <span class="cm">// server-assigned, client kabhi na badle</span>
+  amount: <span class="nm">number</span>;
+  currency: <span class="st">'INR'</span> | <span class="st">'USD'</span>;
+  notes?: Record&lt;<span class="nm">string</span>, <span class="nm">string</span>&gt;;  <span class="cm">// optional — API mein aa bhi sakta, nahi bhi</span>
+}
+
+<span class="cm">// component mein — template tak type safety (strictTemplates!)</span>
+state = <span class="fn">signal</span>&lt;ApiState&lt;Order[]&gt;&gt;({ status: <span class="st">'idle'</span> });</code></pre>
+<pre><code><span class="cm">// order-list.component.html — @switch discriminant pe narrow karta hai</span>
+@switch (state().status) {
+  @case (<span class="st">'loading'</span>) { &lt;app-spinner /&gt; }
+  @case (<span class="st">'success'</span>) { &lt;app-order-table [orders]=<span class="st">"state().data"</span> /&gt; }
+  @case (<span class="st">'error'</span>)   { &lt;app-error [msg]=<span class="st">"state().message"</span> /&gt; }
+}</code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">interface</span> <span class="nm">Product</span> {
+  id: <span class="nm">number</span>;
+  name: <span class="nm">string</span>;
+  price: <span class="nm">number</span>;
+  tags?: <span class="nm">string</span>[];          <span class="cm">// optional: string[] | undefined</span>
+  <span class="kw">readonly</span> sku: <span class="nm">string</span>;      <span class="cm">// assignment ke baad immutable (compile-time!)</span>
+}
+
+<span class="kw">interface</span> <span class="nm">DigitalProduct</span> <span class="kw">extends</span> <span class="nm">Product</span> {
+  downloadUrl: <span class="nm">string</span>;       <span class="cm">// Product ke sab + ye</span>
+}
+
+<span class="kw">type</span> <span class="nm">ID</span> = <span class="nm">string</span> | <span class="nm">number</span>;                 <span class="cm">// ye interface se NAHI ho sakta</span>
+<span class="kw">type</span> <span class="nm">Handler</span> = (e: <span class="nm">Event</span>) =&gt; <span class="nm">void</span>;         <span class="cm">// function type alias</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Index signature + hybrid contract</h3>
+<pre><code><span class="kw">interface</span> <span class="nm">FeatureFlags</span> {
+  [flagName: <span class="nm">string</span>]: <span class="nm">boolean</span>;              <span class="cm">// L1: dynamic keys</span>
+  darkMode: <span class="nm">boolean</span>;                         <span class="cm">// L2: known key — index se compatible hona zaroori</span>
+  <span class="cm">// betaBanner: string;  ❌ L3: string, boolean index se clash</span>
+}
+
+<span class="kw">interface</span> <span class="nm">SearchFn</span> {
+  (query: <span class="nm">string</span>): Promise&lt;<span class="nm">string</span>[]&gt;;       <span class="cm">// L4: callable shape</span>
+  cacheSize: <span class="nm">number</span>;                         <span class="cm">// L5: + property (fn bhi object hai — Ch1!)</span>
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Index signature — "koi bhi string key, value boolean". Config/dictionary shapes ke liye. Trade-off: <code>flags.anything</code> compile ho jaayega, typos ki safety index signature ke andar chali jaati hai — isliye known keys explicitly bhi likho (L2), aur bounded keys ho toh <code>Record&lt;KnownKeys, boolean&gt;</code> better (Section 7).</li>
+<li><strong>L3:</strong> Rule: named members index signature ke type se assignable hone chahiye — index signature poore object ka blanket claim hai.</li>
+<li><strong>L4–L5:</strong> Hybrid interface — callable + properties. Chapter 1 mein seekha tha function object hai; TS mein uska type aise likhte hain. Lodash-style APIs ke types aise hi bane hain.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Optional <code>?</code> ka overuse — "pata nahi hoga ya nahi" ko model karne ke bajaye har field optional kar dena. Result: har usage pe <code>?.</code> ki barish aur asli contracts kho gaye. API truly optional bheje tabhi <code>?</code>.</li>
+<li><code>readonly</code> ko runtime freeze samajhna — sirf compile-time hai (Ch1 ke <code>const</code> jaisa). Runtime immutability = <code>Object.freeze</code> ya discipline.</li>
+<li>Discriminant field bhoolna aur union ke members ko manually narrow karne mein <code>as</code> lagana — discriminated union banao, narrowing free milegi.</li>
+<li>Boolean flags se state model karna (<code>isLoading</code> + <code>isError</code> + <code>data?</code>) — impossible states representable. Interviewer ke saamne discriminated union bolo, seniority dikhegi.</li>
+<li>Ek hi file mein galti se same naam ke do interfaces — merging chup-chaap ho jaayegi, "kahan se aayi ye property" ka confusion.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Team convention &gt; dogma. Common sane default: <strong>object shapes/public contracts = interface</strong> (better errors, merging for augmentation), <strong>unions/tuples/derived types = type</strong> (option bhi nahi hai).</li>
+<li>API models ek <code>models/</code> folder mein, backend ke saath review hote hue — ya OpenAPI se generated.</li>
+<li>Server-owned fields <code>readonly</code>; state machines discriminated unions.</li>
+<li>Interface ko chhota rakho — 15+ fields ka interface aksar 2-3 concepts ko mila raha hota hai; compose karo (<code>extends</code> / intersection).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Compile-time angle: <code>extends</code> (interface) compiler ke liye <em>cached, named relationship</em> hai; bade intersection chains (<code>A &amp; B &amp; C &amp; ...</code>) har use pe re-computed flatten hote hain — massive codebases mein interfaces marginally faster check hote hain. TS team ki khud ki guidance: prefer interfaces for object shapes jab dono kaam karein. Runtime: dono zero cost, obviously.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li>Intersection mein same prop alag types: <code>{x: string} &amp; {x: number}</code> → <code>x: never</code> — silently! Value banana impossible, error tab jab koi assign kare. <code>extends</code> yahi cheez declaration pe hi pakad leta.</li>
+<li>Interface class ko bhi <code>extends</code> kar sakta hai — class ki instance shape le leta hai (rare but legal).</li>
+<li>Optional (<code>tags?: string[]</code>) vs explicit undefined (<code>tags: string[] | undefined</code>) alag hain: pehle mein key absent ho sakti hai, dusre mein key deni hi padegi (value undefined sahi). <code>exactOptionalPropertyTypes</code> flag isko aur strict karta hai.</li>
+<li>Function type ko interface se likha ja sakta hai (callable signature) — arrow-style alias zyada readable, par overloads model karne ke liye interface style better (multiple call signatures).</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Interface vs type — 3 concrete differences.</summary><div class="ans"><p>(1) type unions/tuples/primitives naam de sakta hai, interface sirf object-ish shapes; (2) interface declaration merging karta hai, type duplicate = error; (3) extend style: <code>extends</code> vs <code>&amp;</code>, aur conflicts pe extends clear error deta hai jabki intersection never bana deta hai.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> readonly interface property runtime pe mutation rokti hai?</summary><div class="ans"><p>Nahi — compile-time only. Types erase hote hain. Runtime immutability ke liye <code>Object.freeze</code> (shallow) ya immutable update discipline (Ch1 Section 4). Ye cross-questioning trap hai — confidently "nahi" bolo with reason.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Discriminated union kya hai aur "make impossible states unrepresentable" ka matlab?</summary><div class="ans"><p>Union jisme har variant ek common literal field (discriminant) carry karta hai; us field pe check karo toh compiler poora variant narrow kar deta hai. Boolean-flags model mein loading+data+error independent hain — 2³ combinations, mostly invalid. Union model mein sirf valid states ka type exist karta hai; invalid state <em>likhi hi nahi ja sakti</em>. Bugs ko impossible banana &gt; bugs ko pakadna.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Declaration merging kab kaam aati hai — 2 real cases?</summary><div class="ans"><p>(1) Global augmentation: <code>declare global { interface Window { Razorpay: RazorpayConstructor } }</code> — checkout SDK window pe aata hai, types se officially batao (Section 9 mein poora). (2) Library augmentation: kisi lib ke interface mein apni custom property add karna (e.g., Express Request pe user field — Node side). Merging hi wo mechanism hai jo ye bina source badle possible banata hai.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> {x: string} &amp; {x: number} kya banta hai aur kyun error nahi aata declaration pe?</summary><div class="ans"><p><code>x</code> ka type <code>string &amp; number</code> = <code>never</code> (koi value dono nahi ho sakti). Intersection lazy structural operation hai — compiler declaration pe sirf type <em>banata</em> hai, invalid hona tab pata chalta hai jab koi use/assign kare, aur error message door hoke confusing hota hai. Isi liye object hierarchies mein <code>extends</code> prefer: conflict declaration site pe hi loud error. Ye nuance batao toh interviewer ko pata chal jaata hai tumne production TS likha hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Backend team API response mein naye optional fields add karti rehti hai aur kabhi-kabhi fields rename kar deti hai. Frontend types kaise architect karoge ki drift jaldi pakda jaye?</summary><div class="ans"><p>(1) Types ko haath se sync karna band — OpenAPI/Swagger spec se codegen (single source of truth); rename = generated type change = compile errors sab affected jagah. (2) Boundary validation runtime pe (Section 1 wala zod/guard) — kyunki "optional add karna" backward-compatible hai par rename breaking hai, guard failed parse ko monitoring mein bhejta hai. (3) Types ko <code>readonly</code> + narrow banao, app-internal models ko API models se <em>alag</em> rakho (mapping layer) — API churn app types tak na phaile. (4) Contract tests CI mein. Layered answer = system thinking.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>interface = object contracts + merging + extends; type = universal naming (unions/tuples/fns).</li>
+<li>Conflicts: extends = loud error; intersection = silent never.</li>
+<li><code>?</code> = absent allowed; readonly = compile-time only; index signature = dynamic keys ka blanket.</li>
+<li>State modeling = discriminated union; discriminant literal pe narrowing free.</li>
+<li>Merging = augmentation ka mechanism (Window, libs).</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-2.1 · ApiState&lt;T&gt; + render function</div><p>Discriminated union <code>ApiState</code> banao aur ek <code>render(state)</code> function jo har variant handle kare — exhaustiveness check ke saath (Section 1 crossover). Phir ek variant add karke compiler errors ka tour lo.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-2.2 · Form field contracts</div><p><code>TextField | SelectField | CheckboxField</code> discriminated union design karo (har type ke apne config props) + ek <code>validateField(field, value)</code> jo narrow karke sahi validation lagaye. Impossible configs unrepresentable hone chahiye.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-2.3 · Merge detective</div><p>Ek file mein interface ko 2 baar declare karke merge behavior explore karo: same prop same type, same prop different type, methods overloads ban-ne ka behavior — teeno cases document karo.</p><div class="lvl">LEVEL: EASY</div></div>
+</section>
+<section class="topic" id="s3">
+<div class="sec-head">
+  <span class="sec-num">S-03</span>
+  <h2>Enums (aur unke Modern Alternatives)</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s3"> Done</label>
+</div>
+<p class="covers">Covers: <b>Numeric/String enums · Reverse mapping · const enum · Generated JS · Literal union + as const alternative · Template usage</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Enum = named constants ka fixed set. TS ki <em>gini-chuni features mein se ek jo runtime code generate karti hai</em> — baaki sab types erase hote hain, enum ek asli JS object banata hai. Isi "special" hone ki wajah se ye TS community ka sabse debated feature bhi hai.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Magic values ka ilaj: <code>if (order.status === 2)</code> — 2 kya hai? Kisko pata. Named constants readable + typo-proof + refactor-safe hote hain. Java devs ke liye enum ghar jaisa lagta hai — <em>lekin</em> TS mein literal unions aksar wahi kaam better karte hain, aur ye trade-off samajhna hi is section ka asli maal hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Magic numbers/strings</strong> → self-documenting names.</li>
+<li><strong>Valid values ka closed set</strong> — <code>OrderStatus</code> type ke bahar ki value assign nahi hoti.</li>
+<li><strong>Centralized change</strong> — value badli toh ek jagah.</li>
+</ul>
+
+<h3 class="part">4. Internal Working — Generated JS dekho (yahi interview ka gold hai)</h3>
+<pre><code><span class="cm">// TS:</span>
+<span class="kw">enum</span> <span class="nm">Direction</span> { Up, Down }        <span class="cm">// numeric: Up=0, Down=1</span>
+
+<span class="cm">// Compiled JS — IIFE se object banta hai:</span>
+<span class="kw">var</span> Direction;
+(<span class="kw">function</span> (Direction) {
+  Direction[Direction[<span class="st">"Up"</span>] = <span class="st">0</span>] = <span class="st">"Up"</span>;      <span class="cm">// DOUBLE assignment!</span>
+  Direction[Direction[<span class="st">"Down"</span>] = <span class="st">1</span>] = <span class="st">"Down"</span>;
+})(Direction || (Direction = {}));
+<span class="cm">// Result: { Up: 0, Down: 1, 0: "Up", 1: "Down" }  ← REVERSE MAPPING</span></code></pre>
+<p><strong>String enums</strong> (<code>enum Status { Active = 'ACTIVE' }</code>) reverse mapping <em>nahi</em> banate — sirf one-way object. <strong>const enum</strong> object banata hi nahi — compiler har usage ko literal value se <em>inline</em> kar deta hai (<code>Direction.Up</code> → <code>0</code>), zero runtime footprint. Catch: inlining ke liye compiler ko cross-file type info chahiye — <code>isolatedModules</code> mode (esbuild/modern Angular builds, jahan har file alag transpile hoti hai) mein ambient const enums problem dete hain, isi liye modern codebases const enum avoid karte hain.</p>
+
+<h3 class="part">5. Execution Flow — enum value ka safar</h3>
+<pre class="diagram">
+  order.status = OrderStatus.Captured
+     │ compile: TYPE check (sirf enum members allowed)
+     ▼ runtime: OrderStatus object se property read (numeric/string enum)
+              ya inlined literal (const enum)
+     ▼
+  Serialization: JSON.stringify → number ya string VALUE jaata hai wire pe
+  ► Backend ko enum ka naam nahi, VALUE dikhti hai — isliye
+    numeric enums API contracts mein khatarnaak (2 ka matlab kya?)
+</pre>
+
+<h3 class="part">6. Architecture — Teen options ka decision framework</h3>
+<table>
+<tr><th>Option</th><th>Runtime cost</th><th>Iterable?</th><th>Serialization</th><th>Verdict</th></tr>
+<tr><td>Numeric enum</td><td>Object + reverse map</td><td>Messy (reverse keys bhi aati hain)</td><td>Opaque numbers</td><td>❌ Avoid — API mein numbers leak</td></tr>
+<tr><td>String enum</td><td>Object</td><td>✅ clean</td><td>Readable strings</td><td>🆗 OK — nominal chahiye toh</td></tr>
+<tr><td>Literal union + <code>as const</code> object</td><td>Object (sirf jab values chahiye)</td><td>✅</td><td>Readable strings</td><td>✅ Modern default</td></tr>
+</table>
+<pre><code><span class="cm">// Modern default pattern — enum ke saare fayde, koi surprise nahi:</span>
+<span class="kw">export const</span> <span class="nm">ORDER_STATUS</span> = {
+  Created:    <span class="st">'created'</span>,
+  Authorized: <span class="st">'authorized'</span>,
+  Captured:   <span class="st">'captured'</span>,
+  Failed:     <span class="st">'failed'</span>,
+} <span class="kw">as const</span>;                                          <span class="cm">// Section 1 ka as const!</span>
+
+<span class="kw">export type</span> <span class="nm">OrderStatus</span> =
+  <span class="kw">typeof</span> <span class="nm">ORDER_STATUS</span>[<span class="kw">keyof typeof</span> <span class="nm">ORDER_STATUS</span>];  <span class="cm">// 'created'|'authorized'|...</span></code></pre>
+<p class="mut">Ek object (runtime values, iteration, dropdown options ke liye) + ek derived type (compile-time checking) — single source of truth, aur plain strings assignable hain (<code>status = 'captured'</code> chalega; string enum mein <code>OrderStatus.Captured</code> hi likhna padta — nominal behavior, kabhi feature kabhi friction).</p>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="kw">@Component</span>({ template: <span class="st">`
+  @if (order().status === ORDER_STATUS.Captured) {
+    &lt;app-invoice-download /&gt;
+  }
+  &lt;select&gt;
+    @for (s of statusOptions; track s) {
+      &lt;option [value]="s"&gt;{{ s }}&lt;/option&gt;
+    }
+  &lt;/select&gt;
+`</span> })
+<span class="kw">export class</span> <span class="fn">OrderCardComponent</span> {
+  <span class="cm">// Template class members hi dekh sakta hai — constant ko expose karna padta hai</span>
+  <span class="kw">protected readonly</span> ORDER_STATUS = ORDER_STATUS;
+  <span class="kw">protected readonly</span> statusOptions = Object.<span class="fn">values</span>(ORDER_STATUS);
+  order = <span class="fn">input.required</span>&lt;Order&gt;();
+}</code></pre>
+<p class="mut">Ye "template mein enum kaise use karein" wala classic Angular interview question hai — answer: class field pe assign karke expose karo (enum ho ya as-const object, same pattern).</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">enum</span> <span class="nm">LogLevel</span> {
+  Debug = <span class="st">'DEBUG'</span>,
+  Info  = <span class="st">'INFO'</span>,
+  Error = <span class="st">'ERROR'</span>,
+}
+
+<span class="kw">function</span> <span class="fn">log</span>(level: <span class="nm">LogLevel</span>, msg: <span class="nm">string</span>) {
+  console.<span class="fn">log</span>(<span class="st">`[${level}] ${msg}`</span>);
+}
+<span class="fn">log</span>(LogLevel.Info, <span class="st">'App started'</span>);   <span class="cm">// ✅</span>
+<span class="fn">log</span>(<span class="st">'INFO'</span>, <span class="st">'App started'</span>);          <span class="cm">// ❌ string enum nominal hai — naam se hi aao</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Enum + metadata map (production pattern)</h3>
+<pre><code><span class="kw">type</span> <span class="nm">StatusMeta</span> = { label: <span class="nm">string</span>; color: <span class="nm">string</span>; terminal: <span class="nm">boolean</span> };
+
+<span class="kw">const</span> <span class="nm">STATUS_META</span>: Record&lt;OrderStatus, StatusMeta&gt; = {   <span class="cm">// L1</span>
+  created:    { label: <span class="st">'Order Placed'</span>,  color: <span class="st">'#60a5fa'</span>, terminal: <span class="st">false</span> },
+  authorized: { label: <span class="st">'Authorized'</span>,    color: <span class="st">'#fbbf24'</span>, terminal: <span class="st">false</span> },
+  captured:   { label: <span class="st">'Paid'</span>,          color: <span class="st">'#4ade80'</span>, terminal: <span class="st">true</span>  },
+  failed:     { label: <span class="st">'Failed'</span>,        color: <span class="st">'#f87171'</span>, terminal: <span class="st">true</span>  },
+};                                                        <span class="cm">// L2</span>
+
+<span class="kw">const</span> meta = <span class="nm">STATUS_META</span>[order.status];                   <span class="cm">// L3</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> <code>Record&lt;OrderStatus, StatusMeta&gt;</code> (Section 7 preview) — compiler enforce karta hai ki <em>har</em> status ki entry ho. Naya status union mein add hua aur yahan entry bhoole → compile error. Switch-case ka exhaustiveness, data ke roop mein.</li>
+<li><strong>L2:</strong> UI metadata (labels, colors) status ke <em>saath</em> centrally — 5 components mein bikhre if-else ki jagah ek lookup table. Ye pattern tumhare Category Price Landscape heatmap jaise features mein directly use hota hai.</li>
+<li><strong>L3:</strong> O(1) lookup, fully typed — <code>meta.label</code> autocomplete ke saath.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Numeric enum API/DB mein bhejna — wire pe <code>2</code> gaya; backend, logs, analytics sab ke liye riddle. Values hamesha strings.</li>
+<li><code>Object.keys(NumericEnum)</code> se iterate — reverse mapping ki wajah se <code>["0","1","Up","Down"]</code> milta hai. Classic gotcha.</li>
+<li>Numeric enum mein <em>koi bhi</em> number assign ho jaane ka purana behavior maan ke chalna — TS 5.0+ ne ye tighten kiya, par declare-merge ambient enums ke edge ab bhi hain; string values in problems se door rakhti hain.</li>
+<li>const enum published library mein export karna — consumers ke build modes (isolatedModules) tod deta hai.</li>
+<li>Do-member "enum" banana jahan <code>boolean</code> ya union kaafi tha — ceremony &gt; value.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Default: literal union (+ <code>as const</code> object jab runtime values chahiye). Enum tab jab team convention ho ya nominal typing explicitly chahiye — dono defensible hain, <em>reasoning</em> ke saath choose karo.</li>
+<li>Enum use karo toh: string values only, PascalCase members, template exposure pattern ready rakho.</li>
+<li>Status ke saath metadata = <code>Record&lt;Status, Meta&gt;</code> table — exhaustive by construction.</li>
+<li>API boundary pe (Section 1/2 ka theme) values validate karo — union type runtime pe kuch enforce nahi karta.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Numeric/string enum = ek chhota object per enum — negligible, <em>par</em> tree-shaking angle hai: enum ka IIFE side-effectful code hai, bundlers ke liye shake karna mushkil; unused enum bundle mein reh sakta hai. as-const object plain hai — unused ho toh cleanly shake hota hai. const enum = zero footprint (inlined) par build-mode landmine. Rule: bundle-size-sensitive libraries mein enums avoid, apps mein farak micro hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li>Heterogeneous enums (string + number mix) legal hain — kabhi use mat karo.</li>
+<li>Computed members allowed (<code>Read = 1 &lt;&lt; 1</code>) — bit-flag patterns; uske baad wale members ko explicit values chahiye.</li>
+<li>Enum member types: har member apna literal type bhi hai — <code>LogLevel.Error</code> ek type ki tarah use ho sakta hai (<code>level: LogLevel.Error</code>).</li>
+<li><code>keyof typeof SomeEnum</code> = member <em>names</em> ka union (<code>'Debug'|'Info'|'Error'</code>) — names chahiye toh yahi idiom.</li>
+<li>String enum ko plain string assign nahi hoti, par <em>numeric literal</em> historically numeric enum ko ho jaati thi — asymmetry interview trivia hai.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Enum TS ki baaki type features se fundamentally alag kaise hai?</summary><div class="ans"><p>Ye runtime JS generate karta hai — object (IIFE se) jo bundle mein jaata hai. Interfaces/types/generics sab erase; enum (aur decorators, class parameter properties) survive karte hain. Isi liye enum values runtime pe iterate/lookup ho sakti hain.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Reverse mapping kya hai aur kis enum mein nahi hoti?</summary><div class="ans"><p>Numeric enum object mein value→name entries bhi hoti hain (<code>Direction[0] === 'Up'</code>) — double assignment se. String enums mein nahi hoti (sirf name→value). Follow-up ready: isi wajah se numeric enum pe Object.keys double entries deta hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> const enum kya hai, fayda kya, aur modern builds mein problem kya?</summary><div class="ans"><p>const enum ka object banta hi nahi — compiler usages ko literal se inline karta hai (zero runtime cost). Problem: inlining ke liye compiler ko dusri file ke enum ki values chahiye; <code>isolatedModules</code> builds (esbuild, swc — file-by-file transpile, modern Angular CLI included) mein ye info available nahi — ambient const enums errors/footguns dete hain. Isliye libraries mein banned, apps mein bhi ab discouraged.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> String enum vs literal union — trade-offs dono taraf ke batao.</summary><div class="ans"><p>Union: zero ceremony, plain strings assignable (ergonomic), tree-shake friendly, values chahiye toh as-const object se derive. String enum: nominal (galat string same value ke saath bhi assign nahi hoti — kabhi-kabhi yahi chahiye), members pe jump-to-definition/refactor ergonomics, Java-style familiarity. Balanced answer + "main default union rakhta hoon, nominal need pe enum" = mature engineer.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Enum tree-shaking mein problem kyun create karta hai?</summary><div class="ans"><p>Generated IIFE ek function call hai jo object mutate karta hai — bundler ke liye ye side effect hai; "pure" annotate kiye bina safely remove nahi kar sakta (kya pata IIFE kuch global kare). as-const object literal statically analyzable hai — koi import na kare toh drop. Modern tsc/esbuild kuch enums ko pure-annotate karte hain, par guarantee nahi. Library authors isliye enums avoid karte hain.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Legacy codebase mein 40 numeric enums hain, values API mein jaati hain, aur analytics team ne complain kiya ki events mein "status: 3" aa raha hai. Migration plan?</summary><div class="ans"><p>(1) Freeze: naye numeric enums banned (lint rule). (2) Wire format pehle fix karo — boundary mapping layer: outgoing numeric→string label map, incoming dono accept (transition window). Ye backend/analytics coordination ke saath versioned rollout hai — enum values <em>persisted data</em> hain, sirf rename nahi. (3) Code migration file-by-file: numeric enum → as-const object + union; compiler errors hi migration checklist hain. (4) Persisted/historical data ke liye translation table permanent rakho. Key insight jo bolna hai: enum values ek <em>public contract</em> ban chuki thi — isliye ye type refactor nahi, data-contract migration hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Enum = runtime object (rare non-erased feature). Numeric = reverse mapping bhi; string = one-way; const = inlined (build-mode risk).</li>
+<li>Modern default: literal union + as-const object + <code>typeof X[keyof typeof X]</code>.</li>
+<li>Template mein use = class field pe expose.</li>
+<li>Status+metadata = <code>Record&lt;Status, Meta&gt;</code> (exhaustive table).</li>
+<li>API pe kabhi numeric values nahi.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-3.1 · Enum → union codemod (manual)</div><p>Ek numeric enum + 5 usages likho, phir use as-const pattern mein migrate karo bina koi behavior change ke. Har compiler error ko note karo — yahi migration diary interview story banti hai.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-3.2 · Status machine table</div><p><code>Record&lt;OrderStatus, OrderStatus[]&gt;</code> se allowed-transitions table banao + <code>canTransition(from, to)</code> guard. Invalid transition compile pe nahi pakda ja sakta — batao kyun, aur runtime + type dono layers design karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-3.3 · Generated JS prediction</div><p>Numeric, string, computed-member, aur const enum — chaaron ka compiled JS paper pe likho, phir TS Playground se verify karo. Galat predictions ka reason document karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+<section class="topic" id="s4">
+<div class="sec-head">
+  <span class="sec-num">S-04</span>
+  <h2>Functions in TypeScript</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s4"> Done</label>
+</div>
+<p class="covers">Covers: <b>Function types · Optional/default/rest params · Overloads · this parameter · void ka secret · Contextual typing</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Function type = parameters + return ka contract: <code>(q: string) =&gt; Promise&lt;Result[]&gt;</code>. TS functions ko first-class types deta hai — Chapter 1 mein seekha functions values hain; ab un values ke bhi types hain. <strong>Overloads</strong> ek function ke multiple call-shapes declare karte hain; <strong>this parameter</strong> batata hai function kis context pe chalega.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Angular/RxJS code <em>functions-as-arguments</em> se bhara hai: operators, callbacks, effects, guards. In sab jagah callback ka galat shape = subtle runtime bug. Typed function signatures se: callback ke params auto-typed milte hain (<em>contextual typing</em> — <code>map(order =&gt; ...)</code> mein <code>order</code> ka type likha nahi, mila), aur galat callback compile pe hi reject.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Callback contracts</strong> — "is function ko kya milega, kya lautana hai" enforce hota hai.</li>
+<li><strong>API ergonomics</strong> — overloads se ek function alag input-shapes pe alag precise return types de sakta hai.</li>
+<li><strong>this ki safety</strong> — Chapter 1 ka <code>this</code>-loss ab compile-time pe pakda ja sakta hai.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p><strong>Contextual typing:</strong> jab function <em>expected type</em> wali jagah likha jaata hai, compiler params ke types expected signature se <em>ulta</em> infer karta hai. <code>arr.map(x =&gt; x.price)</code> — <code>x</code> ka type <code>map</code> ke declared signature se aaya. Isi liye inline callbacks pe annotations nahi likhne padte.</p>
+<p><strong>Parameter bivariance vs contravariance:</strong> method-style declarations (<code>onClick(e: MouseEvent): void</code>) params ko <em>bivariantly</em> check karti hain (loose — DOM APIs practical rahein isliye); arrow-style properties (<code>onClick: (e: MouseEvent) =&gt; void</code>) <code>strictFunctionTypes</code> ke saath <em>contravariantly</em> (sound). Ek line mein yaad: <strong>function jo KAM specific input accept kare wo substitute ho sakta hai, zyada specific nahi.</strong></p>
+<p><strong>void ka secret:</strong> return type <code>void</code> ka contextual matlab hai "return value <em>ignore</em> hogi", "return mat karo" nahi. Isliye <code>(x: T) =&gt; void</code> expect karne wali jagah value-returning function bhi chalta hai — aur yahi design hai jisse <code>arr.forEach(x =&gt; results.push(x))</code> legal hai (<code>push</code> number return karta hai!).</p>
+<div class="dg-title">Diagram — Overload resolution</div>
+<pre class="diagram">
+  declare function fetchData(id: number): Order;        ← overload #1
+  declare function fetchData(ids: number[]): Order[];   ← overload #2
+  function fetchData(x: number | number[]) { ... }      ← IMPLEMENTATION
+                                                          (callers ko INVISIBLE!)
+  Call: fetchData(5)
+    compiler upar se neeche overloads try karta hai
+    #1 match → return type Order  ✅ (yahin ruk gaya)
+  Call: fetchData([1,2])
+    #1 ❌ → #2 ✅ → Order[]
+  Call: fetchData(maybe as number | number[])
+    ❌ KOI overload union accept nahi karta — resolution EK overload chunta hai
+</pre>
+
+<h3 class="part">5. Execution Flow — ek call ki type-checking</h3>
+<pre class="diagram">
+  call site: search('shoes', 20)
+     │ 1. Function ka type lao (declaration/overloads)
+     │ 2. Arguments ↔ params: count (optional/rest adjust) + assignability
+     │ 3. Generic ho toh type args infer (Section 6)
+     │ 4. Return type call site pe propagate → aage ki inference isi se
+     ▼
+  Sab pass → typed result    Koi fail → error us argument pe
+</pre>
+
+<h3 class="part">6. Architecture — Parameter toolbox</h3>
+<table>
+<tr><th>Syntax</th><th>Matlab</th><th>Note</th></tr>
+<tr><td><code>(a: string, b?: number)</code></td><td>b optional — <code>number | undefined</code></td><td>Optional required ke baad hi</td></tr>
+<tr><td><code>(a: string, b = 10)</code></td><td>Default — type infer, caller ke liye optional</td><td>undefined pass karo toh default lagta hai</td></tr>
+<tr><td><code>(...items: string[])</code></td><td>Rest — variadic</td><td>Tuple types se fixed-shape variadic bhi (<code>...args: [string, number]</code>)</td></tr>
+<tr><td><code>(this: HTMLButtonElement, e: Event)</code></td><td>Fake first param — sirf type, JS mein erase</td><td>Galat context pe call = compile error</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// Typed callbacks har taraf — contextual typing kaam karti hui:</span>
+<span class="kw">this</span>.orders$ = <span class="kw">this</span>.search$.<span class="fn">pipe</span>(
+  <span class="fn">debounceTime</span>(<span class="st">300</span>),
+  <span class="fn">switchMap</span>(q =&gt; <span class="kw">this</span>.api.<span class="fn">searchOrders</span>(q)),   <span class="cm">// q: string — likha nahi, mila</span>
+  <span class="fn">map</span>(orders =&gt; orders.<span class="fn">filter</span>(o =&gt; o.amount &gt; <span class="st">0</span>)),  <span class="cm">// o: Order — inference chain</span>
+);
+
+<span class="cm">// Functional guard — poora function ek type hai (CanActivateFn)</span>
+<span class="kw">export const</span> authGuard: CanActivateFn = (route, state) =&gt; {
+  <span class="kw">const</span> auth = <span class="fn">inject</span>(AuthService);
+  <span class="kw">return</span> auth.<span class="fn">isLoggedIn</span>() || <span class="fn">inject</span>(Router).<span class="fn">createUrlTree</span>([<span class="st">'/login'</span>]);
+};
+<span class="cm">// route/state ke types CanActivateFn se aaye — contextual typing again.
+// Return type union hai: boolean | UrlTree — API design mein union ka sundar use.</span></code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">function</span> <span class="fn">applyDiscount</span>(price: <span class="nm">number</span>, percent = <span class="st">10</span>): <span class="nm">number</span> {
+  <span class="kw">return</span> price - (price * percent) / <span class="st">100</span>;
+}
+<span class="fn">applyDiscount</span>(<span class="st">500</span>);        <span class="cm">// 450 — default laga</span>
+<span class="fn">applyDiscount</span>(<span class="st">500</span>, <span class="st">20</span>);    <span class="cm">// 400</span>
+<span class="fn">applyDiscount</span>(<span class="st">500</span>, <span class="st">'20'</span>);  <span class="cm">// ❌ compile error</span>
+
+<span class="cm">// Function type alias + implementation</span>
+<span class="kw">type</span> <span class="nm">Validator</span> = (value: <span class="nm">string</span>) =&gt; <span class="nm">string</span> | <span class="st">null</span>;   <span class="cm">// null = valid</span>
+<span class="kw">const</span> required: <span class="nm">Validator</span> = v =&gt; v.<span class="fn">trim</span>() ? <span class="st">null</span> : <span class="st">'Required'</span>;
+<span class="kw">const</span> minLen = (n: <span class="nm">number</span>): <span class="nm">Validator</span> =&gt; v =&gt; v.length &gt;= n ? <span class="st">null</span> : <span class="st">`Min ${n}`</span>;
+<span class="cm">// minLen = function RETURNING function — Ch1 closures, ab typed. Angular Validators aise hi bane hain.</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Overloads (real-world shape)</h3>
+<pre><code><span class="kw">function</span> <span class="fn">getElement</span>(selector: <span class="st">'input'</span>): HTMLInputElement | <span class="st">null</span>;   <span class="cm">// L1</span>
+<span class="kw">function</span> <span class="fn">getElement</span>(selector: <span class="st">'button'</span>): HTMLButtonElement | <span class="st">null</span>; <span class="cm">// L2</span>
+<span class="kw">function</span> <span class="fn">getElement</span>(selector: <span class="nm">string</span>): HTMLElement | <span class="st">null</span>;        <span class="cm">// L3</span>
+<span class="kw">function</span> <span class="fn">getElement</span>(selector: <span class="nm">string</span>): HTMLElement | <span class="st">null</span> {       <span class="cm">// L4</span>
+  <span class="kw">return</span> document.<span class="fn">querySelector</span>(selector);
+}
+
+<span class="kw">const</span> input = <span class="fn">getElement</span>(<span class="st">'input'</span>);   <span class="cm">// HTMLInputElement | null — .value milega!</span>
+<span class="kw">const</span> div   = <span class="fn">getElement</span>(<span class="st">'div'</span>);     <span class="cm">// HTMLElement | null — L3 fallback</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1–L2:</strong> Specific overloads <em>pehle</em> — resolution top-down first-match hai; general pehle rakh diya toh specific kabhi match nahi honge. Ordering rule #1.</li>
+<li><strong>L3:</strong> General fallback — baaki sab strings ke liye.</li>
+<li><strong>L4:</strong> Implementation signature — <em>callers ko dikhta hi nahi</em>, sirf overloads dikhte hain. Iska type sab overloads ko cover karna chahiye (compiler loosely check karta hai — implementation ke andar tum par bharosa kiya jaata hai, isliye overloads me galti runtime bug ban sakti hai).</li>
+<li>Bonus judgement: 2-3 se zyada overloads ho rahe hon toh aksar generics + conditional types (Section 8) cleaner hote hain — ya API redesign. lib.dom.d.ts ka <code>querySelector</code> exactly ye pattern template-literal magic ke saath karta hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Optional param (<code>b?: number</code>) ko "default hai" samajhna — optional ki value <code>undefined</code> aati hai, default nahi lagta jab tak <code>= value</code> na likho.</li>
+<li>Overloads mein general signature pehle likhna — specific unreachable.</li>
+<li>Implementation signature ko public samajhna — export docs mein sirf overloads dikhte hain; implementation ka union callers use nahi kar sakte.</li>
+<li>Callback param types explicitly likhna jab contextual typing de rahi thi — noise; aur galat likh diya toh inference se fight.</li>
+<li><code>Function</code> type use karna — ye "koi bhi function" hai, calls unchecked jaise. Proper signature ya <code>(...args: unknown[]) =&gt; unknown</code> likho.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Public/exported functions: explicit return types. Internal/inline: inference.</li>
+<li>3+ positional params → options object + destructuring (Ch1 Section 4 crossover) — call sites self-documenting.</li>
+<li>Callback types ko naam do (<code>type Comparator&lt;T&gt; = ...</code>) — reuse + readable signatures.</li>
+<li>Union return (boolean | UrlTree jaisa) design karo jab caller ko branch karna hai — exceptions se better contract.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Runtime: types erase — zero. Compile: bahut saare overloads + unions wale call sites resolution slow kar sakte hain (har call pe overload list try hoti hai); hot spots profile karke overloads ko generic signature se replace karna build speedup deta hai. Runtime side se ek Ch1 echo: inline arrows har render mein naye function objects — TS unhe type kar deta hai par allocation problem wahi rehti hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>() =&gt; void</code> type wali jagah value-returning fn allowed (void assignability) — <em>lekin</em> literal <code>function f(): void { return 5 }</code> ❌. Context vs declaration ka farak.</li>
+<li>Return-type position mein arrow: <code>type F = () =&gt; () =&gt; number</code> — function returning function; parens se padho.</li>
+<li>Destructured params ka annotation poora hota hai: <code>function f({page, size}: {page: number; size: number})</code> — <code>{page: number}</code> ko rename samajhne ki galti classic hai (wo destructuring rename syntax se clash karta hai!).</li>
+<li><code>this</code> parameter JS output mein exist nahi karta — sirf type-world; arity change nahi hoti.</li>
+<li>Async function ka declared return type hamesha <code>Promise&lt;T&gt;</code> — <code>async function f(): number</code> ❌ likha hi nahi ja sakta (Ch1: async = promise factory).</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Optional param aur default param mein kya farak?</summary><div class="ans"><p>Optional (<code>b?: number</code>): caller skip kar sakta hai, value <code>number | undefined</code>, function ko khud handle karna hai. Default (<code>b = 10</code>): caller skip kare (ya undefined de) toh 10 milega, andar type clean <code>number</code>. Default ho toh <code>?</code> nahi likhte — redundant.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Contextual typing kya hai — ek example?</summary><div class="ans"><p>Expected type se parameters ka ulta inference. <code>const h: (e: MouseEvent) =&gt; void = e =&gt; e.clientX</code> — <code>e</code> ka type annotation ke bina MouseEvent mila, kyunki LHS ne context diya. Isi se RxJS/array callbacks bina annotations ke typed rehte hain.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> forEach ka callback (x) =&gt; void expect karta hai, phir arr.forEach(x =&gt; results.push(x)) kyun chalta hai jab push number return karta hai?</summary><div class="ans"><p>void return type contextually "return value ignored" hai, "must not return" nahi. Design intent: concise arrows (<code>x =&gt; expr</code>) jo incidentally value return karte hain, void-callback slots mein legal rahein. Trap side bhi batao: isi wajah se <code>onSelect: () =&gt; void</code> mein Promise-returning async handler bhi chala jaata hai — rejection silently floating (Ch1 floating promises).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Overloads mein implementation signature callers ko kyun nahi dikhti — design reason?</summary><div class="ans"><p>Implementation signature sab overloads ka loose superset hoti hai (union params) — agar wo public hoti toh precise per-shape return types ka poora point khatam: <code>fetchData(5)</code> pe <code>Order | Order[]</code> milta, caller phir narrow karta. Overloads = "precise contracts bahar, ek flexible body andar". Cost: body ke andar correctness compiler fully verify nahi karta — overloads ko tests chahiye.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Function parameter contravariance kya hai — strictFunctionTypes ke saath ek concrete example se samjhao.</summary><div class="ans"><p>Substitutability ka rule: jahan <code>(a: Animal) =&gt; void</code> chahiye, wahan <code>(d: Dog) =&gt; void</code> <em>nahi</em> de sakte — wo handler <code>d.bark()</code> kar sakta hai, par usse Cat bhi milegi. Ulta safe hai: <code>(x: unknown) =&gt; void</code> har jagah chalega. Matlab params ki direction ulti (contra) hai: accept-wider = substitutable. Return types covariant hain (return-narrower = substitutable). <code>strictFunctionTypes</code> ye check function-type properties pe enforce karta hai; method declarations bivariant hi rehti hain (DOM ergonomics ke liye deliberate hole). Ye variance answer 4-5 saal experience wale rounds mein differentiator hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Team ek shared utility function design kar rahi hai: formatAmount jo number, string, ya {amount, currency} object le sakta hai. Overloads vs union vs alag functions — kya recommend karoge aur kyun?</summary><div class="ans"><p>Framework se socho: (1) Kya return type input shape pe depend karta hai? Nahi (hamesha string) → overloads ka main benefit gaya; simple union param + narrowing kaafi: <code>formatAmount(input: number | string | Money): string</code>. (2) Kya call sites confuse honge? Teen unrelated shapes ek naam pe = discoverability kharab — aksar <em>alag named functions</em> (<code>formatAmount</code>, <code>formatMoney</code>) best. (3) Overloads tab jab: same conceptual operation, input shape ↔ output shape mapping precise chahiye. Recommendation: union se start, return-type divergence aaye toh overloads, semantic divergence aaye toh split. Decision framework &gt; ek "sahi" jawab.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Contextual typing = expected type se param inference; inline callbacks pe annotations mat likho.</li>
+<li>Optional = undefined aa sakta hai; default = value lagti hai; rest = variadic (+tuple shapes).</li>
+<li>Overloads: specific→general order, implementation invisible + loosely checked.</li>
+<li>void = "ignored", not "forbidden". Async ⇒ Promise return type.</li>
+<li>Variance: params contra (wider OK), returns co (narrower OK); methods bivariant exception.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-4.1 · Validator combinator library</div><p><code>Validator</code> type + <code>compose(...validators)</code> + <code>optional(validator)</code> + <code>withMessage(v, msg)</code> — sab fully typed, koi any nahi. Angular Validators se shape compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-4.2 · Overloaded createElement</div><p><code>createEl('input')</code> → HTMLInputElement, <code>createEl('canvas')</code> → HTMLCanvasElement, generic string → HTMLElement — overloads se. Phir Section 8 padhne ke baad isi ko ek generic + mapped type (HTMLElementTagNameMap) se rewrite karo aur dono approaches compare karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-4.3 · Variance lab</div><p>Animal/Dog hierarchy + 6 function-assignment statements likho; har ek pe predict karo strictFunctionTypes error dega ya nahi, phir verify. Har result ko contravariance rule se explain karo.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+<section class="topic" id="s5">
+<div class="sec-head">
+  <span class="sec-num">S-05</span>
+  <h2>Classes, Access Modifiers &amp; Abstract Classes</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s5"> Done</label>
+</div>
+<p class="covers">Covers: <b>public/private/protected/readonly · Parameter properties (Angular DI idiom) · TS private vs #private · abstract classes · implements · abstract as DI token</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>TS classes = JS classes (Ch1 Section 5 ka prototype sugar) + type-world additions: <strong>access modifiers</strong> (kaun member kahan se dikhega), <strong>parameter properties</strong> (constructor param se field auto-declare), <strong>abstract</strong> (incomplete blueprint — instantiate nahi, sirf extend), aur <strong>implements</strong> (interface contract fulfil karne ka declaration).</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Angular ka poora component/service model classes pe hai — aur access modifiers wahan <em>architecture tool</em> hain: <code>private</code> = "ye implementation detail hai, template/bahar se mat chhoo", <code>protected</code> = "template ke liye hai, public API nahi". Encapsulation compile-time pe enforce hoti hai, code review pe depend nahi karti. Java devs ke liye familiar territory — TS twist ye hai ki enforcement (mostly) erase ho jaati hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Leaky internals</strong> — private members bahar se use nahi ho sakte; refactor safe.</li>
+<li><strong>DI boilerplate</strong> — parameter properties ne "declare field + assign in constructor" ke 3 lines ko 1 banaya.</li>
+<li><strong>Partial implementations</strong> — abstract class shared logic + required-hooks ka combo deta hai jo interface (sirf contract) nahi de sakta.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<table>
+<tr><th>Modifier</th><th>Kahan accessible</th><th>Runtime?</th></tr>
+<tr><td><code>public</code></td><td>Har jagah (default)</td><td>—</td></tr>
+<tr><td><code>protected</code></td><td>Class + subclasses (+ Angular templates!)</td><td>❌ erase</td></tr>
+<tr><td><code>private</code></td><td>Sirf declaring class</td><td>❌ erase — runtime pe property normal hai</td></tr>
+<tr><td><code>#field</code> (JS)</td><td>Sirf declaring class</td><td>✅ runtime-enforced (Ch1 wala)</td></tr>
+<tr><td><code>readonly</code></td><td>Read everywhere, write sirf declaration/constructor</td><td>❌ erase</td></tr>
+</table>
+<p><strong>Parameter properties — Angular ka classic idiom:</strong></p>
+<pre><code><span class="kw">constructor</span>(<span class="kw">private</span> http: HttpClient) {}
+<span class="cm">// Compiler isko expand karta hai:
+//   private http: HttpClient;            (field declare)
+//   constructor(http) { this.http = http; }   (assign)
+// Ye enum ki tarah RARE non-erased TS feature hai — runtime assignment generate hota hai.</span></code></pre>
+<p class="mut">Modern Angular mein <code>private http = inject(HttpClient)</code> field-injection idiom isko replace kar raha hai — inheritance mein constructor forwarding ka dard khatam (Ch1 S5 scenario yaad karo). Dono jaano: legacy codebases constructor injection se bhare hain.</p>
+<p><strong>Abstract internals:</strong> <code>abstract class</code> JS mein normal class hi banti hai — "instantiate nahi kar sakte" sirf compile-time rule hai. Abstract methods ki koi body generate nahi hoti; subclass implement na kare toh compile error.</p>
+
+<h3 class="part">5. Execution Flow — private access check</h3>
+<pre class="diagram">
+  code: orderService.cache.clear()
+     │ compiler: 'cache' OrderService pe milta hai? ✅
+     │ modifier? private → access site declaring class ke andar hai? ❌
+     ▼
+  Error: Property 'cache' is private and only accessible within class 'OrderService'
+  ► Runtime pe ye check GAYAB hai — (orderService as any).cache chal jaayega.
+    TS private = compile-time contract; #cache hota toh runtime bhi block.
+</pre>
+
+<h3 class="part">6. Architecture — Abstract class as DI token (senior pattern)</h3>
+<pre><code><span class="cm">// Interface DI token NAHI ban sakta — erase ho jaata hai, runtime pe kuch nahi bachta.
+// Abstract class runtime pe EXIST karti hai (JS class) + type bhi hai = perfect token.</span>
+
+<span class="kw">export abstract class</span> <span class="fn">PaymentGateway</span> {
+  <span class="kw">abstract</span> <span class="fn">createOrder</span>(amount: <span class="nm">number</span>): Observable&lt;GatewayOrder&gt;;
+  <span class="kw">abstract</span> <span class="fn">verifySignature</span>(payload: WebhookPayload): <span class="nm">boolean</span>;
+}
+
+<span class="kw">@Injectable</span>()
+<span class="kw">export class</span> <span class="fn">RazorpayGateway</span> <span class="kw">extends</span> <span class="fn">PaymentGateway</span> { <span class="cm">/* real impl */</span> }
+
+<span class="kw">@Injectable</span>()
+<span class="kw">export class</span> <span class="fn">MockGateway</span> <span class="kw">extends</span> <span class="fn">PaymentGateway</span> { <span class="cm">/* tests/demo */</span> }
+
+<span class="cm">// Wiring — consumers sirf abstraction jaante hain:</span>
+providers: [{ provide: PaymentGateway, useClass: RazorpayGateway }]
+<span class="cm">// Component: private gateway = inject(PaymentGateway);  ← swap = 1 line</span></code></pre>
+<pre class="diagram">
+  Dependency Inversion in Angular:
+  Components ──depends──► PaymentGateway (abstract)
+                               ▲ provide
+              RazorpayGateway ─┘  (ya MockGateway, ya StripeGateway)
+  Test mein: useClass: MockGateway — component code untouched.
+</pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="kw">@Component</span>({ ... })
+<span class="kw">export class</span> <span class="fn">CheckoutComponent</span> {
+  <span class="kw">private</span> gateway = <span class="fn">inject</span>(PaymentGateway);   <span class="cm">// private: template ko nahi chahiye</span>
+  <span class="kw">private</span> fb = <span class="fn">inject</span>(FormBuilder);
+
+  <span class="kw">protected readonly</span> form = <span class="kw">this</span>.fb.<span class="fn">group</span>({...});  <span class="cm">// protected: template use karega,</span>
+  <span class="kw">protected</span> submitting = <span class="fn">signal</span>(<span class="st">false</span>);              <span class="cm">// par PUBLIC API nahi hai</span>
+
+  <span class="kw">protected</span> <span class="fn">pay</span>() { ... }                     <span class="cm">// template se (click)="pay()"</span>
+}</code></pre>
+<p class="mut">Convention jo senior codebases follow karti hain: <em>template-facing members = protected, internals = private, public sirf wahi jo sach mein component ka bahar ka API hai</em> (inputs/outputs/methods jo parent use kare). AOT templates protected access allow karta hai — isi liye protected yahan sweet spot hai.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">class</span> <span class="fn">BankAccount</span> {
+  <span class="kw">private</span> balance = <span class="st">0</span>;
+  <span class="kw">readonly</span> accountId: <span class="nm">string</span>;
+
+  <span class="kw">constructor</span>(id: <span class="nm">string</span>) { <span class="kw">this</span>.accountId = id; }
+
+  <span class="fn">deposit</span>(amt: <span class="nm">number</span>) {
+    <span class="kw">if</span> (amt &lt;= <span class="st">0</span>) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="st">'Invalid'</span>);
+    <span class="kw">this</span>.balance += amt;               <span class="cm">// andar se ✅</span>
+  }
+  <span class="kw">get</span> <span class="fn">currentBalance</span>() { <span class="kw">return this</span>.balance; }  <span class="cm">// controlled read</span>
+}
+
+<span class="kw">const</span> acc = <span class="kw">new</span> <span class="fn">BankAccount</span>(<span class="st">'ACC-1'</span>);
+acc.balance = <span class="st">1e9</span>;        <span class="cm">// ❌ private</span>
+acc.accountId = <span class="st">'HACK'</span>;   <span class="cm">// ❌ readonly</span>
+acc.currentBalance;        <span class="cm">// ✅ getter — () nahi lagta</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Abstract + template method pattern</h3>
+<pre><code><span class="kw">export abstract class</span> <span class="fn">CsvExporter</span>&lt;T&gt; {                       <span class="cm">// L1</span>
+  <span class="cm">// TEMPLATE METHOD — algorithm ka skeleton, final flow yahi hai</span>
+  <span class="fn">export</span>(rows: T[]): <span class="nm">string</span> {                                  <span class="cm">// L2</span>
+    <span class="kw">const</span> header = <span class="kw">this</span>.<span class="fn">headers</span>().<span class="fn">join</span>(<span class="st">','</span>);
+    <span class="kw">const</span> body = rows.<span class="fn">map</span>(r =&gt; <span class="kw">this</span>.<span class="fn">toRow</span>(r).<span class="fn">join</span>(<span class="st">','</span>)).<span class="fn">join</span>(<span class="st">'\n'</span>);
+    <span class="kw">return</span> <span class="kw">this</span>.<span class="fn">sanitize</span>(header + <span class="st">'\n'</span> + body);
+  }
+  <span class="kw">protected abstract</span> <span class="fn">headers</span>(): <span class="nm">string</span>[];                     <span class="cm">// L3: subclass MUST</span>
+  <span class="kw">protected abstract</span> <span class="fn">toRow</span>(item: T): <span class="nm">string</span>[];
+  <span class="kw">protected</span> <span class="fn">sanitize</span>(csv: <span class="nm">string</span>) { <span class="kw">return</span> csv; }             <span class="cm">// L4: optional hook</span>
+}
+
+<span class="kw">class</span> <span class="fn">OrderCsvExporter</span> <span class="kw">extends</span> <span class="fn">CsvExporter</span>&lt;Order&gt; {          <span class="cm">// L5</span>
+  <span class="kw">protected</span> <span class="fn">headers</span>() { <span class="kw">return</span> [<span class="st">'ID'</span>, <span class="st">'Amount'</span>, <span class="st">'Status'</span>]; }
+  <span class="kw">protected</span> <span class="fn">toRow</span>(o: Order) { <span class="kw">return</span> [o.id, <span class="nm">String</span>(o.amount), o.status]; }
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Abstract + generic — reusable skeleton har row-type ke liye (Section 6 preview).</li>
+<li><strong>L2:</strong> Concrete method abstract class mein — yahi interface se farak hai: <em>shared implementation</em> + contract dono. Ye Template Method pattern hai (GoF): flow fixed, steps pluggable.</li>
+<li><strong>L3:</strong> Abstract members — subclass implement na kare toh class incomplete = compile error. Protected kyun: ye internal steps hain, bahar ka koi directly <code>toRow</code> na bulaye.</li>
+<li><strong>L4:</strong> Hook with default — optional customization point, override karna zaroori nahi.</li>
+<li><strong>L5:</strong> Concrete subclass sirf 2 chhote methods deta hai — 80% logic reuse. Trade-off imaandaari se: yahi pattern deep hierarchies mein Ch1-S5 wale problems deta hai; 1 level = pattern, 3 level = smell.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>TS <code>private</code> ko security samajhna — erase hota hai; <code>(obj as any).secret</code> aur JSON.stringify dono use dekh lete hain. Runtime privacy = <code>#field</code> (Ch1 crossover, interview favourite).</li>
+<li>Template-used members ko <code>private</code> karna — AOT error "property is private and only accessible..." — template class ka <em>bahar</em> nahi, par private se bahar hai; protected use karo.</li>
+<li>Interface ko DI token banane ki koshish (<code>provide: PaymentGatewayInterface</code>) — runtime pe interface undefined hai; abstract class ya InjectionToken.</li>
+<li>Constructor injection + inheritance: base ke deps badle toh saari subclasses ke super() calls todne padte hain — inject() idiom isi liye jeeta.</li>
+<li><code>readonly</code> array/object ko deeply immutable samajhna — sirf reassignment block hai; <code>readonly items: Order[]</code> pe <code>items.push()</code> chalega. Deep chahiye toh <code>ReadonlyArray</code>/<code>Readonly</code> types (Section 7).</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Visibility ladder: default sabse tight — private → protected (template needs) → public (real API). PRs mein "kyun public?" poochna healthy habit.</li>
+<li>Services ki injected deps <code>private readonly</code> — na bahar se dikhen, na kabhi reassign hon.</li>
+<li>Swappable implementations (gateway, storage, logger) = abstract class token + useClass — testing free mein aasan.</li>
+<li>Shared logic ke liye pehle composition (services/functions) socho; abstract class tab jab <em>flow ownership</em> chahiye (template method).</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Modifiers erase = zero cost. Parameter properties = ek assignment (kuch nahi). #private fields ka access V8 mein ab normal property jitna fast (WeakMap-based downlevel sirf old targets pe slow tha — modern targets native). Real note Ch1 se: class fields (arrows) per-instance allocate hote hain — components jo hazaaron baar instantiate hote hain (rows in virtual list) unme methods prototype pe rakho.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li>TS private <em>same class ke dusre instance</em> se accessible hai: <code>equals(other: BankAccount) { return this.balance === other.balance }</code> ✅ — class-private hai, instance-private nahi (Java jaisa hi).</li>
+<li>Subclass parent ke private ko redeclare nahi kar sakti (clash error); #private redeclare ho sakta hai — alag-alag hi rehte hain (naam ka collision hota hi nahi).</li>
+<li><code>protected constructor</code> = "direct new mat karo, sirf subclass ya static factory" — abstract se halka tool.</li>
+<li><code>implements</code> sirf check hai — koi runtime relation nahi banata, na hi member types "inherit" hote hain (sab redeclare karne padte hain).</li>
+<li>Getter/setter pair mein (purane TS mein) same type chahiye tha; TS 4.3+ setter wider type le sakta hai (<code>set value(v: string | number)</code>, <code>get value(): string</code>) — normalize-in-setter pattern.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> TS ka private aur JS ka #private — asli difference?</summary><div class="ans"><p>TS private compile-time only — erase ke baad property normal, <code>as any</code>/bracket access se readable. #private runtime-enforced language feature — bahar se access SyntaxError, JSON.stringify mein bhi nahi aata. Contract chahiye toh private, hard privacy chahiye toh #.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> Parameter properties kya hain — Angular mein kahan dikhti hain?</summary><div class="ans"><p><code>constructor(private http: HttpClient)</code> — modifier lagate hi param field ban jaata hai + auto-assign. Angular constructor injection ka standard idiom raha hai. Bonus: ye un rare TS features mein hai jo runtime code generate karti hain; aur modern alternative <code>inject()</code> field hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Abstract class vs interface — Angular-specific angle ke saath.</summary><div class="ans"><p>Interface: pure contract, multiple implement ho sakte hain, erase. Abstract class: contract + shared implementation + protected state, single extends, runtime pe exist. Angular angle: DI token banna ho toh abstract class hi chalega (interface runtime pe nahi hai); aur template-method style shared flow chahiye toh bhi. Pure shape-checking ke liye interface.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Component members ko protected banane ka modern convention kyun hai?</summary><div class="ans"><p>Template class ke "andar" compile hota hai in the sense ki protected access allowed hai — toh template-facing members protected rakhne se wo class ke <em>public API</em> se hat jaate hain: bahar ka code (parent components, tests via instance) unhe use nahi kar sakta, refactoring free. private template ke liye bhi band hai; public unnecessarily wide. protected = exactly "template + subclass" surface.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Interface DI token kyun nahi ban sakta, aur teen working alternatives with trade-offs?</summary><div class="ans"><p>DI container ko runtime <em>value</em> chahiye map ki key ke liye; interface erase ho jaata hai — <code>provide:</code> pe likhne ko kuch bachta hi nahi. Alternatives: (1) <strong>Abstract class</strong> — type + runtime value dono, instanceof bhi possible; best for service abstractions. (2) <strong>InjectionToken&lt;T&gt;</strong> — lightweight, non-class values (config objects, functions) ke liye; tree-shakable providedIn + factory support. (3) String tokens — legacy, collisions ka risk, avoid. Bonus depth: abstract-class token ke saath useExisting se ek hi instance ko do tokens pe expose karna (adapter pattern DI mein).</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Tumhe app mein storage layer chahiye jo web pe localStorage aur mobile webview pe native bridge use kare — design + testing strategy classes/DI se batao.</summary><div class="ans"><p>(1) <code>abstract class StorageService { abstract get(k): string|null; abstract set(k, v): void; ... }</code> — token + contract. (2) <code>WebStorageService</code> aur <code>BridgeStorageService</code> implementations; platform detection ek <em>factory provider</em> mein: <code>{ provide: StorageService, useFactory: () =&gt; isBridge() ? inject(BridgeStorageService) : inject(WebStorageService) }</code> (ya environment-specific providers). (3) Consumers sirf StorageService inject karte hain — platform knowledge zero. (4) Testing: unit tests mein <code>useClass: InMemoryStorage</code>; contract test suite ek hi likho jo teeno implementations pe chale (shared behavior spec). (5) Migration/quota errors jaise cross-cutting concerns base abstract class ke concrete method mein (template method). Ye answer abstraction + DI + testing teeno box tick karta hai.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>private/protected/readonly = compile-time; #field = runtime. Template ke liye protected sweet spot.</li>
+<li>Parameter properties = declare+assign shorthand (non-erased!); modern idiom = inject() fields.</li>
+<li>Abstract = contract + shared code + no instantiate; interface erase, abstract class runtime pe zinda → DI token.</li>
+<li>implements = sirf check. readonly = shallow reassignment lock.</li>
+<li>Visibility default tight; swappable deps = abstract token + useClass/useFactory.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-5.1 · NotificationChannel abstraction</div><p>Abstract class (send, canSend, protected rate-limit logic shared) + Email/SMS/Push implementations + ek Notifier jo channels ki array le. DI-style manual wiring karo (bina Angular ke) — token concept samajh aayega.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-5.2 · Privacy escape room</div><p>Ek class banao TS private + readonly + #private teeno ke saath. Phir "attacker" script likho jo har member ko access/mutate karne ki koshish kare — document karo kya compile pe ruka, kya runtime pe, kya kahin nahi.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-5.3 · Report pipeline (template method)</div><p>Abstract ReportGenerator: fetch → transform → format → deliver flow fixed; subclasses PDF/CSV/Email versions. Ek hook optional rakho. Phir critique likho: isi ko composition (4 injected strategies) se kaise banate — dono ka code likh ke compare.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+<section class="topic" id="s6">
+<div class="sec-head">
+  <span class="sec-num">S-06</span>
+  <h2>Generics</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s6"> Done</label>
+</div>
+<p class="covers">Covers: <b>Generic functions/interfaces/classes · Constraints (extends) · keyof constraint · Defaults · Inference · Signal&lt;T&gt;, FormControl&lt;T&gt;, HttpClient</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Generic = <strong>type ka parameter</strong>. Jaise function values ke parameters leta hai, generic type-level pe parameters leta hai: <code>function first&lt;T&gt;(arr: T[]): T</code> — "koi bhi type T ho, T[] doge toh T milega". Ek baar likho, har type ke liye <em>precisely</em> typed — <code>any</code> wala compromise nahi, per-type duplication bhi nahi.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Generics ke bina do hi raste the: (a) <code>any</code> — safety gayi (<code>first(users)</code> se <code>any</code> milta, aage ka sab unchecked), ya (b) har type ka alag function — <code>firstUser</code>, <code>firstOrder</code>... DRY ki maut. Generic <em>relationship preserve</em> karta hai: "jo andar gaya, wahi type bahar aayega". Angular tumhe roz generics <em>consume</em> karwata hai: <code>signal&lt;number&gt;(0)</code>, <code>http.get&lt;Order[]&gt;(url)</code>, <code>FormControl&lt;string&gt;</code> — ye section tumhe producer bana dega.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Type-safe reuse</strong> — ek container/utility, saare types.</li>
+<li><strong>Input↔output linkage</strong> — return type input pe depend karta hai, compiler ye rishta track karta hai.</li>
+<li><strong>API precision</strong> — library functions callers ke types ke saath "morph" ho jaate hain.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<p><strong>Inference:</strong> call pe compiler arguments se type params <em>solve</em> karta hai — <code>first([1,2,3])</code> mein <code>T[]</code> ↔ <code>number[]</code> match karke <code>T = number</code>. Explicit <code>first&lt;number&gt;(...)</code> tabhi jab inference ambiguous ho ya tum override karna chaho. Multiple candidates milein (e.g., <code>T</code> do params mein) toh best common type banta hai ya error.</p>
+<p><strong>Constraints (<code>extends</code>):</strong> bina constraint ke <code>T</code> ke andar compiler kuch <em>assume nahi</em> kar sakta — <code>t.length</code> ❌ kyunki T number bhi ho sakta hai. <code>T extends { length: number }</code> bolke tum compiler ko capability ki guarantee dete ho — ab andar <code>.length</code> ✅ aur bahar sirf compatible types accepted. Constraint = "T kuch bhi ho, <em>par kam se kam ye ho</em>".</p>
+<p><strong>Erasure (Java se important difference):</strong> TS generics puri tarah erase — runtime pe <code>T</code> naam ki koi cheez nahi. Java ki tarah bhi reflection se nahi milta, C# ki tarah reified toh bilkul nahi. Consequence: <code>if (x instanceof T)</code> ❌; runtime pe type chahiye toh value pass karo (constructor, validator fn).</p>
+<div class="dg-title">Diagram — keyof constraint (the interview darling)</div>
+<pre class="diagram">
+  function pluck&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K]
+
+  pluck(order, 'amount')
+    T = Order
+    keyof T = 'id' | 'amount' | 'currency' | 'status'
+    K = 'amount'  (literal! kyunki K constrained + inferred from literal arg)
+    T[K] = Order['amount'] = number  ← return type EXACT
+
+  pluck(order, 'amonut')  ❌ typo compile pe mara —
+    'amonut' keyof Order mein nahi hai
+</pre>
+
+<h3 class="part">5. Execution Flow — generic call ka resolution</h3>
+<pre class="diagram">
+  http.get&lt;Order[]&gt;('/api/orders')
+     │ 1. Type args: explicit diye? → use  |  nahi? → args se infer
+     │ 2. Constraints satisfy check (T extends ... pass?)
+     │ 3. Signature mein har T ko concrete type se substitute
+     │ 4. Return type instantiate → Observable&lt;Order[]&gt;
+     ▼ runtime: T ka naamo-nishaan nahi — sirf JS function call
+</pre>
+
+<h3 class="part">6. Architecture — Generic kahan-kahan lagta hai</h3>
+<pre><code><span class="cm">// 1. Function</span>
+<span class="kw">function</span> <span class="fn">wrapInArray</span>&lt;T&gt;(x: T): T[] { <span class="kw">return</span> [x]; }
+
+<span class="cm">// 2. Interface — Angular ke Signal/Observable aise hi hain</span>
+<span class="kw">interface</span> <span class="nm">Repository</span>&lt;T, ID = <span class="nm">string</span>&gt; {      <span class="cm">// default type param!</span>
+  <span class="fn">findById</span>(id: ID): Promise&lt;T | <span class="st">null</span>&gt;;
+  <span class="fn">save</span>(entity: T): Promise&lt;T&gt;;
+}
+
+<span class="cm">// 3. Class</span>
+<span class="kw">class</span> <span class="fn">InMemoryCache</span>&lt;K, V&gt; {
+  <span class="kw">private</span> store = <span class="kw">new</span> <span class="fn">Map</span>&lt;K, V&gt;();
+  <span class="fn">get</span>(k: K): V | <span class="nm">undefined</span> { <span class="kw">return this</span>.store.<span class="fn">get</span>(k); }
+}
+
+<span class="cm">// 4. Type alias — Section 7/8 ke utility types sab yahi hain</span>
+<span class="kw">type</span> <span class="nm">Nullable</span>&lt;T&gt; = T | <span class="st">null</span>;
+<span class="kw">type</span> <span class="nm">ApiResponse</span>&lt;T&gt; = { data: T; meta: { total: <span class="nm">number</span> } };</code></pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// Generic API service — har feature service ka boilerplate khatam</span>
+<span class="kw">export abstract class</span> <span class="fn">CrudService</span>&lt;T, CreateDto = Omit&lt;T, <span class="st">'id'</span>&gt;&gt; {   <span class="cm">// S5+S7 combo!</span>
+  <span class="kw">protected</span> http = <span class="fn">inject</span>(HttpClient);
+  <span class="kw">protected abstract</span> baseUrl: <span class="nm">string</span>;
+
+  <span class="fn">getAll</span>() { <span class="kw">return this</span>.http.<span class="fn">get</span>&lt;T[]&gt;(<span class="kw">this</span>.baseUrl); }
+  <span class="fn">getById</span>(id: <span class="nm">string</span>) { <span class="kw">return this</span>.http.<span class="fn">get</span>&lt;T&gt;(<span class="st">`${</span><span class="kw">this</span>.baseUrl<span class="st">}/${id}`</span>); }
+  <span class="fn">create</span>(dto: CreateDto) { <span class="kw">return this</span>.http.<span class="fn">post</span>&lt;T&gt;(<span class="kw">this</span>.baseUrl, dto); }
+}
+
+<span class="kw">@Injectable</span>({ providedIn: <span class="st">'root'</span> })
+<span class="kw">export class</span> <span class="fn">OrderService</span> <span class="kw">extends</span> <span class="fn">CrudService</span>&lt;Order&gt; {
+  <span class="kw">protected</span> baseUrl = <span class="st">'/api/orders'</span>;
+  <span class="cm">// getAll() → Observable&lt;Order[]&gt; — free, fully typed</span>
+}
+
+<span class="cm">// Typed Reactive Forms — Angular 14+ ka generic showcase</span>
+form = <span class="kw">this</span>.fb.<span class="fn">group</span>({
+  email: <span class="kw">this</span>.fb.<span class="fn">control</span>(<span class="st">''</span>),        <span class="cm">// FormControl&lt;string&gt;</span>
+  amount: <span class="kw">this</span>.fb.<span class="fn">control</span>(<span class="st">0</span>),        <span class="cm">// FormControl&lt;number&gt;</span>
+});
+<span class="kw">this</span>.form.value;   <span class="cm">// Partial&lt;{email: string; amount: number}&gt; — kyun Partial? 
+                   // kyunki disabled controls value se GAYAB ho jaate hain. Design meets types!</span></code></pre>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">function</span> <span class="fn">firstOrNull</span>&lt;T&gt;(arr: T[]): T | <span class="st">null</span> {
+  <span class="kw">return</span> arr.length ? arr[<span class="st">0</span>] : <span class="st">null</span>;
+}
+<span class="kw">const</span> n = <span class="fn">firstOrNull</span>([<span class="st">1</span>, <span class="st">2</span>, <span class="st">3</span>]);        <span class="cm">// n: number | null (T=number inferred)</span>
+<span class="kw">const</span> o = <span class="fn">firstOrNull</span>&lt;Order&gt;([]);         <span class="cm">// explicit — empty array se infer nahi hota</span>
+
+<span class="cm">// Constraint basic</span>
+<span class="kw">function</span> <span class="fn">longest</span>&lt;T <span class="kw">extends</span> { length: <span class="nm">number</span> }&gt;(a: T, b: T): T {
+  <span class="kw">return</span> a.length &gt;= b.length ? a : b;
+}
+<span class="fn">longest</span>(<span class="st">'hello'</span>, <span class="st">'hi'</span>);      <span class="cm">// ✅ string ki length hai</span>
+<span class="fn">longest</span>([<span class="st">1</span>,<span class="st">2</span>], [<span class="st">1</span>]);          <span class="cm">// ✅ arrays bhi</span>
+<span class="fn">longest</span>(<span class="st">10</span>, <span class="st">20</span>);              <span class="cm">// ❌ number pe length nahi</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Typed event bus (generics ka full power)</h3>
+<pre><code><span class="kw">interface</span> <span class="nm">AppEvents</span> {                                      <span class="cm">// L1: event map</span>
+  <span class="st">'order:created'</span>: { orderId: <span class="nm">string</span>; amount: <span class="nm">number</span> };
+  <span class="st">'user:logout'</span>: { reason: <span class="st">'manual'</span> | <span class="st">'expired'</span> };
+  <span class="st">'cart:cleared'</span>: <span class="nm">undefined</span>;
+}
+
+<span class="kw">class</span> <span class="fn">TypedEventBus</span>&lt;EventMap&gt; {                            <span class="cm">// L2</span>
+  <span class="kw">private</span> handlers = <span class="kw">new</span> <span class="fn">Map</span>&lt;<span class="kw">keyof</span> EventMap, <span class="fn">Set</span>&lt;Function&gt;&gt;();
+
+  <span class="fn">on</span>&lt;K <span class="kw">extends keyof</span> EventMap&gt;(                            <span class="cm">// L3</span>
+    event: K,
+    handler: (payload: EventMap[K]) =&gt; <span class="nm">void</span>               <span class="cm">// L4: indexed access!</span>
+  ) { <span class="cm">/* add to map */</span> }
+
+  <span class="fn">emit</span>&lt;K <span class="kw">extends keyof</span> EventMap&gt;(event: K, payload: EventMap[K]) { <span class="cm">/* ... */</span> }
+}
+
+<span class="kw">const</span> bus = <span class="kw">new</span> <span class="fn">TypedEventBus</span>&lt;AppEvents&gt;();
+bus.<span class="fn">on</span>(<span class="st">'order:created'</span>, p =&gt; console.<span class="fn">log</span>(p.amount));      <span class="cm">// p auto-typed! ✅</span>
+bus.<span class="fn">emit</span>(<span class="st">'user:logout'</span>, { reason: <span class="st">'oops'</span> });              <span class="cm">// ❌ 'oops' invalid</span>
+bus.<span class="fn">on</span>(<span class="st">'order:create'</span>, () =&gt; {});                         <span class="cm">// ❌ typo pakda!</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Event map interface — event names ↔ payload shapes ka single source of truth. Naya event = ek line yahan, poora bus typed.</li>
+<li><strong>L2:</strong> Class-level generic <code>EventMap</code> — bus kisi bhi event vocabulary ke saath reusable.</li>
+<li><strong>L3:</strong> Method-level <code>K extends keyof EventMap</code> — <em>per-call</em> narrowing: literal <code>'order:created'</code> pass karo toh K wahi literal ban jaata hai (class generic fixed hai, method generic har call pe fresh — ye layering samajhna important hai).</li>
+<li><strong>L4:</strong> <code>EventMap[K]</code> — indexed access type: "K key ki value ka type". K literal hai isliye payload exact. Yahi 3 tools (generic + keyof constraint + indexed access) milke type-safe APIs ki 80% recipes banate hain.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Unused type param: <code>function log&lt;T&gt;(msg: string)</code> — T kahin use nahi = koi inference source nahi = pointless. Generic tabhi jab types ka <em>rishta</em> express ho raha ho.</li>
+<li><code>&lt;T&gt;(x: T)</code> likhna jab <code>(x: unknown)</code> kaafi tha — agar return input pe depend nahi karta toh generic ceremony hai.</li>
+<li>Constraint ke bina T pe operations maangna, phir <code>as any</code> se "fix" — constraint likho, wahi toh contract hai.</li>
+<li>Runtime pe T use karne ki koshish (<code>new T()</code>, <code>instanceof T</code>) — erased! Constructor chahiye toh param mein lo: <code>create&lt;T&gt;(Ctor: new () =&gt; T): T</code>.</li>
+<li>Java instinct: har class ko generic banana. TS mein functions + inference itne powerful hain ki generic classes kam lagti hain — zaroorat pe hi.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Naming: T/K/V chhote scopes mein theek; complex generics mein descriptive — <code>TEntity</code>, <code>TResponse</code>, <code>EventMap</code>.</li>
+<li>Inference ko kaam karne do — explicit type args tabhi jab zaroori (empty array, override).</li>
+<li>Defaults se ergonomic APIs: <code>Repository&lt;T, ID = string&gt;</code> — common case free, special case possible.</li>
+<li>Constraint minimum rakho — jitna kam maangoge, utne zyada types ke saath reusable.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Runtime: zero — na code duplicate hota hai (C++ templates jaisa nahi), na dispatch cost. Compile: har alag instantiation cache hoti hai; problem sirf deeply recursive generics (Section 8 ke DeepX types) ya massive union × generic combinations pe — "Type instantiation is excessively deep" error wahi hai. App-level code mein kabhi issue nahi hoga; library-level type gymnastics mein depth budget yaad rakhna.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>T extends string</code> mein T <em>literal</em> ho sakta hai (<code>'hello'</code>) — string se narrow. Constraints upper bound hain, exact type nahi.</li>
+<li>Generic ke andar conditional narrowing tricky: <code>function f&lt;T extends string | number&gt;(x: T)</code> mein <code>typeof x === 'string'</code> se <code>x</code> narrow hota hai par <code>T</code> nahi — return T ho toh casts lag sakte hain (known design friction).</li>
+<li>Default type param inference ko replace nahi karta — inference fail hone pe hi default lagta hai.</li>
+<li><code>const</code> type parameter (TS 5.0): <code>function f&lt;const T&gt;(x: T)</code> — arguments as-const jaise infer hote hain, literals preserve. Modern API design tool.</li>
+<li>Variance annotations <code>in</code>/<code>out</code> (TS 4.7) — library-level; interfaces pe variance explicitly declare karne ke liye. Naam jaano, use rare.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Generic function kab likhna chahiye — litmus test kya hai?</summary><div class="ans"><p>Jab input aur output (ya do inputs) ke types ka <em>relationship</em> preserve karna ho — "jo type aaya wahi jaayega" (identity/container) ya "is object ki is key ki value" (linked precision). Agar type param signature mein sirf ek jagah aata hai, generic ki jagah unknown/direct type socho.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> http.get&lt;Order[]&gt;(url) mein Order[] runtime pe kya karta hai?</summary><div class="ans"><p>Kuch nahi — erase. Ye sirf compiler ko bataya gaya assumption hai; response validate nahi hota (Section 1 ka scenario). Ye question TS erasure + boundary validation dono test karta hai — dono bolo.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> pluck&lt;T, K extends keyof T&gt;(obj, key): T[K] — har hissa explain karo.</summary><div class="ans"><p><code>T</code> = object ka type (inferred). <code>keyof T</code> = uski keys ka literal union. <code>K extends keyof T</code> = key argument sirf valid keys — typos compile error. <code>T[K]</code> = indexed access — us key ki value ka exact type return. Literal argument dene pe K literal infer hota hai, isliye precision milti hai. Ye pattern lodash get/pick, form field accessors, table column configs — sab jagah hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> TS generics vs Java generics — 3 differences jo practically matter karte hain.</summary><div class="ans"><p>(1) Erasure dono mein hai par TS structural bhi hai — <code>List&lt;Dog&gt;</code> vs <code>List&lt;Animal&gt;</code> ki assignability shape/variance rules se, nominal declaration se nahi. (2) TS inference kaafi aggressive — call sites pe type args likhne almost kabhi nahi padte; Java mein diamond ke bawajood zyada ceremony. (3) TS mein type-level operations (keyof, indexed access, conditional) generics ke saath compose hote hain — Java generics container-typing tak hi hai, TS type-level programming language hai. Bonus: TS mein reified nahi + wildcards (? extends) ki jagah direct union/variance.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Class-level generic vs method-level generic — TypedEventBus example mein dono kyun hain?</summary><div class="ans"><p>Class-level <code>EventMap</code> instance banate waqt fix hota hai — bus ki poori lifetime ka vocabulary. Method-level <code>K</code> <em>har call pe fresh</em> infer hota hai — isi se <code>on('order:created', ...)</code> mein K wo specific literal banta hai aur payload exact type. Agar K bhi class-level hota toh ek hi event type per bus; agar EventMap method-level hota toh har call apna vocabulary laata — consistency gayi. Rule: instance-wide contracts class pe, per-call precision methods pe.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Tumhari team ka generic DataTable&lt;T&gt; component hai; ab requirement hai ki columns config type-safe ho (galat field name compile pe fail) aur cell renderer ko us field ki value ka sahi type mile. Design karo.</summary><div class="ans"><p>Core: <code>interface ColumnDef&lt;T, K extends keyof T = keyof T&gt; { field: K; header: string; render?: (value: T[K], row: T) =&gt; string }</code>. Trick: columns array mein har entry apna K rakhe — <code>ColumnDef&lt;T, keyof T&gt;[]</code> likhoge toh render ki value union ban jaayegi. Solutions: (1) helper factory <code>col&lt;T, K extends keyof T&gt;(field: K, opts): ColumnDef&lt;T, K&gt;</code> — per-call inference (method-level generic ka wahi principle); (2) ya mapped type se distributive <code>ColumnsOf&lt;T&gt; = { [K in keyof T]: ColumnDef&lt;T, K&gt; }[keyof T]</code> (Section 8 preview) — array type hi per-field precise variants ka union ho. Component input: <code>input.required&lt;ColumnsOf&lt;T&gt;[]&gt;()</code>. Ye question Angular + generics + type-level thinking ek saath test karta hai — SDE-3 favourite.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Generic = type parameter; value inference args se, tabhi likho jab types ka rishta ho.</li>
+<li><code>extends</code> = capability guarantee (upper bound); minimum maango.</li>
+<li>Trinity: <code>&lt;T, K extends keyof T&gt;</code> + <code>T[K]</code> = type-safe accessors/events/configs.</li>
+<li>Fully erased — runtime pe constructor/validator values se lo. Defaults = ergonomics.</li>
+<li>Class generic = instance-wide; method generic = per-call fresh.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-6.1 · Typed pick/omit (runtime + types)</div><p><code>pick(obj, ['a','b'])</code> jo runtime pe naya object bhi banaye aur return type exactly <code>Pick&lt;T, K&gt;</code> ho. Keys array ki typing hi asli challenge hai.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-6.2 · TypedEventBus complete</div><p>Upar wale bus ko poora implement karo: on/off/once/emit, once ka self-cleanup (Ch1 closures), aur <code>undefined</code>-payload events pe emit ka payload param optional banane ka type trick.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-6.3 · Typed localStorage wrapper</div><p>Schema interface (<code>{ 'auth:token': string; 'cart': CartItem[] }</code>) le kar <code>storage.get('cart')</code> ko <code>CartItem[] | null</code> return karwao — JSON parse/stringify + validation hooks ke saath. (Tumhare study tools mein directly use hoga!)</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+<section class="topic" id="s7">
+<div class="sec-head">
+  <span class="sec-num">S-07</span>
+  <h2>Utility Types &amp; Type Operators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s7"> Done</label>
+</div>
+<p class="covers">Covers: <b>keyof · typeof · Indexed access T[K] · Partial/Required/Readonly/Pick/Omit/Record · Exclude/Extract/NonNullable · ReturnType/Parameters/Awaited</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Utility types = TS ke built-in <strong>type transformers</strong> — types jo types lete hain aur naye types return karte hain (type-level functions!). Aur type operators (<code>keyof</code>, <code>typeof</code>, <code>T[K]</code>) wo primitives hain jinse ye transformers bane hain. Sab <code>lib.d.ts</code> mein plain TS code hain — koi compiler magic nahi, Section 8 ke mapped/conditional types se likhi gayi ordinary definitions.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Real apps mein ek entity ke <em>kai roop</em> hote hain: full <code>User</code>, create-form ka user (id nahi), patch-request ka user (sab optional), list-view ka user (3 fields). Har roop ka alag interface haath se likhna = duplication + drift (ek mein field add hua, baaki bhool gaye). Utility types se sab roop <strong>ek source se derive</strong> hote hain — source badla, sab roop khud update, mismatch compile error.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Type drift</strong> — derived types kabhi out-of-sync nahi hote.</li>
+<li><strong>DTO boilerplate</strong> — Create/Update/Patch shapes free mein.</li>
+<li><strong>Values↔types bridge</strong> — <code>typeof</code> se runtime constants ke types nikalte hain (config, as-const objects).</li>
+</ul>
+
+<h3 class="part">4. Internal Working — The operators (building blocks)</h3>
+<table>
+<tr><th>Operator</th><th>Kya deta hai</th><th>Example</th></tr>
+<tr><td><code>keyof T</code></td><td>Keys ka literal union</td><td><code>keyof Order</code> → <code>'id'|'amount'|'status'</code></td></tr>
+<tr><td><code>typeof v</code> (type position)</td><td>Value ka static type</td><td><code>typeof ORDER_STATUS</code> → us object ka shape. JS ke runtime typeof se alag cheez!</td></tr>
+<tr><td><code>T[K]</code></td><td>Indexed access — key ki value ka type</td><td><code>Order['amount']</code> → number; <code>Order['id'|'status']</code> → union bhi chalta hai</td></tr>
+<tr><td><code>T[number]</code></td><td>Array/tuple ke elements ka type</td><td><code>typeof ROLES[number]</code> → as-const array se union (Section 3 wala idiom!)</td></tr>
+</table>
+<p><strong>Ab utility types ke andar jhaanko</strong> (lib.d.ts se, simplified):</p>
+<pre><code><span class="kw">type</span> <span class="nm">Partial</span>&lt;T&gt;  = { [K <span class="kw">in keyof</span> T]?: T[K] };            <span class="cm">// sab optional</span>
+<span class="kw">type</span> <span class="nm">Required</span>&lt;T&gt; = { [K <span class="kw">in keyof</span> T]-?: T[K] };           <span class="cm">// -? = optionality HATAO</span>
+<span class="kw">type</span> <span class="nm">Readonly</span>&lt;T&gt; = { <span class="kw">readonly</span> [K <span class="kw">in keyof</span> T]: T[K] };
+<span class="kw">type</span> <span class="nm">Pick</span>&lt;T, K <span class="kw">extends keyof</span> T&gt; = { [P <span class="kw">in</span> K]: T[P] };    <span class="cm">// chune hue keys</span>
+<span class="kw">type</span> <span class="nm">Record</span>&lt;K <span class="kw">extends keyof any</span>, V&gt; = { [P <span class="kw">in</span> K]: V };
+<span class="kw">type</span> <span class="nm">Exclude</span>&lt;T, U&gt; = T <span class="kw">extends</span> U ? <span class="nm">never</span> : T;            <span class="cm">// conditional (S8)</span>
+<span class="kw">type</span> <span class="nm">Omit</span>&lt;T, K <span class="kw">extends keyof any</span>&gt; = Pick&lt;T, Exclude&lt;<span class="kw">keyof</span> T, K&gt;&gt;;  <span class="cm">// composed!</span></code></pre>
+<p class="mut">Dekho — <code>Omit</code> = <code>Pick</code> + <code>Exclude</code> ka composition. Utility types ratta nahi hain, <em>derivations</em> hain. Section 8 mein tum khud aise likhoge.</p>
+
+<h3 class="part">5. Execution Flow — ek derived type ka evaluate hona</h3>
+<pre class="diagram">
+  type CreateOrderDto = Omit&lt;Order, 'id' | 'createdAt'&gt;
+     │ Omit expand → Pick&lt;Order, Exclude&lt;keyof Order, 'id'|'createdAt'&gt;&gt;
+     │ keyof Order → 'id'|'amount'|'currency'|'status'|'createdAt'
+     │ Exclude (distributive!) → 'amount'|'currency'|'status'
+     │ Pick → { amount: number; currency: 'INR'|'USD'; status: OrderStatus }
+     ▼ Ye evaluation COMPILE pe, lazily, on-demand hoti hai
+</pre>
+
+<h3 class="part">6. Architecture — Kaunsa utility kab (cheat map)</h3>
+<table>
+<tr><th>Zaroorat</th><th>Utility</th><th>Typical Angular jagah</th></tr>
+<tr><td>Patch/draft shape</td><td><code>Partial&lt;T&gt;</code></td><td>PATCH request body, form draft, <code>setState(patch)</code></td></tr>
+<tr><td>Create DTO (server fields hatao)</td><td><code>Omit&lt;T, 'id'|'createdAt'&gt;</code></td><td>POST bodies</td></tr>
+<tr><td>Lightweight view</td><td><code>Pick&lt;T, 'id'|'name'&gt;</code></td><td>Dropdown/list items</td></tr>
+<tr><td>Lookup/dictionary</td><td><code>Record&lt;K, V&gt;</code></td><td>Status→meta table (S3), entity maps (NgRx)</td></tr>
+<tr><td>Immutable contract</td><td><code>Readonly&lt;T&gt;</code> / <code>ReadonlyArray&lt;T&gt;</code></td><td>OnPush inputs, store state (Ch1 S4!)</td></tr>
+<tr><td>Union se hatao / rakho</td><td><code>Exclude</code> / <code>Extract</code></td><td>Event names filter, discriminant subsets</td></tr>
+<tr><td>null/undefined hatao</td><td><code>NonNullable&lt;T&gt;</code></td><td>Guards ke baad ke types</td></tr>
+<tr><td>Function se types nikaalo</td><td><code>ReturnType</code> / <code>Parameters</code></td><td>Third-party fns ke unexported types</td></tr>
+<tr><td>Promise unwrap</td><td><code>Awaited&lt;T&gt;</code></td><td>async utils ke results</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// models/order.model.ts — EK source, saare roop derived</span>
+<span class="kw">export interface</span> <span class="nm">Order</span> {
+  id: <span class="nm">string</span>;
+  amount: <span class="nm">number</span>;
+  currency: <span class="st">'INR'</span> | <span class="st">'USD'</span>;
+  status: OrderStatus;
+  createdAt: <span class="nm">string</span>;
+}
+
+<span class="kw">export type</span> <span class="nm">CreateOrderDto</span> = Omit&lt;Order, <span class="st">'id'</span> | <span class="st">'createdAt'</span> | <span class="st">'status'</span>&gt;;
+<span class="kw">export type</span> <span class="nm">UpdateOrderDto</span> = Partial&lt;CreateOrderDto&gt; &amp; Pick&lt;Order, <span class="st">'id'</span>&gt;;
+<span class="kw">export type</span> <span class="nm">OrderListItem</span>  = Pick&lt;Order, <span class="st">'id'</span> | <span class="st">'amount'</span> | <span class="st">'status'</span>&gt;;
+
+<span class="cm">// NgRx-style normalized state — Record ka classic use</span>
+<span class="kw">interface</span> <span class="nm">OrdersState</span> {
+  ids: <span class="nm">string</span>[];
+  entities: Record&lt;<span class="nm">string</span>, Order&gt;;      <span class="cm">// O(1) lookup (Ch1 S4 scenario yaad hai?)</span>
+  selectedId: <span class="nm">string</span> | <span class="st">null</span>;
+}
+
+<span class="cm">// Service — signatures khud document hain</span>
+<span class="fn">create</span>(dto: CreateOrderDto): Observable&lt;Order&gt; { ... }
+<span class="fn">patch</span>(dto: UpdateOrderDto): Observable&lt;Order&gt; { ... }</code></pre>
+<p class="mut">Kal <code>Order</code> mein <code>notes</code> field aayi → CreateOrderDto mein khud aa gayi, service signatures updated, jo call sites notes nahi bhejte wo (optional na ho toh) compile pe pakde gaye. Zero drift.</p>
+
+<h3 class="part">8. Beginner Example</h3>
+<pre><code><span class="kw">interface</span> <span class="nm">User</span> { id: <span class="nm">number</span>; name: <span class="nm">string</span>; email: <span class="nm">string</span>; }
+
+<span class="kw">type</span> <span class="nm">UserPatch</span> = Partial&lt;User&gt;;
+<span class="cm">// { id?: number; name?: string; email?: string }</span>
+
+<span class="kw">type</span> <span class="nm">UserPreview</span> = Pick&lt;User, <span class="st">'id'</span> | <span class="st">'name'</span>&gt;;
+<span class="cm">// { id: number; name: string }</span>
+
+<span class="kw">type</span> <span class="nm">RolePermissions</span> = Record&lt;<span class="st">'admin'</span> | <span class="st">'editor'</span> | <span class="st">'viewer'</span>, <span class="nm">string</span>[]&gt;;
+<span class="kw">const</span> perms: <span class="nm">RolePermissions</span> = {
+  admin: [<span class="st">'*'</span>],
+  editor: [<span class="st">'read'</span>, <span class="st">'write'</span>],
+  viewer: [<span class="st">'read'</span>],       <span class="cm">// koi role missing? → compile error. Exhaustive!</span>
+};</code></pre>
+
+<h3 class="part">9. Advanced Example — typeof + ReturnType (values se types)</h3>
+<pre><code><span class="cm">// Config object pehle VALUE hai — type usse derive karo, ulta nahi</span>
+<span class="kw">const</span> appConfig = {
+  api: { baseUrl: <span class="st">'/api'</span>, timeoutMs: <span class="st">30_000</span> },
+  features: { darkMode: <span class="st">true</span>, beta: <span class="st">false</span> },
+} <span class="kw">as const</span>;                                            <span class="cm">// L1</span>
+
+<span class="kw">type</span> <span class="nm">AppConfig</span> = <span class="kw">typeof</span> appConfig;                     <span class="cm">// L2</span>
+<span class="kw">type</span> <span class="nm">FeatureFlag</span> = <span class="kw">keyof typeof</span> appConfig.features;    <span class="cm">// L3: 'darkMode' | 'beta'</span>
+
+<span class="cm">// Kisi function ka return type export nahi hua? Nikaal lo:</span>
+<span class="kw">function</span> <span class="fn">buildQueryState</span>() {
+  <span class="kw">return</span> { page: <span class="st">1</span>, filters: <span class="kw">new</span> <span class="fn">Map</span>&lt;<span class="nm">string</span>, <span class="nm">string</span>&gt;(), sort: <span class="st">null</span> <span class="kw">as</span> <span class="nm">string</span> | <span class="st">null</span> };
+}
+<span class="kw">type</span> <span class="nm">QueryState</span> = ReturnType&lt;<span class="kw">typeof</span> buildQueryState&gt;;  <span class="cm">// L4</span>
+
+<span class="kw">type</span> <span class="nm">OrdersResult</span> = Awaited&lt;ReturnType&lt;<span class="kw">typeof</span> fetchOrders&gt;&gt;;  <span class="cm">// L5: Promise bhi khula</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> <code>as const</code> (S1) — literals preserve, warna <code>baseUrl: string</code> milta aur precision jaati.</li>
+<li><strong>L2:</strong> <code>typeof</code> type-position mein — value ka compile-time shape. Ab config hi schema hai; alag interface maintain karne ki zaroorat nahi.</li>
+<li><strong>L3:</strong> <code>keyof typeof</code> combo — runtime object se keys ka union. Feature-flag functions ka param type yahi hota hai: <code>isEnabled(flag: FeatureFlag)</code>.</li>
+<li><strong>L4:</strong> <code>ReturnType&lt;typeof fn&gt;</code> — function-first design: implementation likho, type free. Factory functions + store patterns mein bahut common.</li>
+<li><strong>L5:</strong> Composition — <code>Awaited&lt;ReturnType&lt;...&gt;&gt;</code>: async fn ke resolved value ka type. Utility types functions ki tarah nest hote hain — yahi mindset Section 8 ki taiyari hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li><code>Partial&lt;T&gt;</code> ko "sab kuch chalega" mode banana — service internals tak Partial phailaya toh har jagah undefined checks. Partial sirf <em>boundary</em> shapes (patch DTO) pe; andar full types.</li>
+<li><code>Omit</code> ki keys unchecked hain (<code>K extends keyof any</code>): <code>Omit&lt;Order, 'idd'&gt;</code> — typo, koi error nahi, kuch omit hi nahi hua! Strict version khud banao: <code>type StrictOmit&lt;T, K extends keyof T&gt; = Omit&lt;T, K&gt;</code>.</li>
+<li><code>Record&lt;string, V&gt;</code> har jagah — keys ka union pata hai toh use likho, exhaustiveness + autocomplete dono milenge. <code>Record&lt;string, V&gt;</code> lookup pe har value <code>V</code> deta hai, missing key ka jhooth (noUncheckedIndexedAccess flag isi ke liye hai).</li>
+<li>Derived types ko copy-paste expand karke commit karna — "IDE ne expand karke dikhaya toh maine likh diya" — drift wapas aa gaya.</li>
+<li>Deep expectations: <code>Partial</code>/<code>Readonly</code> <strong>shallow</strong> hain — nested objects untouched. Deep versions Section 8 mein khud banayenge.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Entity = ek canonical interface; DTOs/views = derive (Pick/Omit/Partial). Naye interface likhne se pehle poochho: "derive ho sakta hai?"</li>
+<li>Domain-specific aliases banao: <code>type EntityId&lt;T extends {id: unknown}&gt; = T['id']</code> — readable + reusable.</li>
+<li>as-const configs + typeof = single source of truth for constants (S3 ka pattern generalize).</li>
+<li>Bounded keys pe <code>Record&lt;UnionKeys, V&gt;</code>; open dictionaries pe <code>Record&lt;string, V&gt;</code> + <code>noUncheckedIndexedAccess</code> on.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Compile-time only; evaluation lazy + cached. Ek hi note: giant unions pe distributive utilities (<code>Exclude</code> 500-member union pe baar-baar) aur nested Omit-of-Omit chains editor responsiveness gira sakte hain — intermediate named aliases banao (compiler cache karta hai, error messages bhi readable hote hain). Runtime: zero, hamesha ki tarah.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>keyof</code> union pe = <em>common</em> keys only (<code>keyof (A | B)</code> = keys jo dono mein hain); intersection pe sab keys. Ulta lagta hai pehli baar — value-assignability se socho toh sahi hai.</li>
+<li><code>Partial&lt;T&gt;</code> + <code>exactOptionalPropertyTypes</code>: <code>{name: undefined}</code> explicitly dena vs key absent hona alag treat hota hai.</li>
+<li><code>Pick</code>/<code>Omit</code> discriminated unions ko <em>flatten</em> kar dete hain (union pe directly lagao toh distribution nahi hoti default mein) — union-safe versions ke liye distributive wrapper chahiye (S8).</li>
+<li><code>ReturnType&lt;typeof overloadedFn&gt;</code> sirf <em>aakhri</em> overload ka return deta hai — overloads + utility types ka known friction.</li>
+<li><code>Readonly&lt;T&gt;</code> methods ko nahi chhoota; aur <code>readonly T[]</code> pe push/pop <em>types se hi gayab</em> hote hain — mutation compile pe hi impossible (Ch1 S4 immutability ka type-level enforcement).</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Pick aur Omit mein kya farak, aur dono ka ek-ek use case?</summary><div class="ans"><p>Pick = whitelist (ye keys rakho): list-item views. Omit = blacklist (ye keys hatao): create DTO jisme server-generated id/createdAt nahi. Chhota surface chahiye toh Pick; "sab kuch except" toh Omit. Bonus: Omit = Pick + Exclude composition.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> TS ka typeof JS ke typeof se kaise alag hai?</summary><div class="ans"><p>JS typeof runtime operator hai — string deta hai ('object', 'string'...). TS typeof <em>type position</em> mein compile-time operator hai — value ka poora static type deta hai. <code>type C = typeof appConfig</code> compile pe evaluate, runtime pe exist hi nahi.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Partial&lt;T&gt; ki definition likho aur -? modifier kya karta hai?</summary><div class="ans"><p><code>type Partial&lt;T&gt; = { [K in keyof T]?: T[K] }</code> — mapped type jo har key pe <code>?</code> add karta hai. <code>-?</code> ulta: optionality <em>remove</em> (Required ki definition). Similarly <code>-readonly</code> readonly hatata hai. Modifiers add (+, implicit) ya remove (-) dono ho sakte hain — mapped types ka control panel.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Record&lt;Status, Meta&gt; vs { [k: string]: Meta } — exhaustiveness angle se compare karo.</summary><div class="ans"><p>Union-keyed Record: <em>saari</em> keys required — missing status = compile error (S3 wala table pattern), extra key bhi error, lookup ka result guaranteed Meta. String index signature: koi bhi key, kuch bhi missing, lookup pe Meta ka jhootha vaada (undefined possible). Bounded domain = Record with union; truly dynamic = index signature + noUncheckedIndexedAccess.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> Omit&lt;T, K&gt; typos kyun nahi pakadta jabki Pick pakadta hai — aur fix?</summary><div class="ans"><p>Definitions dekho: Pick ka <code>K extends keyof T</code> — invalid key constraint fail = error. Omit ka <code>K extends keyof any</code> (i.e., string|number|symbol) — deliberately loose rakha gaya (union se omit, related types pe reuse ke liye). Cost: <code>Omit&lt;Order,'idd'&gt;</code> silently no-op. Fix: <code>type StrictOmit&lt;T, K extends keyof T&gt; = Omit&lt;T, K&gt;</code> — apne codebase mein yahi export karo. Ye definition-level answer "maine lib.d.ts padha hai" signal deta hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Form draft feature: user aadha form bhar ke save kare, baad mein resume. Types kaise design karoge ki draft aur final submission alag contracts hon?</summary><div class="ans"><p>(1) Canonical <code>CheckoutForm</code> interface (full, required). (2) Draft = <code>Partial&lt;CheckoutForm&gt;</code> — storage/API dono mein; nested sections hain toh DeepPartial (S8) ya section-wise Partials: <code>{ address?: Partial&lt;Address&gt;; payment?: Partial&lt;Payment&gt; }</code> — deliberate structure blind DeepPartial se better. (3) Submit boundary pe narrow: ek validator/type-guard <code>isComplete(draft): draft is CheckoutForm</code> — guard pass hone ke baad hi submit fn (jo full type maangta hai) call ho <em>sakta</em> hai; "incomplete submit" compile-time pe unrepresentable. (4) Server pe bhi wahi validation (types wire cross nahi karte — S1 ka mantra). Ye Partial + type guard + boundary validation ka combo hai — teen sections ka gyaan ek answer mein.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Operators: keyof (keys union), typeof (value→type), T[K] (value type), T[number] (element type).</li>
+<li>Shape transformers: Partial/Required/Readonly (modifiers), Pick/Omit (keys), Record (build).</li>
+<li>Union tools: Exclude/Extract/NonNullable. Function tools: ReturnType/Parameters/Awaited.</li>
+<li>Sab shallow. Omit loose (typo-blind) — StrictOmit banao. Ek entity → sab DTOs derived.</li>
+<li>Ye sab mapped+conditional types se bane hain — S8 mein khud likhenge.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-7.1 · Utility types from scratch</div><p>Bina lib.d.ts dekhe likho: Partial, Required, Readonly, Pick, Record, Exclude, Extract, NonNullable, ReturnType (infer S8 se — attempt karo). Phir compare karo official se.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-7.2 · DTO suite for your Razorpay clone</div><p>Payment entity se Create/Update/ListItem/AdminView types derive karo + har DTO ke saath ek function signature. Ek field entity mein add karke ripple effects document karo.</p><div class="lvl">LEVEL: EASY</div></div>
+<div class="mc"><div class="mct">MC-7.3 · StrictOmit + RequireAtLeastOne</div><p><code>StrictOmit</code> likho, phir challenge: <code>RequireAtLeastOne&lt;T, K&gt;</code> — diye gaye keys mein se kam se kam ek required ho (hint: union of intersections). Ye interview mein "type-level thinking" ka litmus test hai.</p><div class="lvl">LEVEL: HARD</div></div>
+</section>
+<section class="topic" id="s8">
+<div class="sec-head">
+  <span class="sec-num">S-08</span>
+  <h2>Advanced Types — Mapped, Conditional, infer, Template Literals</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s8"> Done</label>
+</div>
+<p class="covers">Covers: <b>Mapped types + key remapping (as) · +/- modifiers · Conditional types · Distributivity · infer · Template literal types · DeepPartial</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Ye TS ka <strong>type-level programming</strong> toolkit hai: <strong>mapped types</strong> = types pe loop (<code>for key in keys</code>), <strong>conditional types</strong> = types pe if-else (<code>T extends U ? X : Y</code>), <strong>infer</strong> = types ke andar se pattern-match karke hissa nikaalna, <strong>template literal types</strong> = string types pe concatenation/pattern. Milake: ek chhoti functional language jo types compute karti hai — Section 7 ke saare utilities isi se bane the.</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Kyunki real APIs mein types ke beech <em>mechanical relationships</em> hote hain: "event object ki har key ka handler", "har field ka getter", "Observable ke andar kya hai", "route path se params". Ye relationships haath se maintain karo toh drift; type-level programming se <em>compute</em> karo toh hamesha sync. Interview reality: 4-5 YOE ke baad yahi section junior aur senior TS ko alag karta hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Derived shapes at scale</strong> — Getters, EventHandlers, FormModel — sab source se computed.</li>
+<li><strong>Wrapper unwrapping</strong> — Promise/Observable/Array ke andar ka type nikaalna (<code>infer</code>).</li>
+<li><strong>String contracts</strong> — <code>'order:created'</code> jaise patterns, route paths, CSS vars — typed strings.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<h4>A) Mapped types — loop + modifiers + remap</h4>
+<pre><code><span class="kw">type</span> <span class="nm">Mapped</span>&lt;T&gt; = {
+  <span class="cm">// [K in keyof T]  ← loop variable K, har key pe</span>
+  <span class="cm">// -readonly / +?  ← modifiers add/remove</span>
+  <span class="cm">// as NewKey       ← KEY REMAPPING (TS 4.1+)</span>
+  [K <span class="kw">in keyof</span> T <span class="kw">as</span> <span class="st">`get${Capitalize&lt;string &amp; K&gt;}`</span>]: () =&gt; T[K]
+};
+
+<span class="kw">interface</span> <span class="nm">Order</span> { id: <span class="nm">string</span>; amount: <span class="nm">number</span>; }
+<span class="kw">type</span> <span class="nm">OrderGetters</span> = <span class="nm">Mapped</span>&lt;Order&gt;;
+<span class="cm">// { getId: () =&gt; string; getAmount: () =&gt; number }  ← computed!</span></code></pre>
+<p class="mut"><code>as never</code> remap = key ko <em>drop</em> karna — filtered mapped types isi se bante hain (sirf function keys rakho, etc.).</p>
+<h4>B) Conditional types + distributivity (THE exam topic)</h4>
+<pre><code><span class="kw">type</span> <span class="nm">IsString</span>&lt;T&gt; = T <span class="kw">extends</span> <span class="nm">string</span> ? <span class="st">true</span> : <span class="st">false</span>;</code></pre>
+<pre class="diagram">
+  DISTRIBUTIVITY: naked type param + union = condition HAR member pe
+  alag-alag chalti hai, results ka union banta hai:
+
+  Exclude&lt;'a'|'b'|'c', 'b'&gt;
+    = ('a' extends 'b' ? never : 'a')   → 'a'
+    | ('b' extends 'b' ? never : 'b')   → never   (union se GAYAB)
+    | ('c' extends 'b' ? never : 'c')   → 'c'
+    = 'a' | 'c'          ← never union mein evaporate ho jaata hai!
+
+  Band karna ho: [T] extends [U] ? ... : ...   (tuple-wrap = non-distributive)
+</pre>
+<h4>C) infer — type pattern matching</h4>
+<pre><code><span class="kw">type</span> <span class="nm">UnwrapPromise</span>&lt;T&gt; = T <span class="kw">extends</span> Promise&lt;<span class="kw">infer</span> U&gt; ? U : T;
+<span class="cm">// "Agar T Promise&lt;kuch&gt; ke pattern se match kare, us 'kuch' ko U naam do"</span>
+<span class="kw">type</span> <span class="nm">A</span> = <span class="nm">UnwrapPromise</span>&lt;Promise&lt;Order&gt;&gt;;   <span class="cm">// Order</span>
+<span class="kw">type</span> <span class="nm">B</span> = <span class="nm">UnwrapPromise</span>&lt;<span class="nm">number</span>&gt;;            <span class="cm">// number (no match → fallback)</span></code></pre>
+<h4>D) Template literal types</h4>
+<pre><code><span class="kw">type</span> <span class="nm">EventName</span> = <span class="st">`${'order'|'user'}:${'created'|'updated'}`</span>;
+<span class="cm">// 'order:created'|'order:updated'|'user:created'|'user:updated' — cross product!</span>
+<span class="cm">// + intrinsic helpers: Uppercase, Lowercase, Capitalize, Uncapitalize</span></code></pre>
+
+<h3 class="part">5. Execution Flow — compiler ek advanced type kaise evaluate karta hai</h3>
+<pre class="diagram">
+  type R = ApiResult&lt;typeof fetchOrders&gt;
+     │ 1. Alias expand — definition substitute
+     │ 2. Conditional? → T resolve karo → union hai + naked param? → DISTRIBUTE
+     │ 3. infer positions pe structural match — candidates collect
+     │ 4. Mapped? → keyof compute → har key pe remap/modifier apply
+     │ 5. Result cache (same inputs → same output, dobara compute nahi)
+     ▼ Lazy: types tabhi evaluate jab USE hote hain — infinite-ish recursion
+       tabhi pakdi jaati hai jab expand karni pade (depth limit ~ recursion guard)
+</pre>
+
+<h3 class="part">6. Architecture — apne utility types ki library</h3>
+<pre><code><span class="cm">// 1. DeepPartial — S7 ka shallow limitation fix (recursion!)</span>
+<span class="kw">type</span> <span class="nm">DeepPartial</span>&lt;T&gt; = {
+  [K <span class="kw">in keyof</span> T]?: T[K] <span class="kw">extends</span> <span class="nm">object</span> ? <span class="nm">DeepPartial</span>&lt;T[K]&gt; : T[K];
+};
+
+<span class="cm">// 2. Observable/Promise unwrap — RxJS codebases ka staple</span>
+<span class="kw">type</span> <span class="nm">ObservedValue</span>&lt;T&gt; = T <span class="kw">extends</span> Observable&lt;<span class="kw">infer</span> V&gt; ? V : <span class="nm">never</span>;
+
+<span class="cm">// 3. Union-safe Omit — S7 edge case ka ilaaj (distribute deliberately)</span>
+<span class="kw">type</span> <span class="nm">DistributiveOmit</span>&lt;T, K <span class="kw">extends keyof any</span>&gt; = T <span class="kw">extends</span> <span class="nm">unknown</span> ? Omit&lt;T, K&gt; : <span class="nm">never</span>;
+
+<span class="cm">// 4. Function-keys filter — as never se keys DROP</span>
+<span class="kw">type</span> <span class="nm">MethodsOf</span>&lt;T&gt; = {
+  [K <span class="kw">in keyof</span> T <span class="kw">as</span> T[K] <span class="kw">extends</span> Function ? K : <span class="nm">never</span>]: T[K]
+};</code></pre>
+
+<h3 class="part">7. Real Project Example (Angular context)</h3>
+<pre><code><span class="cm">// Typed Reactive Forms ka asli engine yahi hai. Angular internally
+// tumhare model se control tree ka type COMPUTE karta hai:</span>
+<span class="kw">interface</span> <span class="nm">CheckoutModel</span> {
+  email: <span class="nm">string</span>;
+  address: { city: <span class="nm">string</span>; pincode: <span class="nm">string</span> };
+}
+
+<span class="cm">// Simplified version of what Angular's types do:</span>
+<span class="kw">type</span> <span class="nm">ControlsOf</span>&lt;T&gt; = {
+  [K <span class="kw">in keyof</span> T]: T[K] <span class="kw">extends</span> <span class="nm">object</span>
+    ? FormGroup&lt;ControlsOf&lt;T[K]&gt;&gt;          <span class="cm">// nested object → nested group</span>
+    : FormControl&lt;T[K]&gt;;                    <span class="cm">// leaf → control</span>
+};
+<span class="cm">// ControlsOf&lt;CheckoutModel&gt; = {
+//   email: FormControl&lt;string&gt;;
+//   address: FormGroup&lt;{ city: FormControl&lt;string&gt;; ... }&gt;;
+// }
+// form.controls.address.controls.city — poora path typed, autocomplete included.
+// Mapped + conditional + recursion — teeno production framework ke andar.</span></code></pre>
+
+<h3 class="part">8. Beginner Example — pehla mapped + pehla conditional</h3>
+<pre><code><span class="kw">interface</span> <span class="nm">Settings</span> { theme: <span class="nm">string</span>; fontSize: <span class="nm">number</span>; }
+
+<span class="kw">type</span> <span class="nm">Flags</span>&lt;T&gt; = { [K <span class="kw">in keyof</span> T]: <span class="nm">boolean</span> };
+<span class="kw">type</span> <span class="nm">DirtyFlags</span> = <span class="nm">Flags</span>&lt;Settings&gt;;   <span class="cm">// { theme: boolean; fontSize: boolean }</span>
+
+<span class="kw">type</span> <span class="nm">NonNull</span>&lt;T&gt; = T <span class="kw">extends</span> <span class="st">null</span> | <span class="nm">undefined</span> ? <span class="nm">never</span> : T;
+<span class="kw">type</span> <span class="nm">Clean</span> = <span class="nm">NonNull</span>&lt;<span class="nm">string</span> | <span class="st">null</span> | <span class="nm">undefined</span>&gt;;  <span class="cm">// string (distribute + evaporate)</span></code></pre>
+
+<h3 class="part">9. Advanced Example — Typed route params (template literals + infer + recursion)</h3>
+<pre><code><span class="kw">type</span> <span class="nm">ExtractParams</span>&lt;Path <span class="kw">extends</span> <span class="nm">string</span>&gt; =                     <span class="cm">// L1</span>
+  Path <span class="kw">extends</span> <span class="st">`${string}:${infer Param}/${infer Rest}`</span>       <span class="cm">// L2</span>
+    ? { [K <span class="kw">in</span> Param | <span class="kw">keyof</span> <span class="nm">ExtractParams</span>&lt;Rest&gt;]: <span class="nm">string</span> }   <span class="cm">// L3</span>
+    : Path <span class="kw">extends</span> <span class="st">`${string}:${infer Param}`</span>                 <span class="cm">// L4</span>
+      ? { [K <span class="kw">in</span> Param]: <span class="nm">string</span> }
+      : {};                                                     <span class="cm">// L5</span>
+
+<span class="kw">type</span> <span class="nm">P</span> = <span class="nm">ExtractParams</span>&lt;<span class="st">'/orders/:orderId/items/:itemId'</span>&gt;;
+<span class="cm">// { orderId: string; itemId: string }  ← STRING se COMPUTE hua!</span>
+
+<span class="kw">function</span> <span class="fn">navigate</span>&lt;P <span class="kw">extends</span> <span class="nm">string</span>&gt;(path: P, params: <span class="nm">ExtractParams</span>&lt;P&gt;) {}
+<span class="fn">navigate</span>(<span class="st">'/orders/:orderId'</span>, { orderId: <span class="st">'ord_1'</span> });   <span class="cm">// ✅</span>
+<span class="fn">navigate</span>(<span class="st">'/orders/:orderId'</span>, { id: <span class="st">'ord_1'</span> });        <span class="cm">// ❌ compile error!</span></code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> <code>Path extends string</code> constraint — template matching sirf string types pe.</li>
+<li><strong>L2:</strong> Template pattern mein do <code>infer</code> — compiler string ko structurally todta hai: <code>:</code> ke baad param, <code>/</code> ke baad rest. Greedy nahi, pattern-guided.</li>
+<li><strong>L3:</strong> Recursion! Rest pe khud ko call + mapped type se dono params merge. Types mein loop nahi hota — recursion hi iteration hai (FP mindset).</li>
+<li><strong>L4:</strong> Base-ish case — aakhri param (aage koi <code>/</code> nahi).</li>
+<li><strong>L5:</strong> True base case — koi <code>:</code> hi nahi → empty object.</li>
+<li>Real-world note: TanStack Router / typed-router libs exactly yahi karte hain. Angular Router ke params abhi bhi loosely typed hain — is technique se apna typed wrapper banana ek killer portfolio piece hai.</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li>Distributivity ko bhool jaana — <code>IsString&lt;'a' | 1&gt;</code> ko <code>false</code> expect karna; asal mein <code>true | false</code> = <code>boolean</code> milta hai (per-member!). Whole-union check chahiye toh <code>[T] extends [string]</code>.</li>
+<li><code>never</code> input pe conditional se result expect karna — naked param pe <code>never</code> = empty union = distribute over nothing = result <code>never</code>. Famous head-scratcher.</li>
+<li>DeepPartial ko sab pe maar dena — Date, Map, Observable bhi "object" hain, unke andar bhi ghus jaayega. Production DeepPartial mein in types ke liye early-return branches likho.</li>
+<li>Type-level showoff — jo cheez do explicit interfaces se saaf ho jaati, uspe 5-level conditional. Error messages team ke liye punishment ban jaate hain. Power tool = zaroorat pe.</li>
+<li>infer positions ka overconfidence — multiple infer candidates (covariant positions) union bante hain, contravariant intersection — is nuance ke bina complex infers debugging nightmare.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Har custom utility ke saath <em>test types</em> likho: <code>type _t1 = Expect&lt;Equal&lt;ExtractParams&lt;'/a/:id'&gt;, {id: string}&gt;&gt;</code> — type-level unit tests (type-challenges style).</li>
+<li>Intermediate aliases + comments — 3+ operations ho toh naam do har stage ko; error messages aur compile perf dono sudhrenge.</li>
+<li>Utilities ko <code>types/</code> mein centralize; ad-hoc inline conditionals PR review mein flag karo.</li>
+<li>Recursion pe depth-consciousness — tail-recursive patterns (accumulator param) TS 4.5+ mein zyada depth allow karte hain.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>Ye wahi section hai jahan compile perf <em>sach mein</em> bigad sakti hai: template literal cross-products explode karte hain (<code>`${A}-${B}-${C}`</code> = |A|×|B|×|C| members — 3 unions of 100 = 1,000,000 types!), deep recursion "excessively deep" errors, aur giant distributive conditionals editor lag. Budget rules: unions chhote rakho jab cross ho rahe hon, recursion sirf bounded structures pe, aur <code>tsc --extendedDiagnostics</code> + TS server logs se hot types identify karo. Runtime: zero — chahe type kitna bhi zabardast ho, JS mein sirf plain code jaata hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li>Homomorphic mapped types (<code>[K in keyof T]</code> direct) modifiers <em>preserve</em> karte hain — optional/readonly source se copy hote hain; non-homomorphic (<code>[K in SomeUnion]</code>) nahi. Isi se Partial nested optionality sahi rakh paata hai.</li>
+<li>Mapped type arrays/tuples pe lagao toh (homomorphic case) array/tuple hi rehta hai — <code>Readonly&lt;string[]&gt;</code> = <code>readonly string[]</code>, object nahi banta. Spec ka thoughtful corner.</li>
+<li><code>infer X extends string</code> (TS 4.7+) — inferred type pe constraint inline; extra conditional bacha deta hai.</li>
+<li>Conditional types <em>deferred</em> rehte hain jab T unresolved generic ho — function body ke andar isliye kabhi-kabhi "assignability unknown" errors; resolution call site pe hoti hai.</li>
+<li>Recursive conditional + union = dono combine: har member apni recursion chalata hai. Power aur perf-risk ka multiplication yahi hai.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> Mapped type kya hai — Partial ki definition se samjhao.</summary><div class="ans"><p><code>{ [K in keyof T]?: T[K] }</code> — keyof T ke har member pe loop, har key wahi value type, <code>?</code> modifier add. Types pe map() jaisa operation. Modifiers +/- se add/remove; <code>as</code> se key rename/drop.</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> infer keyword kya karta hai?</summary><div class="ans"><p>Conditional type ke extends pattern mein ek "capture variable" declare karta hai — match hua toh us position ka type us naam se milta hai. <code>T extends Array&lt;infer U&gt; ? U : never</code> = element type nikaalo. Type-level destructuring bolo toh bhi sahi hai.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Distributive conditional types — kya, kab, aur band kaise karte hain?</summary><div class="ans"><p>Jab conditional ka checked type <em>naked type parameter</em> ho aur union aaye, condition har member pe alag apply hoti hai aur results ka union banta hai — isi se Exclude/Extract/NonNullable kaam karte hain (never evaporates). Band karna: dono sides tuple-wrap <code>[T] extends [U]</code> — ab whole-union comparison. Bonus: never input distributive mein never hi return karta hai (empty union).</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> ReturnType&lt;T&gt; khud likho aur samjhao.</summary><div class="ans"><p><code>type MyReturnType&lt;T extends (...args: any[]) =&gt; any&gt; = T extends (...args: any[]) =&gt; infer R ? R : never</code>. Constraint ensure karta hai function hi aaye; pattern mein return position pe infer R capture; match guaranteed hai (constraint ki wajah se) par syntax conditional maangta hai. Follow-up ready: overloaded function pe last signature hi milti hai.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> DeepPartial likho aur uske 3 production pitfalls batao.</summary><div class="ans"><p><code>type DeepPartial&lt;T&gt; = { [K in keyof T]?: T[K] extends object ? DeepPartial&lt;T[K]&gt; : T[K] }</code>. Pitfalls: (1) built-ins bhi "object" hain — Date/Map/Set/Observable ke andar ghus jaata hai; special-case branches chahiye (<code>T extends Date ? T : ...</code>); (2) functions object extend karte hain — methods corrupt ho sakte hain; (3) arrays: element optional karna hai ya nahi — design decision, naive version <code>(T[K])[number]</code> semantics galat kar sakta hai; (4th bonus) recursion depth on huge models. Isliye libraries (type-fest) ka battle-tested DeepPartial use karna bhi valid engineering answer hai.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Design karo: ek analytics track(event, payload) function jahan event names 'domain_action' pattern follow karein aur har event ka payload type enforce ho — naya event add karna ek line ka kaam ho.</summary><div class="ans"><p>(1) Source of truth: <code>interface EventPayloads { order_created: {...}; user_login: {...} }</code>. (2) Naming enforce template literal se: <code>type EventName = keyof EventPayloads &amp; `${string}_${string}`</code> — galat-pattern key add karo toh EventName se bahar (ya validation type se compile error). (3) Signature S6 ke bus jaisa: <code>track&lt;K extends EventName&gt;(event: K, payload: EventPayloads[K])</code>. (4) Optional polish: <code>type DomainOf&lt;K&gt; = K extends `${infer D}_${string}` ? D : never</code> se per-domain filtering/sampling types. (5) Runtime boundary pe schema validation (types wire pe nahi jaate — hamesha ka disclaimer). Ye answer S6 generics + template literals + infer teeno ko ek business problem pe compose karta hai — exactly SDE-3 bar.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>Mapped = loop (<code>[K in keyof T]</code>) + modifiers (+/- ? readonly) + remap (<code>as</code>, never = drop). Homomorphic = modifiers preserved.</li>
+<li>Conditional = if-else; naked param + union = distribute (never evaporates); <code>[T] extends [U]</code> = off.</li>
+<li>infer = pattern capture; recursion = types ka loop.</li>
+<li>Template literals = string patterns + cross products (explosion se bacho).</li>
+<li>Test types likho; intermediate aliases; power sirf zaroorat pe.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-8.1 · Utility gauntlet</div><p>Likho: <code>Getters&lt;T&gt;</code> (getName pattern, key remap), <code>Mutable&lt;T&gt;</code> (-readonly), <code>PickByValue&lt;T, V&gt;</code> (as never filter), <code>UnwrapObservable&lt;T&gt;</code>. Har ek ke 2 test types ke saath.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-8.2 · Production DeepPartial</div><p>Date/Map/Set/Array/function special cases + tail-recursion friendly + 5 test types. Phir type-fest ke PartialDeep se diff karo aur unke extra branches ka reason likho.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-8.3 · Typed path getter</div><p><code>get(obj, 'a.b.c')</code> — dot-path string se nested value ka EXACT type (template literal split + recursion + indexed access). Type-challenges ka classic; interview mein aa jaye toh star answer.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-8.4 · ControlsOf explorer</div><p>Upar wale ControlsOf ko extend karo: arrays → FormArray, optional fields → nullable controls. Apne Razorpay clone ke CheckoutModel pe chala ke dekho hover mein kya types bante hain.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+<section class="topic" id="s9">
+<div class="sec-head">
+  <span class="sec-num">S-09</span>
+  <h2>Modules, Declaration Files &amp; Decorators</h2>
+  <label class="done-toggle"><input type="checkbox" data-sec="s9"> Done</label>
+</div>
+<p class="covers">Covers: <b>import type · Module resolution · .d.ts files · declare / declare global · @types (DefinitelyTyped) · Decorators (legacy vs TC39) · Angular decorators ka sach</b></p>
+
+<h3 class="part">1. What is it?</h3>
+<p>Teen boundary-tools: <strong>Modules</strong> (Ch1 S8 ka ESM, ab TS ke type-imports ke saath), <strong>declaration files</strong> (<code>.d.ts</code> — sirf types, koi implementation nahi; JS world ko TS world se jodne wala contract), aur <strong>decorators</strong> (<code>@Something</code> — classes/members ko annotate/modify karne wale functions; Angular ki poori API inhi pe khadi hai... thi. Signals era mein kahani badal rahi hai — aage dekhte hain).</p>
+
+<h3 class="part">2. Why do we need it?</h3>
+<p>Real project kabhi pure-TS island nahi hota: npm ke JS packages, window pe SDK scripts (Razorpay checkout!), legacy code — sab boundaries pe types chahiye warna wahan se <code>any</code> ka zeher andar aata hai. <code>.d.ts</code> + <code>declare</code> yahi seal karte hain. Decorators isliye samajhne hain kyunki tum roz likhte ho <code>@Component</code>, <code>@Injectable</code> — kya <em>hota</em> hai wahan, ye jaanna "Angular user" aur "Angular engineer" ka farak hai.</p>
+
+<h3 class="part">3. What problem does it solve?</h3>
+<ul>
+<li><strong>Untyped JS boundary</strong> — declaration files se koi bhi JS library typed ho jaati hai.</li>
+<li><strong>Global scripts</strong> — <code>declare global</code> se window-injected SDKs officially typed.</li>
+<li><strong>Metadata attach karna</strong> — decorators class ke saath configuration jodte hain jo framework padh sake.</li>
+<li><strong>Type-only dependencies</strong> — <code>import type</code> se circular/runtime issues ke bina types share.</li>
+</ul>
+
+<h3 class="part">4. Internal Working</h3>
+<h4>A) .d.ts aur module resolution</h4>
+<pre class="diagram">
+  import { debounce } from 'lodash-es'
+     │ compiler resolution:
+     │ 1. package.json → "types"/"exports.types" field?
+     │ 2. package ke saath .d.ts bundled?
+     │ 3. node_modules/@types/lodash-es (DefinitelyTyped)?
+     │ 4. Kuch nahi mila → implicit any + error (noImplicitAny)
+     ▼
+  .d.ts = SIRF declarations:  declare function debounce(...): ...
+  Implementation .js mein — compiler ko sirf SHAPES chahiye.
+  Tumhari library banao toh: tsc "declaration": true → dist mein .d.ts auto.
+</pre>
+<h4>B) declare keyword — "ye exist karta hai, bharosa karo"</h4>
+<pre><code><span class="kw">declare const</span> __BUILD_VERSION__: <span class="nm">string</span>;   <span class="cm">// bundler inject karega (define plugin)</span>
+<span class="kw">declare module</span> <span class="st">'*.svg'</span> { <span class="kw">const</span> url: <span class="nm">string</span>; <span class="kw">export default</span> url; }  <span class="cm">// asset imports</span></code></pre>
+<h4>C) Decorators — do duniya (interview mein ye distinction gold hai)</h4>
+<table>
+<tr><th></th><th>Legacy (experimentalDecorators)</th><th>TC39 Standard (TS 5.0+)</th></tr>
+<tr><td>Status</td><td>TS ka purana experiment — Angular isi pe bana</td><td>JS ka aane wala standard (stage 3)</td></tr>
+<tr><td>Signature</td><td><code>(target, key?, descriptor?)</code></td><td><code>(value, context)</code> — context.kind/name/addInitializer</td></tr>
+<tr><td>Param decorators</td><td>✅ (Angular @Inject isi se)</td><td>❌ nahi hain</td></tr>
+<tr><td>Metadata</td><td>reflect-metadata + emitDecoratorMetadata</td><td>context.metadata (naya proposal)</td></tr>
+</table>
+<p><strong>Core idea dono mein same:</strong> decorator = function jo declaration pe <em>class definition time</em> pe (instantiation pe nahi!) chalta hai — wrap/replace/annotate kar sakta hai. Ye enum/parameter-properties ki tarah <em>non-erased</em> feature hai — runtime code generate hota hai.</p>
+
+<h3 class="part">5. Execution Flow — @Component ke andar kya hota hai</h3>
+<pre class="diagram">
+  @Component({ selector: 'app-checkout', template: '...' })
+  class CheckoutComponent { }
+     │ 1. Component(config) call → decorator function return
+     │ 2. Wo function class pe apply → config class ke saath ATTACH
+     │    (conceptually: CheckoutComponent[METADATA] = config)
+     │ 3. AOT compiler (build time!) is metadata ko STATICALLY padhta hai
+     │    → template ko render instructions (ɵcmp definition) mein compile
+     ▼ Runtime pe Angular ɵcmp use karta hai — isliye Angular ke decorators
+       ke liye reflect-metadata runtime ki zaroorat hi nahi (AOT sab pehle kar chuka)
+  ► Signals-era shift: inputs/outputs/queries ab @Input/@Output/@ViewChild
+    decorators se nahi, input()/output()/viewChild() FUNCTIONS se — compiler
+    inhe bhi statically samajhta hai. Direction saaf hai: kam decorators,
+    zyada plain-TS — par @Component/@Injectable abhi core hain.
+</pre>
+
+<h3 class="part">6. Architecture — Boundary-typing ki layers</h3>
+<table>
+<tr><th>Boundary</th><th>Tool</th><th>Example</th></tr>
+<tr><td>npm JS package</td><td>Bundled .d.ts ya @types/*</td><td><code>npm i -D @types/lodash</code></td></tr>
+<tr><td>Script-tag SDK (window pe)</td><td><code>declare global</code> augmentation</td><td>Razorpay checkout (neeche!)</td></tr>
+<tr><td>Env/build constants</td><td><code>declare const</code></td><td>__BUILD_VERSION__</td></tr>
+<tr><td>Non-code imports</td><td><code>declare module '*.ext'</code></td><td>svg, css modules</td></tr>
+<tr><td>Library ke types extend</td><td>Module augmentation + interface merging (S2!)</td><td>Router data typing</td></tr>
+</table>
+
+<h3 class="part">7. Real Project Example — window.Razorpay ko type karna (tumhare clone ke liye!)</h3>
+<pre><code><span class="cm">// types/razorpay.d.ts — script tag se aane wale SDK ka contract</span>
+<span class="kw">export interface</span> <span class="nm">RazorpayOptions</span> {
+  key: <span class="nm">string</span>;
+  amount: <span class="nm">number</span>;              <span class="cm">// paise mein!</span>
+  currency: <span class="st">'INR'</span>;
+  order_id: <span class="nm">string</span>;
+  handler: (res: { razorpay_payment_id: <span class="nm">string</span>; razorpay_signature: <span class="nm">string</span> }) =&gt; <span class="nm">void</span>;
+  modal?: { ondismiss?: () =&gt; <span class="nm">void</span> };
+}
+<span class="kw">export interface</span> <span class="nm">RazorpayInstance</span> { <span class="fn">open</span>(): <span class="nm">void</span>; <span class="fn">close</span>(): <span class="nm">void</span>; }
+
+<span class="kw">declare global</span> {                                    <span class="cm">// L1</span>
+  <span class="kw">interface</span> <span class="nm">Window</span> {                                <span class="cm">// L2: S2 ka declaration merging!</span>
+    Razorpay: <span class="kw">new</span> (options: RazorpayOptions) =&gt; RazorpayInstance;  <span class="cm">// L3</span>
+  }
+}
+
+<span class="cm">// checkout.service.ts — ab fully typed:</span>
+<span class="kw">const</span> rzp = <span class="kw">new</span> window.<span class="fn">Razorpay</span>({ key, amount, currency: <span class="st">'INR'</span>, order_id, handler });
+rzp.<span class="fn">open</span>();
+<span class="cm">// Typo in options? Galat handler signature? — sab COMPILE errors ab. 
+// Pehle ye poora (window as any).Razorpay tha — any ka zeher.</span></code></pre>
+
+<h3 class="part">8. Beginner Example — import type</h3>
+<pre><code><span class="cm">// order.service.ts</span>
+<span class="kw">import type</span> { Order } <span class="kw">from</span> <span class="st">'./order.model'</span>;   <span class="cm">// TYPE-ONLY — JS output se GAYAB</span>
+<span class="kw">import</span> { <span class="fn">inject</span> } <span class="kw">from</span> <span class="st">'@angular/core'</span>;        <span class="cm">// value import — runtime pe rahega</span>
+
+<span class="cm">// Kyun matter karta hai: type-only import (1) circular import cycles ko
+// runtime pe todta hai (Ch1 S8 ka TDZ problem — type imports erase = cycle gone),
+// (2) isolatedModules/esbuild ko saaf batata hai kya drop karna hai,
+// (3) accidental "sirf type chahiye tha, poora module bundle ho gaya" se bachata hai.
+// verbatimModuleSyntax flag ise enforce karta hai — modern strict setup.</span></code></pre>
+
+<h3 class="part">9. Advanced Example — apna decorator likhna (demystify!)</h3>
+<pre><code><span class="cm">// TC39-style method decorator — performance logging</span>
+<span class="kw">function</span> <span class="fn">measured</span>&lt;This, Args <span class="kw">extends</span> <span class="nm">unknown</span>[], R&gt;(          <span class="cm">// L1</span>
+  original: (<span class="kw">this</span>: This, ...args: Args) =&gt; R,
+  context: ClassMethodDecoratorContext&lt;This&gt;                  <span class="cm">// L2</span>
+) {
+  <span class="kw">return function</span> (<span class="kw">this</span>: This, ...args: Args): R {           <span class="cm">// L3</span>
+    <span class="kw">const</span> t0 = performance.<span class="fn">now</span>();
+    <span class="kw">try</span> { <span class="kw">return</span> original.<span class="fn">call</span>(<span class="kw">this</span>, ...args); }             <span class="cm">// L4</span>
+    <span class="kw">finally</span> {
+      console.<span class="fn">log</span>(<span class="st">`${String(context.name)}: ${(performance.now() - t0).toFixed(1)}ms`</span>);
+    }
+  };
+}
+
+<span class="kw">class</span> <span class="fn">ReportService</span> {
+  <span class="kw">@measured</span>                                                   <span class="cm">// L5</span>
+  <span class="fn">buildHeatmapData</span>(rows: PriceRow[]) { <span class="cm">/* heavy transform */</span> }
+}</code></pre>
+
+<h3 class="part">10. Code Explanation — Line by Line</h3>
+<ul>
+<li><strong>L1:</strong> Fully-generic signature — This/Args/R preserve hote hain, decorated method ka type <em>nahi badalta</em> callers ke liye. Generics (S6) yahan kaam pe.</li>
+<li><strong>L2:</strong> <code>context</code> — TC39 style ki pehchaan: kind ('method'), name, static/private flags, addInitializer. Legacy style hota toh <code>(target, key, descriptor)</code> milta — dono forms interview mein bolo.</li>
+<li><strong>L3–L4:</strong> Wrapper function return = original replace. <code>this</code> forward + try/finally — errors pe bhi timing log. Ch1 ka this-binding gyaan yahan directly lagta hai.</li>
+<li><strong>L5:</strong> Sirf <code>@measured</code> — arguments nahi. Configurable chahiye (<code>@measured('label')</code>) toh <em>decorator factory</em>: function jo decorator return kare — Angular ke saare decorators factories hain, isliye <code>@Component({...})</code> mein parentheses hain!</li>
+</ul>
+
+<h3 class="part">11. Common Mistakes</h3>
+<div class="panel bad-p"><div class="ptitle">❌ Galtiyan</div>
+<ul>
+<li><code>(window as any).Razorpay</code> se kaam chalana — 30 second bachaye, poore checkout flow ki type safety bech di. d.ts likho (7 wala) — 10 minute ka one-time kaam.</li>
+<li>.d.ts mein implementation likhne ki koshish — declaration files mein sirf declare-shapes; logic wahan compile error hai.</li>
+<li><code>declare module 'some-lib'</code> mein <code>: any</code> ka shortcut stub — poora module any ho gaya, imports pe koi checking nahi. Minimum bhi likho toh used-surface ke real types likho.</li>
+<li>Global augmentation ko kahin bhi random file mein daalna — module file mein <code>declare global</code> tabhi lagta hai jab file module ho (koi import/export ho); warna ambient/global confusion. Convention: <code>types/</code> folder, project references saaf.</li>
+<li>Decorators mein heavy logic — wo <em>class definition</em> pe chalte hain (app startup), na ki lazily; startup cost + testing pain. Decorator thin rakho; kaam service/function mein.</li>
+</ul></div>
+
+<h3 class="part">12. Best Practices</h3>
+<div class="panel good-p"><div class="ptitle">✅ Production rules</div>
+<ul>
+<li>Boundary inventory rakho: har script-tag SDK, env constant, asset import ka apna .d.ts <code>types/</code> mein — "any imports" lint rule se guard.</li>
+<li><code>import type</code> + <code>verbatimModuleSyntax</code> — type/value imports explicitly alag; bundler-friendly, cycle-safe.</li>
+<li>Library publish karo toh: <code>declaration: true</code>, declaration maps bhi (go-to-definition consumers ke liye source tak jaaye).</li>
+<li>Custom decorators sirf cross-cutting concerns pe (logging, caching, telemetry) — business logic kabhi nahi; aur Angular components mein framework ke primitives (signals APIs) prefer karo.</li>
+</ul></div>
+
+<h3 class="part">13. Performance</h3>
+<p>.d.ts / import type: pure compile-time — balki <em>runtime bundle ghatate</em> hain (type-only imports drop). Decorators: runtime cost hai — legacy emit har decorated class pe helper calls + (agar emitDecoratorMetadata on ho) design-type metadata arrays; sainkdon classes wale app mein measurable startup bytes. Angular AOT isi liye decorators ko <em>build time</em> pe consume karke unke runtime footprint ko practically zero kar deta hai — "decorators are a compile-time DSL for Angular" bolna interview mein sharp line hai.</p>
+
+<h3 class="part">14. Edge Cases</h3>
+<ul>
+<li><code>declare global</code> sirf <em>module</em> files mein valid (kuch import/export ho); pure ambient .d.ts mein cheezein waise hi global hoti hain — dono modes mix karna common confusion.</li>
+<li>Module augmentation (<code>declare module '@angular/router'</code>) sirf <em>existing</em> module mein add karta hai — naya module declare karna alag cheez hai; augment mein original import bhi file mein hona chahiye.</li>
+<li>@types packages ka version drift — lib v5, @types v4 = phantom errors; renovate/dependabot pairing rakho. Bundled-types libraries (Angular, RxJS) ye problem hi nahi rakhtin.</li>
+<li>Legacy vs TC39 ek project mein mix nahi hote — <code>experimentalDecorators</code> flag ON = sab legacy semantics (Angular ka current mode), OFF (TS 5+) = standard. Library authors ke liye dono support karna painful — isi transition mein ecosystem abhi hai.</li>
+<li>Decorator evaluation order: factories top-to-bottom evaluate, decorators bottom-to-top apply — multiple decorators stack karo toh wrapping order ulta hota hai.</li>
+</ul>
+
+<h3 class="part">15. Interview Questions</h3>
+<details><summary><span class="qtag q-easy">EASY</span> .d.ts file kya hai aur @types packages kahan se aate hain?</summary><div class="ans"><p>Declaration file — sirf type declarations, zero implementation; JS code ko TS-consumable banati hai. @types/* = DefinitelyTyped community repo se published types un packages ke liye jo apne types bundle nahi karte. Resolution order: package ke own types → @types → nothing (any + error).</p></div></details>
+<details><summary><span class="qtag q-easy">EASY</span> import type kyun use karein jab normal import bhi types la sakta hai?</summary><div class="ans"><p>Guarantee ke liye ki import runtime output se poora erase ho — (1) circular dependency runtime pe nahi banti, (2) single-file transpilers (esbuild) ko ambiguity nahi, (3) accidental bundle inclusion nahi. verbatimModuleSyntax ise enforce karta hai. Ek line: "types ki dependency ≠ runtime ki dependency — import type ye distinction explicit karta hai."</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> window pe aane wale third-party SDK (script tag) ko type-safe kaise banaoge?</summary><div class="ans"><p>Types folder mein .d.ts: SDK ke options/instance ke interfaces + <code>declare global { interface Window { Sdk: new (opts) =&gt; Instance } }</code> — Window interface merging (S2) se augment hota hai. Ab window.Sdk fully typed, as-any casting gayab. Bonus: SDK load hone ki runtime guarantee alag problem hai — loader service + "script loaded" promise/signal se handle hoti hai; types sirf shape ka contract hain.</p></div></details>
+<details><summary><span class="qtag q-med">MEDIUM</span> Decorator kab execute hota hai — class definition pe ya instantiation pe? Iska implication?</summary><div class="ans"><p>Definition pe — file/module evaluate hote waqt, ek baar per class. Instances banne se pehle sab decorators chal chuke hote hain. Implications: (1) decorator ke andar instance state available nahi (wo prototype/constructor level pe kaam karta hai); (2) heavy decorator = startup cost; (3) isi liye Angular AOT decorators ko build pe consume kar sakta hai — wo static, definition-time information hain.</p></div></details>
+<details><summary><span class="qtag q-hard">HARD</span> @Component decorator se render hone tak Angular ka pipeline explain karo — reflect-metadata ki zaroorat kyun nahi padti?</summary><div class="ans"><p>@Component ek decorator factory hai jo config ko class ke saath associate karta hai. JIT world mein ye metadata runtime pe padha jaata (reflect-metadata / compiler in browser). AOT mein Angular compiler <em>build time</em> pe TS AST se decorator config statically extract karta hai, template ko parse karke render instructions (ɵcmp static property — component definition) generate karta hai, aur DI ke liye ɵfac (factory). Runtime pe framework seedha in generated definitions ko use karta hai — decorator ka runtime role effectively khatam, reflect-metadata unnecessary. Isi architecture se: templates ki compile-time checking (strictTemplates), chhota runtime, tree-shakable output. Signals-era APIs (input()/viewChild()) isi static-analysis philosophy ko aur aage le jaati hain.</p></div></details>
+<details><summary><span class="qtag q-scen">SCENARIO</span> Team ko legacy jQuery plugin (script tag, window.$.myPlugin) Angular app mein use karna hai. Poora type-safe integration plan batao.</summary><div class="ans"><p>(1) Surface audit: plugin ka jitna API use hoga sirf utna type karo (full types likhne mein hafta mat lagao). (2) .d.ts: options/instance interfaces + declare global se Window (ya jQuery interface) augmentation — S2 merging. (3) Wrapper Angular service: plugin access ek jagah encapsulate — DOM-touching code Renderer2/afterNextRender ke saath (SSR safety — tumhare PR reviews wala point!), lifecycle pe destroy (Ch1 leaks). (4) Loader: script dynamically load + typed readiness promise; components sirf service se baat karein. (5) Boundary tests: wrapper ka contract test, plugin mocked. Ye answer types + architecture + SSR + memory sab dikhata hai — full-stack senior signal.</p></div></details>
+
+<h3 class="part">16. Revision Notes</h3>
+<div class="revision"><div class="ptitle">⚡ 30-second recall</div>
+<ul>
+<li>.d.ts = shapes only; resolution: own types → @types → any. Library banao toh declaration: true.</li>
+<li>declare = "exist karta hai, bharosa karo"; declare global (module file mein) + Window merging = SDK typing.</li>
+<li>import type = erased dependency — cycles + bundles safe.</li>
+<li>Decorator = definition-time function; factory = args wala. Legacy (Angular ka mode, param decorators) vs TC39 (value+context).</li>
+<li>Angular AOT decorators ko build pe kha jaata hai → ɵcmp/ɵfac; signals APIs decorators ko aur replace kar rahi hain.</li>
+</ul></div>
+
+<h3 class="part">17. Machine Coding Exercises</h3>
+<div class="mc"><div class="mct">MC-9.1 · Razorpay SDK types (poore)</div><p>Apne clone ke liye complete razorpay.d.ts likho: options, instance, handler payloads, error events, modal callbacks — phir checkout service ko as-any-free banao. Portfolio-ready kaam hai ye.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+<div class="mc"><div class="mct">MC-9.2 · @Memoize decorator</div><p>TC39-style method decorator jo results cache kare (args ko key banao — Ch1 ka memoize + WeakMap gyaan). Cache invalidation method bhi expose karo context.addInitializer se.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-9.3 · Mini @Component</div><p>Khud ka baby framework: <code>@Comp({selector, template})</code> decorator metadata store kare + ek <code>bootstrap(CompClass)</code> jo selector dhund ke template render kare. 50 lines mein Angular ka core idea samajh aa jaayega.</p><div class="lvl">LEVEL: HARD</div></div>
+<div class="mc"><div class="mct">MC-9.4 · Augmentation drill</div><p>Router ke Route['data'] ko module augmentation se strongly type karo (title: string, roles: Role[] required) — phir ek galat route config likh ke error verify karo.</p><div class="lvl">LEVEL: MEDIUM</div></div>
+</section>
+
+<div class="footer-note">
+Chapter 2 complete. TypeScript ab tumhare liye "JS + types" nahi — ek compile-time language hai jise tum likh sakte ho. Agla padav: <b>Chapter 3 — Change Detection Deep Dive</b> (Zone.js → OnPush → Signals — Ch1 S6 ki story ka climax) ya <b>RxJS Internals</b>.<br>
+<b>Soch ka Safar</b> · Ratta nahi, reasoning. 🚀
+</div>
+
+
+</div>
+
+<script>
+(function(){
+  var KEY='ts_ch2_progress_v1';
+  var state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; }
+  var boxes=document.querySelectorAll('.done-toggle input');
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  function render(){
+    var done=0;
+    boxes.forEach(function(b){ if(state[b.dataset.sec]){ b.checked=true; done++; } else { b.checked=false; } });
+    var pct=boxes.length? Math.round(done/boxes.length*100):0;
+    var f=document.getElementById('pfill'), l=document.getElementById('plabel');
+    if(f) f.style.width=pct+'%';
+    if(l) l.textContent=done+' / '+boxes.length+' sections done';
+  }
+  boxes.forEach(function(b){
+    b.addEventListener('change',function(){ state[b.dataset.sec]=b.checked; save(); render(); });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

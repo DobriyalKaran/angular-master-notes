@@ -210,9 +210,11 @@ function searchNotes() {
             card.style.display = "";
         } else {
             card.style.display = "none";
-        }
-
-    });
+        } 
+    document.querySelectorAll("a").forEach(link => {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+    }); 
 
 }
 </script>
